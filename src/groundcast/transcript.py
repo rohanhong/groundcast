@@ -33,11 +33,16 @@ ol.sources { font-size: .85rem; color: var(--muted); }
 """
 
 
-def source_href(chunk: Chunk, material: Material) -> str:
-    href = f"../../materials/{material.stored_name}"
+def material_path(chunk: Chunk, material: Material) -> str:
+    """Path of a chunk's material relative to the data directory, at its page for PDFs."""
+    path = f"materials/{material.stored_name}"
     if material.kind == "pdf" and chunk.locator.startswith("p"):
-        href += f"#page={chunk.locator[1:]}"
-    return href
+        path += f"#page={chunk.locator[1:]}"
+    return path
+
+
+def source_href(chunk: Chunk, material: Material) -> str:
+    return "../../" + material_path(chunk, material)
 
 
 def render_transcript(

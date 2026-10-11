@@ -30,4 +30,5 @@ def roles(settings: LLMSettings) -> dict[str, Role]:
         "writer": Role("writer", settings.writer_model, settings.writer_effort),
         "verifier": Role("verifier", settings.verifier_model, settings.verifier_effort),
         "editor": Role("editor", settings.editor_model, settings.editor_effort),
+        "tutor": Role("tutor", settings.tutor_model, settings.tutor_effort),
     }

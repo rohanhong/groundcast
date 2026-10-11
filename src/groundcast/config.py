@@ -57,6 +57,9 @@ class LLMSettings(_Section):
     verifier_effort: str = "medium"
     editor_model: str = "opus"
     editor_effort: str = "medium"
+    # Answers the learner's typed questions (S10 text Q&A).
+    tutor_model: str = "sonnet"
+    tutor_effort: str = "medium"
     timeout_s: int = 900
     max_attempts: int = 3
     # Wait before retry n is n times this; errors that cannot be fixed by
@@ -109,6 +112,16 @@ class AudioSettings(_Section):
     mp3_bitrate: str = "96k"
 
 
+class QASettings(_Section):
+    # Passages of the session's materials given to the Tutor per question.
+    top_k: int = Field(default=6, ge=1)
+    # Earlier exchanges shown with a question, for follow-ups.
+    history_turns: int = Field(default=3, ge=0)
+    # Check every answer sentence with the Verifier; failures are shown with a warning.
+    verify: bool = True
+    max_question_chars: int = Field(default=1000, ge=1)
+
+
 class EvaluationSettings(_Section):
     # Pass thresholds for `groundcast eval`, on the means over all runs (spec
     # section 13). Set on 2026-10-11 from the M1 baseline on evals/seeded/.
@@ -128,6 +141,7 @@ class Settings(_Section):
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
     tts: TTSSettings = Field(default_factory=TTSSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)
+    qa: QASettings = Field(default_factory=QASettings)
     evaluation: EvaluationSettings = Field(default_factory=EvaluationSettings)
 
 

@@ -4,7 +4,7 @@
   materials/<id>.<ext>        original files
   materials/<id>.json         Material record
   chunks/<id>.json            list of Chunk records
-  sessions/<session id>/      brief, script JSON, verification report, MP3, transcript
+  sessions/<session id>/      brief, script JSON, verification report, MP3, transcript, Q&A
 """
 
 from __future__ import annotations

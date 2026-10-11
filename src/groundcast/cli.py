@@ -82,6 +82,37 @@ def cmd_session(args: argparse.Namespace) -> int:
     return 0 if record.status == SessionStatus.DONE else 1
 
 
+def cmd_ask(args: argparse.Namespace) -> int:
+    from groundcast.llm import make_backend, roles
+    from groundcast.models import SessionStatus
+    from groundcast.qa import answer_question, load_history, save_history
+    from groundcast.storage import Store
+
+    settings = _settings(args)
+    store = Store(settings.data_dir)
+    record = store.get_session(args.session)
+    if record.status != SessionStatus.DONE:
+        raise SystemExit(f"session {record.id} is {record.status.value}; questions open once it is done")
+    materials = {m: store.get_material(m) for m in record.brief.material_ids}
+    chunks = [c for m in record.brief.material_ids for c in store.get_chunks(m)]
+    history = load_history(store, record.id)
+    exchange = answer_question(
+        make_backend(settings.llm), roles(settings.llm), settings, chunks, materials, args.question, history.exchanges
+    )
+    history.exchanges.append(exchange)
+    save_history(store, record.id, history)
+    numbers = {s.chunk_id: n for n, s in enumerate(exchange.sources, start=1)}
+    if not exchange.covered:
+        print("(Your materials do not answer this.)")
+    for s in exchange.sentences:
+        refs = "".join(f"[{numbers[c]}]" for c in s.sources)
+        warning = "" if s.verified else f"  <- not verified against your materials ({s.label})"
+        print(f"{s.text}{refs}{warning}")
+    for src in exchange.sources:
+        print(f"[{numbers[src.chunk_id]}] {src.label}")
+    return 0
+
+
 def cmd_eval(args: argparse.Namespace) -> int:
     from groundcast.evaluation.seeded import format_report, run_seeded, save_report, threshold_failures
     from groundcast.llm import make_backend
@@ -135,6 +166,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--format", default="narrator", choices=["narrator", "two_hosts"])
     p.add_argument("--notes", default="")
     p.set_defaults(func=cmd_session)
+
+    p = sub.add_parser("ask", help="ask a question about a finished session, answered from its materials")
+    p.add_argument("session", help="session ID")
+    p.add_argument("question")
+    p.set_defaults(func=cmd_ask)
 
     p = sub.add_parser("eval", help="run the seeded-error test of the Verifier")
     p.add_argument("--set", help="evaluation set file (default: evals/seeded/items.json in the repository)")

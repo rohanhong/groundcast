@@ -26,6 +26,8 @@ verifier_model = "sonnet"  # a different tier from the Writer
 verifier_effort = "medium"
 editor_model = "opus"
 editor_effort = "medium"
+tutor_model = "sonnet"  # answers typed questions about a session
+tutor_effort = "medium"
 timeout_s = 900
 max_attempts = 3
 retry_backoff_s = 10.0  # wait before retry n is n times this
@@ -66,6 +68,12 @@ disclaimer = "This is an AI-generated audio session, written from your own study
 [audio]
 ffmpeg_bin = "ffmpeg"
 mp3_bitrate = "96k"
+
+[qa]
+top_k = 6  # passages given to the Tutor per question
+history_turns = 3  # earlier exchanges shown for follow-up questions
+verify = true  # check answer sentences; failures are shown with a warning
+max_question_chars = 1000
 
 [evaluation]
 # Pass thresholds for `groundcast eval`, on the means over all runs.

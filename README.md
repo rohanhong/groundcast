@@ -38,8 +38,9 @@ result as an MP3 you can play in any phone player.
 > Early development: milestone M1 is done and M2 is in progress. A session
 > runs end to end: text-layer PDF, Markdown, or text in; a verified MP3, read
 > by one narrator or two hosts, with chapter marks, and a linked transcript
-> out. Later features, such as text Q&A, quizzes, and the profile, are
-> described below but not built yet.
+> out; typed questions about a finished session are answered from your
+> materials. Later features, such as quizzes and the profile, are described
+> below but not built yet.
 
 ## ✨ Highlights
 
@@ -95,7 +96,8 @@ result as an MP3 you can play in any phone player.
 
 The same pipeline runs from the command line: `groundcast ingest <files>`,
 then `groundcast session -m <material id> --focus "<what to cover>"` (add
-`--format two_hosts` for two hosts). Run `groundcast --help` for every
+`--format two_hosts` for two hosts). Ask about a finished session with
+`groundcast ask <session id> "<question>"`. Run `groundcast --help` for every
 command.
 
 ## 🗺️ Roadmap

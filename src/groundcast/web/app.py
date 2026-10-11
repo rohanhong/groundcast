@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import shutil
 import tempfile
+import threading
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from importlib import resources
@@ -14,10 +15,13 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from groundcast.config import Settings
 from groundcast.ingest import ExtractionError, ingest_file
-from groundcast.models import Brief, Chunk, Material, SessionRecord
+from groundcast.llm import LLMBackend, make_backend, roles
+from groundcast.models import Brief, Chunk, Material, SessionRecord, SessionStatus
+from groundcast.qa import QAExchange, answer_question, load_history, save_history
 from groundcast.sessions import REPORT_FILE, SessionRunner, fail_interrupted, new_session
 from groundcast.storage import Store
 
@@ -57,8 +61,15 @@ def local_request_problem(
     return None
 
 
-def create_app(settings: Settings, runner: SessionRunner | None = None) -> FastAPI:
+class Question(BaseModel):
+    question: str
+
+
+def create_app(
+    settings: Settings, runner: SessionRunner | None = None, backend: LLMBackend | None = None
+) -> FastAPI:
     store = Store(settings.data_dir)
+    qa_lock = threading.Lock()  # one question at a time keeps each session's qa.json consistent
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
@@ -157,6 +168,47 @@ def create_app(settings: Settings, runner: SessionRunner | None = None) -> FastA
             return json.loads(path.read_text(encoding="utf-8"))
         except (FileNotFoundError, ValueError) as exc:
             raise _not_found(exc) from exc
+
+    @app.get("/api/sessions/{session_id}/questions")
+    def list_questions(session_id: str) -> list[QAExchange]:
+        try:
+            store.get_session(session_id)
+            return load_history(store, session_id).exchanges
+        except (FileNotFoundError, ValueError) as exc:
+            raise _not_found(exc) from exc
+
+    @app.post("/api/sessions/{session_id}/questions")
+    def ask_question(session_id: str, body: Question) -> QAExchange:
+        question = body.question.strip()
+        if not question or len(question) > settings.qa.max_question_chars:
+            raise HTTPException(
+                status_code=422, detail=f"Ask a question of 1 to {settings.qa.max_question_chars} characters."
+            )
+        try:
+            record = store.get_session(session_id)
+        except (FileNotFoundError, ValueError) as exc:
+            raise _not_found(exc) from exc
+        if record.status != SessionStatus.DONE:
+            raise HTTPException(status_code=409, detail="Questions open once the session is done.")
+        with qa_lock:
+            try:
+                materials = {m: store.get_material(m) for m in record.brief.material_ids}
+                chunks = [c for m in record.brief.material_ids for c in store.get_chunks(m)]
+            except (FileNotFoundError, ValueError) as exc:
+                raise HTTPException(status_code=409, detail=f"A material of this session is gone: {exc}") from exc
+            history = load_history(store, session_id)
+            exchange = answer_question(
+                backend or make_backend(settings.llm),
+                roles(settings.llm),
+                settings,
+                chunks,
+                materials,
+                question,
+                history.exchanges,
+            )
+            history.exchanges.append(exchange)
+            save_history(store, session_id, history)
+        return exchange
 
     # Session files (MP3, transcript) and the materials they link to.
     app.mount("/data/materials", StaticFiles(directory=store.materials_dir), name="materials")
