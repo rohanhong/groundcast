@@ -12,6 +12,9 @@ head, which helps them remember (retrieval practice).
   them. Each question is one sentence of kind "recall": an open question
   that takes nothing for granted and can be answered in a few words from
   the session.
+- Ask the listener to produce the answer: no yes-or-no and no either-or
+  questions. Ask "why" or "how" only about causes or steps the session
+  explained.
 - Right after each question, give the answer in one or two claim sentences
   with their sources. The answer must make sense right after its question,
   for example "Two: the Pell and the Askra."

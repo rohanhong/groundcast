@@ -93,8 +93,20 @@ criterion is within noise; the gain on structure and vividness is not.
 | Announce analogies, one image at a time, right after the idea | Vividness | S14, S15, S05, S07 | S14-science-vs, S15-philosophize-this, S05-sweller |
 | Verifier labels: supported, contradicted, unsupported, framing, no claim | Verifier prompt | S20, S17, S23 | S20-fever, S17-factscore |
 | Retrieve passages with the line before the sentence | Verifier input | S23 | S23-minicheck |
+| Host B asks for a term at first use, voices doubts the passages answer, sums up for Host A to check; questions never hold their answers; comparisons announced | Two-host prompt | S13, S14, S07 | S13-hidden-brain, S14-science-vs, S07-npr-training |
+| Recall questions ask the listener to produce the answer; "why" and "how" only about what was explained | Recall prompt | S03 | S03-dunlosky |
+
+The two-host and recall additions were kept on 2026-10-12 from two scripts
+per affected brief (6 scripts per variant): format 3.71 to 4.15, vividness
+3.34 to 3.74, structure 3.94 to 3.90, first-pass verification 0.95 to 0.98.
 
 ## Evaluated and not adopted
+
+- Verifier prompt: "contradicted needs a passage that rules the fact out"
+  (S20) and "work out stated totals and shares from the passages' numbers"
+  (S18): seeded test detection 0.985 to 0.979, false flags 0.000 to 0.006,
+  label accuracy 0.935 to 0.941. It caught the arithmetic item in 2 of 3
+  runs but missed another item in all 3; no clear gain, so not adopted.
 
 - Code check of numbers and names (S22): flagged 4 of 53 correct seeded
   sentences, all numbers derived by arithmetic, and caught no error the LLM
