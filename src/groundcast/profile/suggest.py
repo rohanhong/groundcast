@@ -24,9 +24,10 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from groundcast.config import Settings
-from groundcast.models import Brief, Material, SessionRecord, SessionStatus, utc_now
+from groundcast.models import MAX_MINUTES, MIN_MINUTES, Brief, Material, SessionRecord, SessionStatus, utc_now
 from groundcast.profile.concepts import Concept, list_concepts
 from groundcast.profile.db import ProfileDB, log_event
+from groundcast.profile.feedback import get_feedback
 from groundcast.profile.preferences import BRIEF_KEYS, Preferences, defaults, load_preferences
 
 LABELS = {"minutes": "length", "format": "format", "recall_prompts": "recall questions", "context": "context",
@@ -179,14 +180,23 @@ def suggest(
             score=0.9 - 0.5 * mastery(weak[0]),
         ))  # fmt: skip
 
-    # The last finished session again, if its materials are still here.
+    # The last finished session again, if its materials are still here, adjusted by its feedback.
     last = next((s for s in sessions if s.status == SessionStatus.DONE), None)
     if last is not None and all(m in ready for m in last.brief.material_ids):
+        brief, why, score = last.brief, [f"Your last session, on {last.created_at:%Y-%m-%d}."], 0.6
+        fb = get_feedback(db, last.id)
+        if fb is not None and fb.length in ("too_long", "too_short"):
+            factor = settings.suggest.length_step if fb.length == "too_short" else 1 / settings.suggest.length_step
+            minutes = min(MAX_MINUTES, max(MIN_MINUTES, round(brief.minutes * factor)))
+            brief = brief.model_copy(update={"minutes": minutes})
+            why.append(f"{minutes} minutes, since you said it was {fb.length.replace('_', ' ')}.")
+        if fb is not None and fb.rating is not None and fb.rating <= settings.suggest.low_rating:
+            score = 0.3
+            why.append(f"You rated it {fb.rating} of 5, so it comes after the others.")
         out.append(Suggestion(
             id=f"same_as_last:{last.id}", kind="same_as_last",
             title=f"Same as last time: {last.brief.title or last.brief.focus}",
-            why=[f"Your last session, on {last.created_at:%Y-%m-%d}."],
-            brief=last.brief, score=0.6,
+            why=why, brief=brief, score=score,
         ))  # fmt: skip
 
     # Materials no session has used yet, newest first.

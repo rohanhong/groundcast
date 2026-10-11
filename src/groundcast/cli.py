@@ -241,6 +241,27 @@ def cmd_prefs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_feedback(args: argparse.Namespace) -> int:
+    from groundcast.profile.db import ProfileDB
+    from groundcast.profile.feedback import Feedback, get_feedback, set_feedback
+    from groundcast.storage import Store
+
+    settings = _settings(args)
+    record = Store(settings.data_dir).get_session(args.session)
+    db = ProfileDB(settings.data_dir)
+    if args.rating is not None or args.length or args.comment is not None:
+        old = get_feedback(db, record.id)
+        fb = Feedback(
+            rating=args.rating if args.rating is not None else (old.rating if old else None),
+            length=args.length or (old.length if old else None),
+            comment=args.comment if args.comment is not None else (old.comment if old else ""),
+        )
+        set_feedback(db, record.id, fb)
+    current = get_feedback(db, record.id)
+    print(current.model_dump_json(indent=1) if current else "No feedback on this session yet.")
+    return 0
+
+
 def cmd_suggest(args: argparse.Namespace) -> int:
     from groundcast.profile.db import ProfileDB
     from groundcast.profile.suggest import suggest
@@ -378,6 +399,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="for example speed=1.1")
     p.add_argument("--clear", action="append", default=[], metavar="KEY", help="go back to the configured default")
     p.set_defaults(func=cmd_prefs)
+
+    p = sub.add_parser("feedback", help="rate a session and say if it was too short or too long")
+    p.add_argument("session", help="session ID")
+    p.add_argument("--rating", type=int, choices=range(1, 6), help="1 to 5")
+    p.add_argument("--length", choices=["too_short", "right", "too_long"])
+    p.add_argument("--comment")
+    p.set_defaults(func=cmd_feedback)
 
     p = sub.add_parser("suggest", help="show ranked session suggestions and what was learned from past sessions")
     p.set_defaults(func=cmd_suggest)

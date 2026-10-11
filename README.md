@@ -120,7 +120,8 @@ text with `groundcast review <material id>`), then `groundcast session -m <mater
 end). Ask about a finished session with `groundcast ask <session id>
 "<question>"`, or print a checked quiz with `groundcast quiz <session id>`;
 list the concept table with `groundcast concepts`; set preferences with
-`groundcast prefs --set speed=1.1`; see ranked suggestions with
+`groundcast prefs --set speed=1.1`; rate a session with `groundcast feedback
+<session id> --rating 4 --length too_long`; see ranked suggestions with
 `groundcast suggest`. Run `groundcast --help` for every
 command.
 

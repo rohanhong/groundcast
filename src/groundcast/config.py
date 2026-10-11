@@ -249,6 +249,10 @@ class SuggestSettings(_Section):
     weak_mastery: float = Field(default=0.6, ge=0.0, le=1.0)  # concepts below this are suggested for revision
     weak_topics: int = Field(default=3, ge=1)  # concepts in one revision suggestion
     max_suggestions: int = Field(default=4, ge=1)
+    # Session feedback: "too short" or "too long" scales the repeated session's
+    # length by this factor; a rating at or below low_rating ranks it last.
+    length_step: float = Field(default=1.25, gt=1.0)
+    low_rating: int = Field(default=2, ge=1, le=5)
 
 
 class EvaluationSettings(_Section):

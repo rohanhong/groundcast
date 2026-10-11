@@ -46,6 +46,7 @@ from groundcast.profile.preferences import (
     voice_choices,
 )
 from groundcast.profile.extract import extract_concepts
+from groundcast.profile.feedback import Feedback, StoredFeedback, get_feedback, set_feedback
 from groundcast.profile.suggest import Suggestion, SuggestionView, record_outcome, suggest
 from groundcast.qa import QAExchange, answer_question, load_history, save_history
 from groundcast.quiz import AttemptResult, QuizView, grade, load_quizzes, make_quiz, save_quizzes, view
@@ -331,6 +332,19 @@ def create_app(
         except (FileNotFoundError, ValueError) as exc:
             raise HTTPException(status_code=409, detail=f"A material of this session is gone: {exc}") from exc
         return materials, chunks
+
+    @app.get("/api/sessions/{session_id}/feedback")
+    def read_feedback(session_id: str) -> StoredFeedback | None:
+        try:
+            store.get_session(session_id)
+        except (FileNotFoundError, ValueError) as exc:
+            raise _not_found(exc) from exc
+        return get_feedback(profile, session_id)
+
+    @app.put("/api/sessions/{session_id}/feedback")
+    def write_feedback(session_id: str, body: Feedback) -> StoredFeedback:
+        _done_session(session_id, "Feedback")
+        return set_feedback(profile, session_id, body)
 
     @app.get("/api/sessions/{session_id}/questions")
     def list_questions(session_id: str) -> list[QAExchange]:

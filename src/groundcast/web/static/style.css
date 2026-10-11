@@ -110,6 +110,7 @@ details#events summary { cursor: pointer; color: var(--accent); margin-top: .5re
 details.qa summary { cursor: pointer; color: var(--accent); }
 .qa-form { display: flex; gap: .5rem; margin-top: .5rem; }
 .qa-form input { margin-top: 0; }
+.feedback select { width: auto; margin-top: 0; }
 .qa-exchange { border-left: 3px solid var(--line); padding-left: .7rem; margin: .7rem 0; }
 .qa-question { font-weight: 600; margin: 0 0 .2rem; }
 .qa-answer { margin: 0; }

@@ -90,3 +90,19 @@ def test_suggestions_api(settings: Settings, tides: Tides) -> None:
         r = client.post("/api/suggestions/outcome", json={"suggestion": s, "brief": s["brief"]})
         assert r.json() == {"accepted": True}
         assert client.get("/api/suggestions").json()["acceptance"]["rate"] == 1.0
+
+
+def test_feedback_changes_the_repeat_suggestion(settings: Settings, store: Store, db: ProfileDB, tides: Tides) -> None:
+    from groundcast.profile.feedback import Feedback, get_feedback, set_feedback
+
+    material, _ = tides
+    last = _session(material.id, 1, minutes=20)
+    set_feedback(db, last.id, Feedback(rating=2, length="too_long", comment="dragged"))
+    repeat = next(s for s in suggest(db, settings, store.list_materials(), [last]).suggestions
+                  if s.kind == "same_as_last")  # fmt: skip
+    assert repeat.brief.minutes == 16 and repeat.score == 0.3
+    assert any("too long" in w for w in repeat.why) and any("2 of 5" in w for w in repeat.why)
+    set_feedback(db, last.id, Feedback(rating=5, length="right"))
+    assert get_feedback(db, last.id).comment == ""
+    events = [e for e in list_events(db, 5) if e.kind == "session.feedback"]
+    assert events[0].before["comment"] == "dragged" and events[0].after["rating"] == 5

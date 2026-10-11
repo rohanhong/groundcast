@@ -192,6 +192,8 @@ min_confidence = 0.6  # inferred values below this are shown but not used
 weak_mastery = 0.6  # concepts with a lower share of right quiz answers are suggested for revision
 weak_topics = 3  # concepts in one revision suggestion
 max_suggestions = 4
+length_step = 1.25  # "too short" or "too long" on a session scales its length by this when repeated
+low_rating = 2  # a session rated this or lower is not suggested first again
 
 [evaluation]
 # Pass thresholds for `groundcast eval`, on the means over all runs.

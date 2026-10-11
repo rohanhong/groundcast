@@ -149,7 +149,7 @@ def undo(db: ProfileDB, settings: Settings, event_id: int) -> Preferences:
 
 
 # Rows that refer to concepts come before the concepts table, so deleting in order keeps the keys valid.
-TABLES = ("preferences", "inferred", "voice_pace", "extractions", "quiz_results", "concept_sources", "concepts", "events")
+TABLES = ("preferences", "feedback", "inferred", "voice_pace", "extractions", "quiz_results", "concept_sources", "concepts", "events")
 
 
 def export_profile(db: ProfileDB) -> dict[str, list[dict[str, Any]]]:

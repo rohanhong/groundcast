@@ -52,6 +52,13 @@ CREATE TABLE IF NOT EXISTS preferences (
     value TEXT NOT NULL,           -- JSON
     updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS feedback (
+    session_id TEXT PRIMARY KEY,
+    rating INTEGER,                -- 1 to 5
+    length TEXT,                   -- too_short, right, or too_long
+    comment TEXT NOT NULL DEFAULT '',
+    at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS inferred (
     key TEXT PRIMARY KEY,          -- a brief setting whose inferred value is confident enough to use
     value TEXT NOT NULL,           -- JSON

@@ -549,13 +549,54 @@ async function loadSessions() {
           el("a", { href: `${base}/session.mp3`, download: `${s.id}.mp3` }, "Download MP3")),
       );
       const reportBox = el("div", { class: "muted" });
-      item.append(reportBox, qaPanel(s.id), quizPanel(s.id));
+      item.append(reportBox, feedbackPanel(s.id), qaPanel(s.id), quizPanel(s.id));
       api(`/api/sessions/${s.id}/report`).then((r) => { reportBox.textContent = reportLine(r); }).catch(() => {});
     }
     list.append(item);
   }
   clearTimeout(pollTimer);
   if (active) pollTimer = setTimeout(loadSessions, POLL_MS);
+}
+
+// Feedback on a finished session (S11): used by the suggestions
+
+const feedbackPanels = new Map(); // session id -> panel, kept across list refreshes
+
+function feedbackPanel(sessionId) {
+  if (feedbackPanels.has(sessionId)) return feedbackPanels.get(sessionId);
+  const rating = el("select", {}, el("option", { value: "" }, "Rating"),
+    ...[5, 4, 3, 2, 1].map((n) => el("option", { value: String(n) }, `${n} of 5`)));
+  const length = el("select", {}, el("option", { value: "" }, "Length"),
+    el("option", { value: "too_short" }, "Too short"), el("option", { value: "right" }, "About right"),
+    el("option", { value: "too_long" }, "Too long"));
+  const comment = el("input", { type: "text", placeholder: "Comment (optional)", maxlength: "1000" });
+  const status = el("span", { class: "muted", role: "status" });
+  const form = el("form", { class: "qa-form feedback" }, rating, length, comment,
+    el("button", { type: "submit", class: "secondary" }, "Save"), status);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      await api(`/api/sessions/${sessionId}/feedback`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: rating.value ? Number(rating.value) : null, length: length.value || null,
+          comment: comment.value.trim() }),
+      });
+      status.textContent = "Saved.";
+      loadSuggestions().catch(() => {});
+    } catch (error) {
+      status.textContent = `Not saved: ${error.message}`;
+    }
+  });
+  api(`/api/sessions/${sessionId}/feedback`).then((f) => {
+    if (!f) return;
+    rating.value = f.rating === null ? "" : String(f.rating);
+    length.value = f.length || "";
+    comment.value = f.comment;
+  }).catch(() => {});
+  const panel = el("details", { class: "qa" }, el("summary", {}, "How was it?"), form);
+  feedbackPanels.set(sessionId, panel);
+  return panel;
 }
 
 // Concepts and the change log

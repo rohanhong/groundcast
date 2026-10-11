@@ -47,9 +47,9 @@ which every statement is grounded in those materials.
   backends), `elicit.py` (S1, brief by dialogue), `voice_direction.py` (S8,
   pace per segment), `tts/`, `sessions.py` (S9 export), `qa.py` and
   `quiz.py` (S10 text Q&A and quizzes), `profile/` (the SQLite profile:
-  preferences, inferred preferences and ranked suggestions, concept table,
-  quiz results, event log), `web/` (FastAPI app and static UI),
-  `evaluation/`.
+  preferences, inferred preferences and ranked suggestions, session
+  feedback, concept table, quiz results, event log), `web/` (FastAPI app and
+  static UI), `evaluation/`.
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
   the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are
   added to the Writer prompt for two-host sessions and recall prompts.

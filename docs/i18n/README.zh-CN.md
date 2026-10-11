@@ -78,7 +78,7 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    groundcast serve
    ```
 
-同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`（网页用 `--url <网址>`；用 `groundcast review <material id>` 核对识别出的语音或扫描文字），再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好；用 `groundcast suggest` 查看排序的建议。运行 `groundcast --help` 查看全部命令。
+同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`（网页用 `--url <网址>`；用 `groundcast review <material id>` 核对识别出的语音或扫描文字），再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好；用 `groundcast feedback <session id> --rating 4 --length too_long` 为会话打分；用 `groundcast suggest` 查看排序的建议。运行 `groundcast --help` 查看全部命令。
 
 ## 🗺️ 路线图
 
