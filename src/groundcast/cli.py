@@ -332,7 +332,8 @@ def cmd_eval_quality(args: argparse.Namespace) -> int:
     set_path = Path(args.set) if args.set else _default_eval_set("quality", "briefs.json")
     stamp = f"{datetime.now():%Y%m%d-%H%M%S}"
     out = Path(args.out) if args.out else settings.data_dir / "evals" / f"quality-{stamp}.json"
-    report = run_quality(set_path, settings, make_backend(settings.llm), args.judge_runs, out.with_suffix(""))
+    report = run_quality(set_path, settings, make_backend(settings.llm), args.judge_runs, out.with_suffix(""),
+                         generations=args.generations)  # fmt: skip
     save_quality(report, out)
     print(format_quality(report))
     print(f"Report: {out} (scripts in {out.with_suffix('')})")
@@ -424,6 +425,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("eval-quality", help="write scripts for fixed briefs and score them with the LLM judge")
     p.add_argument("--set", help="brief set file (default: evals/quality/briefs.json in the repository)")
     p.add_argument("--judge-runs", type=int, default=3, help="judging runs per script, averaged")
+    p.add_argument("--generations", type=int, default=1, help="scripts written per brief, averaged")
     p.add_argument("--out", help="report path (default: <data dir>/evals/); scripts go next to it")
     p.set_defaults(func=cmd_eval_quality)
     return parser

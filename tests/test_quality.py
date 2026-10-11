@@ -28,7 +28,7 @@ def test_run_quality_scores_and_averages(settings: Settings, tmp_path: Path) -> 
         {"id": "tides", "materials": [str(FIXTURES / "tides.md")], "focus": "tides", "minutes": 2},
     ]}), encoding="utf-8")  # fmt: skip
     prompts: list[str] = []
-    runs = iter([4, 2])
+    runs = iter([4, 2, 5, 5])
 
     def judge(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
         prompts.append(prompt)
@@ -48,6 +48,11 @@ def test_run_quality_scores_and_averages(settings: Settings, tmp_path: Path) -> 
     assert "[framing]" in prompts[0] and "# Brief" in prompts[0]
     assert (tmp_path / "out" / "tides.script.json").is_file()
     assert "structure 3.00" in format_quality(report)
+
+    twice = run_quality(set_path, settings, backend, judge_runs=1, out_dir=tmp_path / "two", progress=lambda m: None,
+                        generations=2)  # fmt: skip
+    assert [(b.id, b.generation) for b in twice.briefs] == [("tides", 1), ("tides", 2)]
+    assert twice.axes["structure"] == 5.0 and (tmp_path / "two" / "tides-2.script.json").is_file()
 
 
 def test_render_names_hosts_and_kinds(settings: Settings) -> None:

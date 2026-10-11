@@ -3,7 +3,10 @@
 A quality set lists briefs on self-written materials. For each brief the
 pipeline writes, verifies, and edits a script (no audio), and an LLM judge
 scores it against the fixed criteria in prompts/judge.md, several times,
-since one judging run is noisy. The judge's criteria do not change when the
+since one judging run is noisy. Scripts vary more than judgements: with
+prompts unchanged, one brief's axis scores moved by up to 0.6 between two
+scripts, so a comparison of prompts should write several scripts per brief
+(generations). The judge's criteria do not change when the
 Writer's prompts change, so two runs of this evaluation compare prompts.
 Correctness comes from the pipeline's own verification report.
 """
@@ -63,6 +66,7 @@ class JudgeOutput(BaseModel):
 
 class BriefResult(BaseModel):
     id: str
+    generation: int = 1  # which script for this brief, when several are written
     words: int
     target_words: int
     sentences: int  # written by the Writer
@@ -78,6 +82,7 @@ class QualityReport(BaseModel):
     writer_model: str
     judge_model: str
     judge_runs: int
+    generations: int = 1
     briefs: list[BriefResult]
     axes: dict[str, float | None]  # axis -> mean of its criteria over briefs
     criteria: dict[str, float | None]  # criterion -> mean over briefs
@@ -136,25 +141,28 @@ def run_quality(
     judge_runs: int,
     out_dir: Path,
     progress: Callable[[str], None] = print,
+    generations: int = 1,
 ) -> QualityReport:
     quality_set = QualitySet.model_validate_json(set_path.read_text(encoding="utf-8"))
     out_dir.mkdir(parents=True, exist_ok=True)
     results = []
     with tempfile.TemporaryDirectory(prefix="groundcast-quality-") as tmp:
         store = Store(Path(tmp))
-        for qb in quality_set.briefs:
+        for qb, generation in ((qb, g) for qb in quality_set.briefs for g in range(1, generations + 1)):
             materials = [ingest_file(set_path.parent / rel, store, settings) for rel in qb.materials]
             chunks = [c for m in materials for c in store.get_chunks(m.id)]
             brief = Brief(focus=qb.focus, material_ids=[m.id for m in materials], minutes=qb.minutes,
                           context=qb.context, level=qb.level, format=qb.format, recall_prompts=qb.recall_prompts)  # fmt: skip
-            progress(f"{qb.id}: writing and checking a {qb.minutes}-minute script")
+            label = qb.id if generations == 1 else f"{qb.id} #{generation}"
+            progress(f"{label}: writing and checking a {qb.minutes}-minute script")
             result = Pipeline(settings, backend, roles(settings.llm)).run(brief, chunks)
             report = result.report
-            (out_dir / f"{qb.id}.script.json").write_text(result.model_dump_json(indent=1), encoding="utf-8")
+            name = qb.id if generations == 1 else f"{qb.id}-{generation}"
+            (out_dir / f"{name}.script.json").write_text(result.model_dump_json(indent=1), encoding="utf-8")
             runs = []
             reasons: dict[str, str] = {}
             for n in range(1, judge_runs + 1):
-                progress(f"{qb.id}: judging, run {n}/{judge_runs}")
+                progress(f"{label}: judging, run {n}/{judge_runs}")
                 judged = judge_script(backend, settings, brief, result.script, report.target_words)
                 runs.append(judged["scores"])
                 reasons = reasons or judged["reasons"]
@@ -163,6 +171,7 @@ def run_quality(
             results.append(
                 BriefResult(
                     id=qb.id,
+                    generation=generation,
                     words=result.script.word_count(),
                     target_words=report.target_words,
                     sentences=report.writer_sentences,
@@ -179,6 +188,7 @@ def run_quality(
         writer_model=roles(settings.llm)["writer"].model,
         judge_model=roles(settings.llm)["judge"].model,
         judge_runs=judge_runs,
+        generations=generations,
         briefs=results,
         axes={axis: _mean([criteria[c] for c in names]) for axis, names in CRITERIA.items()},
         criteria=criteria,
@@ -192,7 +202,8 @@ def format_quality(report: QualityReport) -> str:
         return "  -  " if v is None else f"{v:.2f}"
 
     lines = [
-        f"Writer {report.writer_model}, judge {report.judge_model}, {report.judge_runs} judging run(s) per script",
+        f"Writer {report.writer_model}, judge {report.judge_model}, {report.generations} script(s) per brief, "
+        f"{report.judge_runs} judging run(s) per script",
         f"  first-pass verification {report.first_pass_rate:.3f}, length {report.length_ratio:.2f} of target",
         "  " + "  ".join(f"{axis} {f(v)}" for axis, v in report.axes.items()),
         "Per criterion (mean over briefs):",
@@ -202,7 +213,8 @@ def format_quality(report: QualityReport) -> str:
     lines.append("Per brief:")
     for b in report.briefs:
         weakest = sorted((v, c) for c, v in b.scores.items() if v is not None)[:3]
-        lines.append(f"  {b.id:14} {b.words}/{b.target_words} words, first pass {b.first_pass_rate:.2f}, "
+        name = b.id if report.generations == 1 else f"{b.id} #{b.generation}"
+        lines.append(f"  {name:17} {b.words}/{b.target_words} words, first pass {b.first_pass_rate:.2f}, "
                      f"dropped {b.dropped}; weakest: " + ", ".join(f"{c} {v:.1f}" for v, c in weakest))  # fmt: skip
     return "\n".join(lines)
 
