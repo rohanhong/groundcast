@@ -28,7 +28,7 @@ def _script_text(script: Script) -> str:
     lines = [f"Title: {script.title}", ""]
     for seg in script.segments:
         lines.append(f"[{seg.id}] Heading: {seg.heading}")
-        lines.extend(f"  {s.id}: {s.text}" for s in seg.sentences)
+        lines.extend(f"  {s.id}: {s.line()}" for s in seg.sentences)
         lines.append("")
     return "\n".join(lines)
 

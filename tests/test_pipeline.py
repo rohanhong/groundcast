@@ -1,10 +1,13 @@
+import re
+from typing import Any
+
 from groundcast.config import Settings
-from groundcast.llm import roles
+from groundcast.llm import Role, roles
 from groundcast.models import Brief, Chunk, Material
 from groundcast.pipeline.run import Pipeline
 from groundcast.transcript import render_transcript
 
-from .conftest import scripted_backend
+from .conftest import FakeBackend, items_in, scripted_backend
 
 Tides = tuple[Material, list[Chunk]]
 
@@ -30,6 +33,9 @@ def test_pipeline_write_verify_revise_edit(settings: Settings, tides: Tides) -> 
     assert (r.edits_applied, r.edits_reverted) == (1, 1)
     assert all(v.passed for v in r.verdicts.values())
     assert {"dropped", "replaced", "reverted"} <= {e.outcome for e in r.events}
+    # A narrator script has no speakers, whatever the Writer returned.
+    assert result.script.format == "narrator"
+    assert all(s.speaker is None for s in result.script.sentences())
 
 
 def test_verifier_sees_no_writer_labels(settings: Settings, tides: Tides) -> None:
@@ -64,3 +70,71 @@ def test_length_target_scales_with_voice_speed(settings: Settings, tides: Tides)
     writer_prompt = next(prompt for _, title, prompt in backend.calls if title == "Draft")
     expected = 10 * round(settings.pipeline.words_per_minute * 1.2)
     assert f"about {expected} spoken words" in writer_prompt
+
+
+def test_two_hosts_keep_speakers_and_show_them_to_the_checker(settings: Settings, tides: Tides) -> None:
+    material, chunks = tides
+    backend = scripted_backend()
+    brief = Brief(focus="tides", material_ids=[material.id], format="two_hosts")
+    result = Pipeline(settings, backend, roles(settings.llm)).run(brief, chunks)
+    speakers = {s.id: s.speaker for s in result.script.sentences()}
+    assert result.script.format == "two_hosts"
+    assert speakers == {"s1.1": "A", "s1.2": "B", "s1.3": "A", "s2.2": "B"}
+    assert "Format: two hosts" in next(p for _, t, p in backend.calls if t == "Draft")
+    first_check = next(p for role, _, p in backend.calls if role == "verifier")
+    assert "sentence_id: s1.2\nspeaker: Host B\nprevious sentence: Host A: The Moon causes tides." in first_check
+    edit_prompt = next(p for _, t, p in backend.calls if t == "Edits")
+    assert "s1.2: Host B: The Moon is the main cause." in edit_prompt
+
+
+def _previous_lines(prompt: str) -> dict[str, str]:
+    return dict(re.findall(r"^sentence_id: (\S+)\n(?:speaker: .*\n)?previous sentence: (.*)$", prompt, re.M))
+
+
+def test_answer_checked_again_when_its_question_is_dropped(settings: Settings, tides: Tides) -> None:
+    material, chunks = tides
+    first = chunks[0].id
+    checked: list[tuple[str, str]] = []
+
+    def draft(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        lines = [
+            ("A", "The Moon causes tides."),
+            ("B", "How many UNFIXABLE moons pull on the sea?"),
+            ("A", "Just one."),
+        ]
+        return {
+            "title": "Tides",
+            "segments": [{"heading": "Moons", "sentences": [
+                {"text": t, "kind": "claim", "sources": [first], "speaker": sp} for sp, t in lines
+            ]}],
+        }  # fmt: skip
+
+    def verify(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        previous = _previous_lines(prompt)
+        out = []
+        for i in items_in(prompt):
+            checked.append((i["text"], previous[i["sentence_id"]]))
+            if "UNFIXABLE" in i["text"]:
+                label = "unsupported"
+            elif i["text"] == "Just one.":
+                label = "supported" if "How many" in previous[i["sentence_id"]] else "unsupported"
+            else:
+                label = "supported"
+            out.append({"sentence_id": i["sentence_id"], "label": label})
+        return {"verdicts": out}
+
+    def revise(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        return {"revisions": [{"sentence_id": i["sentence_id"], "action": "drop"} for i in items_in(prompt)]}
+
+    backend = FakeBackend({
+        "Draft": draft,
+        "VerifierOutput": verify,
+        "Revisions": revise,
+        "Edits": lambda role, prompt, schema: {"sentences": [], "headings": []},
+    })  # fmt: skip
+    brief = Brief(focus="tides", material_ids=[material.id], format="two_hosts")
+    result = Pipeline(settings, backend, roles(settings.llm)).run(brief, chunks)
+
+    assert [s.text for s in result.script.sentences()] == ["The Moon causes tides."]
+    assert ("Just one.", "Host A: The Moon causes tides.") in checked  # checked again without its question
+    assert [e.sentence_id for e in result.report.events if e.outcome == "dropped"] == ["s1.2", "s1.3"]

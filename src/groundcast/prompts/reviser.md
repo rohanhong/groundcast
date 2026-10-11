@@ -14,4 +14,8 @@ For each sentence, return one of:
 Never fix a sentence by citing a passage that does not state it. Keep
 numbers, names, and qualifiers exactly as the passages give them.
 
+In a two-host script each failed sentence names its speaker, and the
+previous line names its own. The corrected line stays with the same host and
+must still fit as a reply to the previous line.
+
 {rubric}

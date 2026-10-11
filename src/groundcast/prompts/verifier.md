@@ -31,6 +31,12 @@ Check every fact in the sentence. Label it with exactly one of:
 When in doubt between supported and unsupported, choose unsupported. A
 sentence that mixes supported and unsupported facts is unsupported.
 
+In a two-host script each item names its speaker, and the previous line
+names its own. Judge a line by everything it states, including what it takes
+from the previous line: a short answer ("Two of them.") states the fact the
+question asked about, and a reply such as "Exactly" or "Right" agrees with
+the previous line, so it states that line again. Judge it as such.
+
 For each item return the sentence_id, the label, the IDs of the passages
 that support or contradict it (evidence), and a one-sentence rationale that
 names the problem when the label is not supported.

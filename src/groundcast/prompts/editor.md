@@ -14,7 +14,10 @@ You may:
 - Improve segment headings.
 
 You may not add, delete, merge, split, or reorder sentences, and you may not
-change what a sentence claims.
+change what a sentence claims. In a two-host script each line shows its host
+("Host A: ..."); keep each line in its host's voice, keep answers fitting the
+questions before them, and return only the spoken text, without the host
+label.
 
 Return only what you change: for each edited sentence its sentence_id and
 the new text; for each changed heading its segment_id and the new heading.

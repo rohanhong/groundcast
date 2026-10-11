@@ -7,7 +7,18 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from groundcast.llm import LLMBackend, Role
-from groundcast.models import Brief, Chunk, Script, Segment, Sentence, SentenceKind, Verdict
+from groundcast.models import (
+    Brief,
+    Chunk,
+    Script,
+    ScriptFormat,
+    Segment,
+    Sentence,
+    SentenceKind,
+    Speaker,
+    Verdict,
+    speaker_label,
+)
 from groundcast.pipeline.common import format_passages, load_prompt
 from groundcast.retrieval import BM25Index
 
@@ -16,6 +27,7 @@ class DraftSentence(BaseModel):
     text: str
     kind: SentenceKind
     sources: list[str] = Field(default_factory=list)
+    speaker: Speaker = "A"
 
 
 class DraftSegment(BaseModel):
@@ -61,6 +73,7 @@ def _brief_text(brief: Brief, target_words: int) -> str:
         f"Focus: {brief.focus}",
         f"Listening context: {brief.context}",
         f"Listener level: {brief.level}",
+        "Format: " + ("two hosts, A and B, in conversation" if brief.format == "two_hosts" else "one narrator"),
         f"Length: about {brief.minutes} minutes, so about {target_words} spoken words in total",
     ]
     if brief.title:
@@ -79,17 +92,24 @@ def clean_sources(sources: list[str], valid: set[str]) -> list[str]:
     return seen
 
 
-def draft_to_script(draft: Draft, valid: set[str]) -> Script:
+def draft_to_script(draft: Draft, valid: set[str], script_format: ScriptFormat = "narrator") -> Script:
+    two_hosts = script_format == "two_hosts"
     segments = []
     for g, dseg in enumerate(draft.segments, start=1):
         sentences = [
-            Sentence(id=f"s{g}.{n}", text=ds.text.strip(), kind=ds.kind, sources=clean_sources(ds.sources, valid))
+            Sentence(
+                id=f"s{g}.{n}",
+                text=ds.text.strip(),
+                kind=ds.kind,
+                sources=clean_sources(ds.sources, valid),
+                speaker=ds.speaker if two_hosts else None,
+            )
             for n, ds in enumerate(dseg.sentences, start=1)
             if ds.text.strip()
         ]
         if sentences:
             segments.append(Segment(id=f"g{g}", heading=dseg.heading.strip(), sentences=sentences))
-    return Script(title=draft.title.strip(), segments=segments)
+    return Script(title=draft.title.strip(), segments=segments, format=script_format)
 
 
 def write_script(
@@ -103,7 +123,10 @@ def write_script(
         f"{format_passages(sources)}\n\n"
         "Write the script now."
     )
-    return backend.complete_structured(role, load_prompt("writer"), prompt, Draft)
+    system = load_prompt("writer")
+    if brief.format == "two_hosts":
+        system += "\n\n" + load_prompt("dialogue")
+    return backend.complete_structured(role, system, prompt, Draft)
 
 
 def revise_sentences(
@@ -117,8 +140,10 @@ def revise_sentences(
     for sentence, context, verdict, passages in failed:
         for c in passages:
             pool.setdefault(c.id, c)
+        speaker = f"speaker: {speaker_label(sentence.speaker)}\n" if sentence.speaker else ""
         items.append(
             f"sentence_id: {sentence.id}\n"
+            f"{speaker}"
             f"previous sentence: {context or '(none)'}\n"
             f"sentence: {sentence.text}\n"
             f"label: {verdict.label.value}\n"

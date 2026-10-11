@@ -32,6 +32,14 @@ class Chunk(BaseModel):
     text: str
 
 
+Speaker = Literal["A", "B"]
+ScriptFormat = Literal["narrator", "two_hosts"]
+
+
+def speaker_label(speaker: str) -> str:
+    return f"Host {speaker}"
+
+
 class Brief(BaseModel):
     """Session brief (S1). M1 collects it with a short form."""
 
@@ -41,6 +49,7 @@ class Brief(BaseModel):
     minutes: int = Field(default=10, ge=2, le=60)
     context: Literal["desk", "commute", "exercise", "revision"] = "commute"
     level: Literal["introductory", "intermediate", "advanced"] = "introductory"
+    format: ScriptFormat = Field(default="narrator", description="One narrator, or two hosts in conversation")
     notes: str = ""
 
 
@@ -55,8 +64,14 @@ class Sentence(BaseModel):
     text: str
     kind: SentenceKind
     sources: list[str] = Field(default_factory=list)
+    # The host speaking this line in a two-host script; None for a narrator.
+    speaker: Speaker | None = None
     # Set when the sentence failed verification and pipeline.unresolved="mark".
     unverified: bool = False
+
+    def line(self) -> str:
+        """The sentence as a listener hears it, with its speaker when there is one."""
+        return f"{speaker_label(self.speaker)}: {self.text}" if self.speaker else self.text
 
 
 class Segment(BaseModel):
@@ -68,6 +83,7 @@ class Segment(BaseModel):
 class Script(BaseModel):
     title: str
     segments: list[Segment]
+    format: ScriptFormat = "narrator"
 
     def sentences(self) -> list[Sentence]:
         return [s for seg in self.segments for s in seg.sentences]

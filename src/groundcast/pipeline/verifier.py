@@ -1,8 +1,9 @@
 """S4 Verify and S7 Re-verify.
 
-The Verifier sees only each sentence, the sentence before it for reference
-resolution, and the passages: the ones the Writer cited plus the BM25 top-k
-(spec sections 5 and 6). It never sees the Writer's reasoning or labels.
+The Verifier sees only each sentence (with its speaker in a two-host script),
+the line before it for reference resolution, and the passages: the ones the
+Writer cited plus the BM25 top-k (spec sections 5 and 6). It never sees the
+Writer's reasoning or labels.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ from dataclasses import dataclass
 from pydantic import BaseModel, Field
 
 from groundcast.llm import LLMBackend, Role
-from groundcast.models import Chunk, Label, Sentence, Verdict
+from groundcast.models import Chunk, Label, Sentence, Verdict, speaker_label
 from groundcast.pipeline.common import format_passages, load_prompt
 from groundcast.retrieval import BM25Index
 
@@ -34,6 +35,7 @@ class CheckItem:
     text: str
     context: str
     passages: list[Chunk]
+    speaker: str = ""  # "Host A" or "Host B" in a two-host script
 
 
 def passages_for(text: str, cited: list[str], by_id: dict[str, Chunk], index: BM25Index, top_k: int) -> list[Chunk]:
@@ -45,9 +47,15 @@ def passages_for(text: str, cited: list[str], by_id: dict[str, Chunk], index: BM
 def build_items(
     sentences: list[tuple[Sentence, str]], by_id: dict[str, Chunk], index: BM25Index, top_k: int
 ) -> list[CheckItem]:
-    """sentences: (sentence, previous sentence text) pairs."""
+    """sentences: (sentence, previous line) pairs; see Sentence.line."""
     return [
-        CheckItem(s.id, s.text, context, passages_for(s.text, s.sources, by_id, index, top_k))
+        CheckItem(
+            s.id,
+            s.text,
+            context,
+            passages_for(s.text, s.sources, by_id, index, top_k),
+            speaker_label(s.speaker) if s.speaker else "",
+        )
         for s, context in sentences
     ]
 
@@ -58,8 +66,10 @@ def _prompt(items: list[CheckItem]) -> str:
     for item in items:
         for c in item.passages:
             pool.setdefault(c.id, c)
+        speaker = f"speaker: {item.speaker}\n" if item.speaker else ""
         blocks.append(
             f"sentence_id: {item.sentence_id}\n"
+            f"{speaker}"
             f"previous sentence: {item.context or '(none)'}\n"
             f"sentence: {item.text}\n"
             f"check against: {', '.join(c.id for c in item.passages) or '(no passages)'}"

@@ -86,7 +86,8 @@ def scripted_backend() -> FakeBackend:
     """A full Writer, Verifier, reviser, and Editor run with known outcomes.
 
     The Verifier labels by marker words: WRONG is contradicted, UNFIXABLE is
-    unsupported (and stays so after revision), "like a" is framing.
+    unsupported (and stays so after revision), "like a" is framing. Two
+    sentences are Host B's; a narrator script ignores that.
     """
 
     def draft(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
@@ -98,7 +99,8 @@ def scripted_backend() -> FakeBackend:
                     "heading": "Causes",
                     "sentences": [
                         {"text": "The Moon causes tides.", "kind": "claim", "sources": [first, "bogus:p9:9"]},
-                        {"text": "The Sun is the WRONG main cause.", "kind": "claim", "sources": [first]},
+                        {"text": "The Sun is the WRONG main cause.", "kind": "claim", "sources": [first],
+                         "speaker": "B"},
                         {"text": "Let's start.", "kind": "connective", "sources": []},
                     ],
                 },
@@ -106,7 +108,7 @@ def scripted_backend() -> FakeBackend:
                     "heading": "Spring tides",
                     "sentences": [
                         {"text": "An UNFIXABLE claim.", "kind": "claim", "sources": []},
-                        {"text": "It is like a tug of war.", "kind": "framing", "sources": [first]},
+                        {"text": "It is like a tug of war.", "kind": "framing", "sources": [first], "speaker": "B"},
                     ],
                 },
             ],

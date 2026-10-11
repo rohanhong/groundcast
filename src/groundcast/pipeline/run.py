@@ -53,8 +53,26 @@ def _with_context(script: Script, ids: set[str] | None = None) -> list[tuple[Sen
         for s in seg.sentences:
             if ids is None or s.id in ids:
                 pairs.append((s, previous))
-            previous = s.text
+            previous = s.line()
     return pairs
+
+
+def _followers(script: Script, ids: set[str]) -> set[str]:
+    """The sentence right after each run of ids in a segment.
+
+    Its context changes when those sentences are dropped or rewritten: an
+    answer such as "Two of them." means nothing without its question.
+    """
+    out: set[str] = set()
+    for seg in script.segments:
+        after = False
+        for s in seg.sentences:
+            if s.id in ids:
+                after = True
+            elif after:
+                out.add(s.id)
+                after = False
+    return out
 
 
 def _remove(script: Script, ids: set[str]) -> None:
@@ -88,7 +106,7 @@ class Pipeline:
         # A faster voice fits more words into the same minutes.
         pace = round(cfg.words_per_minute * self.settings.tts.speed)
         draft = write_script(self.backend, self.roles["writer"], brief, sources, pace)
-        script = draft_to_script(draft, valid)
+        script = draft_to_script(draft, valid, brief.format)
         report.writer_sentences = len(script.sentences())
         if not report.writer_sentences:
             raise ValueError("the Writer returned an empty script")
@@ -129,26 +147,35 @@ class Pipeline:
                 s.kind = rev.kind
                 s.sources = clean_sources(rev.sources, valid)
                 replaced.add(s.id)
+            recheck = replaced | _followers(script, dropped | replaced)
             _remove(script, dropped)
             for sid in dropped:
                 verdicts.pop(sid, None)
-            if replaced:
-                verdicts.update(verify(_with_context(script, replaced)))
+            if recheck:
+                verdicts.update(verify(_with_context(script, recheck)))
 
-        # Sentences still failing after the last round
+        # Sentences still failing after the last round. Dropping them changes
+        # the context of the sentences that follow, which are checked again;
+        # any that now fail go the same way.
         unresolved = {sid for sid, v in verdicts.items() if not v.passed}
-        for s, _ in _with_context(script, unresolved):
-            v = verdicts[s.id]
-            outcome = "dropped" if cfg.unresolved == "drop" else "marked"
-            report.events.append(
-                ReportEntry(sentence_id=s.id, text=s.text, stage="unresolved", outcome=outcome,
-                            label=v.label, rationale=v.rationale)
-            )  # fmt: skip
-            s.unverified = True
-        if cfg.unresolved == "drop":
+        while unresolved:
+            for s, _ in _with_context(script, unresolved):
+                v = verdicts[s.id]
+                outcome = "dropped" if cfg.unresolved == "drop" else "marked"
+                report.events.append(
+                    ReportEntry(sentence_id=s.id, text=s.text, stage="unresolved", outcome=outcome,
+                                label=v.label, rationale=v.rationale)
+                )  # fmt: skip
+                s.unverified = True
+            if cfg.unresolved != "drop":
+                break
+            followers = _followers(script, unresolved)
             _remove(script, unresolved)
             for sid in unresolved:
                 verdicts.pop(sid, None)
+            rechecked = verify(_with_context(script, followers)) if followers else {}
+            verdicts.update(rechecked)
+            unresolved = {sid for sid, v in rechecked.items() if not v.passed}
         if not script.sentences():
             raise ValueError("no sentence passed verification")
 

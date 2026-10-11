@@ -36,7 +36,8 @@ which every statement is grounded in those materials.
   API backends), `tts/`, `sessions.py` (S9 export), `web/` (FastAPI app and
   static UI), `evaluation/`.
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
-  the Writer, reviser, and Editor prompts.
+  the Writer, reviser, and Editor prompts, and `dialogue.md` is added to the
+  Writer prompt for two-host sessions.
 - Tests mirror the modules (`tests/test_<module>.py`); the fake LLM backend,
   the scripted pipeline run, and shared fixtures live in `tests/conftest.py`.
 - Every setting is a field in `src/groundcast/config.py`; add new ones there
