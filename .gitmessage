@@ -83,7 +83,7 @@
 #   branches are protected and whether committing directly on
 #   a trunk is allowed.
 #
-#   Workflow: <not recorded>
+#   Workflow: trunk-solo
 #
 #   git-flow     - `main` plus `develop` trunks; all work lands
 #                  through short-lived branches and a reviewed
@@ -174,7 +174,7 @@
 #
 #   Record the adopted variant on the line below once decided
 #   (`repo-init` maintains it; tooling reads it):
-#   Adopted: <not recorded>
+#   Adopted: Variant B
 #
 # ------------------------------------------------------------
 # Naming Character Rules

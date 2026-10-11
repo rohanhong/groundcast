@@ -352,12 +352,12 @@ bun.lockb       binary
 # honor export-ignore. repo-init offers to uncomment every
 # `# <path> export-ignore` line in a consumer repository.
 # =====================================================================
-# .gitattributes  export-ignore
-# .gitignore      export-ignore
-# .gitmodules     export-ignore
-# .gitmessage     export-ignore
-# .github/        export-ignore
-# .gitlab/        export-ignore
+.gitattributes  export-ignore
+.gitignore      export-ignore
+.gitmodules     export-ignore
+.gitmessage     export-ignore
+.github/        export-ignore
+.gitlab/        export-ignore
 
 # =====================================================================
 # AI agent tools. Canonical content lives in AGENTS.md and .agents/;
@@ -380,24 +380,24 @@ skills          symlink=dir
 # directories are listed. The root instruction file names carry no leading slash, so
 # they also match nested AGENTS.md, CLAUDE.md, and GEMINI.md files;
 # excluding those nested instruction files is deliberate.
-# .agents/        export-ignore
-# .amazonq/       export-ignore
-# .claude/        export-ignore
-# .cline/         export-ignore
-# .clinerules/    export-ignore
-# .codex/         export-ignore
-# .continue/      export-ignore
-# .cursor/        export-ignore
-# .devin/         export-ignore
-# .gemini/        export-ignore
-# .junie/         export-ignore
-# .kiro/          export-ignore
-# .opencode/      export-ignore
-# .roo/           export-ignore
-# .trae/          export-ignore
-# .windsurf/      export-ignore
-# AGENTS.md       export-ignore
-# CLAUDE.md       export-ignore
-# GEMINI.md       export-ignore
-# .cursorrules    export-ignore
-# .windsurfrules  export-ignore
+.agents/        export-ignore
+.amazonq/       export-ignore
+.claude/        export-ignore
+.cline/         export-ignore
+.clinerules/    export-ignore
+.codex/         export-ignore
+.continue/      export-ignore
+.cursor/        export-ignore
+.devin/         export-ignore
+.gemini/        export-ignore
+.junie/         export-ignore
+.kiro/          export-ignore
+.opencode/      export-ignore
+.roo/           export-ignore
+.trae/          export-ignore
+.windsurf/      export-ignore
+AGENTS.md       export-ignore
+CLAUDE.md       export-ignore
+GEMINI.md       export-ignore
+.cursorrules    export-ignore
+.windsurfrules  export-ignore
