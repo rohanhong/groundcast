@@ -1,0 +1,120 @@
+"""Typed records passed between pipeline stages and stored in the data directory."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from enum import StrEnum
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class Material(BaseModel):
+    id: str  # hash prefix, the first part of every chunk ID
+    sha256: str
+    filename: str
+    kind: Literal["pdf", "markdown", "text"]
+    stored_name: str  # file name inside <data>/materials/
+    pages: int
+    words: int
+    added_at: datetime = Field(default_factory=utc_now)
+
+
+class Chunk(BaseModel):
+    id: str  # <material hash prefix>:<locator>:<index>
+    material_id: str
+    locator: str  # p<page>, s<slide>, or t<start second>
+    index: int
+    text: str
+
+
+class Brief(BaseModel):
+    """Session brief (S1). M1 collects it with a short form."""
+
+    title: str = ""
+    focus: str = Field(description="What the session should cover, in the user's words")
+    material_ids: list[str]
+    minutes: int = Field(default=10, ge=2, le=60)
+    context: Literal["desk", "commute", "exercise", "revision"] = "commute"
+    level: Literal["introductory", "intermediate", "advanced"] = "introductory"
+    notes: str = ""
+
+
+class SentenceKind(StrEnum):
+    CLAIM = "claim"  # states something about the subject; must be supported
+    FRAMING = "framing"  # analogy or example; must not mislead
+    CONNECTIVE = "connective"  # signposting with no content of its own
+
+
+class Sentence(BaseModel):
+    id: str
+    text: str
+    kind: SentenceKind
+    sources: list[str] = Field(default_factory=list)
+    # Set when the sentence failed verification and pipeline.unresolved="mark".
+    unverified: bool = False
+
+
+class Segment(BaseModel):
+    id: str
+    heading: str
+    sentences: list[Sentence]
+
+
+class Script(BaseModel):
+    title: str
+    segments: list[Segment]
+
+    def sentences(self) -> list[Sentence]:
+        return [s for seg in self.segments for s in seg.sentences]
+
+    def word_count(self) -> int:
+        return sum(len(s.text.split()) for s in self.sentences())
+
+
+class Label(StrEnum):
+    SUPPORTED = "supported"
+    UNSUPPORTED = "unsupported"
+    CONTRADICTED = "contradicted"
+    FRAMING_OK = "framing_ok"
+    FRAMING_MISLEADING = "framing_misleading"
+    NO_CLAIM = "no_claim"
+
+
+PASSING_LABELS = frozenset({Label.SUPPORTED, Label.FRAMING_OK, Label.NO_CLAIM})
+
+
+class Verdict(BaseModel):
+    sentence_id: str
+    label: Label
+    evidence: list[str] = Field(default_factory=list)
+    rationale: str = ""
+
+    @property
+    def passed(self) -> bool:
+        return self.label in PASSING_LABELS
+
+
+class SessionStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    DONE = "done"
+    FAILED = "failed"
+
+
+class SessionRecord(BaseModel):
+    id: str
+    brief: Brief
+    status: SessionStatus = SessionStatus.QUEUED
+    stage: str = ""
+    log: list[str] = Field(default_factory=list)
+    error: str = ""
+    # Process that queued or runs the session; lets a restarted app tell an
+    # interrupted session from one another process is still running.
+    pid: int | None = None
+    created_at: datetime = Field(default_factory=utc_now)
+    finished_at: datetime | None = None
