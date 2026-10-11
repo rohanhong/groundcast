@@ -10,7 +10,15 @@ from groundcast.models import Brief, Chunk, Label, Script, Sentence, SentenceKin
 from groundcast.pipeline.common import Progress, no_progress
 from groundcast.pipeline.editor import edit_script
 from groundcast.pipeline.verifier import CheckItem, build_items, passages_for, verify_items
-from groundcast.pipeline.writer import clean_sources, draft_to_script, revise_sentences, select_sources, write_script
+from groundcast.pipeline.writer import (
+    clean_sources,
+    draft_to_script,
+    revise_sentences,
+    select_sources,
+    shorten_draft,
+    target_words,
+    write_script,
+)
 from groundcast.retrieval import BM25Index
 
 
@@ -24,6 +32,8 @@ class ReportEntry(BaseModel):
 
 
 class VerificationReport(BaseModel):
+    target_words: int = 0
+    draft_words: list[int] = Field(default_factory=list)  # the first draft, then each shortened one
     writer_sentences: int = 0
     first_pass: dict[str, int] = Field(default_factory=dict)
     revise_rounds: int = 0
@@ -115,10 +125,23 @@ class Pipeline:
         progress("write", f"Writing a {brief.minutes}-minute script from {len(sources)} passages")
         # A faster voice fits more words into the same minutes.
         pace = round(cfg.words_per_minute * self.settings.tts.speed)
-        recall_pause = self.settings.tts.recall_pause_s
-        draft = write_script(
-            self.backend, self.roles["writer"], brief, sources, pace, cfg.recall_questions, recall_pause
-        )
+        target = target_words(brief, pace, cfg.recall_questions, self.settings.tts.recall_pause_s)
+        report.target_words = target
+        draft = write_script(self.backend, self.roles["writer"], brief, sources, target, cfg.recall_questions)
+        report.draft_words.append(draft.word_count())
+
+        # Length check: a model asked for a length tends to run over it.
+        for _ in range(cfg.max_trim_rounds):
+            words = draft.word_count()
+            if words <= target * (1 + cfg.length_tolerance):
+                break
+            progress("trim", f"The draft has {words} words for a {target}-word target; shortening it")
+            shorter = shorten_draft(self.backend, self.roles["writer"], brief, draft, target, cfg.recall_questions)
+            report.draft_words.append(shorter.word_count())
+            # Keep the draft when shortening did not help or cut recall questions.
+            if not 0 < shorter.word_count() < words or shorter.recall_count() < draft.recall_count():
+                break
+            draft = shorter
         script = draft_to_script(draft, valid, brief.format)
         report.writer_sentences = len(script.sentences())
         if not report.writer_sentences:

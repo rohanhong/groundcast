@@ -87,6 +87,11 @@ class PipelineSettings(_Section):
     # Upper bound on material text given to the Writer; larger selections are
     # cut down to the chunks that best match the brief.
     writer_max_source_words: int = 60000
+    # A draft longer than the word target by more than this share is sent back
+    # to the Writer to shorten, at most max_trim_rounds times. Drafts tend to
+    # run about a third over when only asked for a length.
+    length_tolerance: float = Field(default=0.15, ge=0.0)
+    max_trim_rounds: int = Field(default=2, ge=0)
     # Questions in the closing recall segment when a brief asks for recall prompts.
     recall_questions: int = Field(default=3, ge=1, le=10)
     # What happens to a sentence still failing after max_revise_rounds.

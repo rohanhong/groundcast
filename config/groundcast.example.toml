@@ -50,6 +50,8 @@ verify_batch_size = 20
 max_revise_rounds = 2
 writer_max_source_words = 60000
 recall_questions = 3  # when a brief asks for recall prompts
+length_tolerance = 0.15  # drafts longer than the word target by more are shortened
+max_trim_rounds = 2
 unresolved = "drop"  # or "mark": keep and label as not verified
 
 [tts]

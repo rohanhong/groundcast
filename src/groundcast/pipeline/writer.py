@@ -39,6 +39,16 @@ class Draft(BaseModel):
     title: str
     segments: list[DraftSegment]
 
+    def word_count(self) -> int:
+        return sum(len(s.text.split()) for seg in self.segments for s in seg.sentences)
+
+    def recall_count(self) -> int:
+        return sum(s.kind == SentenceKind.RECALL for seg in self.segments for s in seg.sentences)
+
+
+class Shortened(Draft):
+    """The Writer's shortened draft (its own schema title, so the call is distinct)."""
+
 
 class Revision(BaseModel):
     sentence_id: str
@@ -114,23 +124,25 @@ def draft_to_script(draft: Draft, valid: set[str], script_format: ScriptFormat =
     return Script(title=draft.title.strip(), segments=segments, format=script_format)
 
 
+def target_words(brief: Brief, words_per_minute: int, recall_questions: int = 0, recall_pause_s: float = 0.0) -> int:
+    seconds = brief.minutes * 60.0
+    if brief.recall_prompts:
+        # The pauses after recall questions take time but no words.
+        seconds -= recall_questions * recall_pause_s
+    return max(1, round(seconds / 60.0 * words_per_minute))
+
+
 def write_script(
     backend: LLMBackend,
     role: Role,
     brief: Brief,
     sources: list[Chunk],
-    words_per_minute: int,
+    target: int,
     recall_questions: int = 0,
-    recall_pause_s: float = 0.0,
 ) -> Draft:
-    seconds = brief.minutes * 60.0
-    if brief.recall_prompts:
-        # The pauses after recall questions take time but no words.
-        seconds -= recall_questions * recall_pause_s
-    target_words = max(1, round(seconds / 60.0 * words_per_minute))
     prompt = (
         "# Session brief\n\n"
-        f"{_brief_text(brief, target_words, recall_questions)}\n\n"
+        f"{_brief_text(brief, target, recall_questions)}\n\n"
         "# Passages\n\n"
         f"{format_passages(sources)}\n\n"
         "Write the script now."
@@ -141,6 +153,20 @@ def write_script(
     if brief.recall_prompts:
         system += "\n\n" + load_prompt("recall")
     return backend.complete_structured(role, system, prompt, Draft)
+
+
+def shorten_draft(
+    backend: LLMBackend, role: Role, brief: Brief, draft: Draft, target: int, recall_questions: int = 0
+) -> Draft:
+    words = draft.word_count()
+    prompt = (
+        "# Session brief\n\n"
+        f"{_brief_text(brief, target, recall_questions)}\n\n"
+        f"# Draft to shorten\n\nIt has {words} spoken words; the budget is {target}. "
+        f"Cut about {words - target} words.\n\n"
+        f"{draft.model_dump_json(indent=1)}\n\nReturn the whole shortened script."
+    )
+    return backend.complete_structured(role, load_prompt("shortener"), prompt, Shortened)
 
 
 def revise_sentences(

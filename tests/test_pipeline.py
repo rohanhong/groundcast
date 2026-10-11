@@ -153,3 +153,57 @@ def test_recall_question_dropped_with_its_answer(settings: Settings, tides: Tide
     assert f"about {round(seconds / 60 * settings.pipeline.words_per_minute)} spoken words" in writer_prompt
     assert [s.text for s in result.script.sentences()] == ["Let's check what stuck.", "What causes tides?", "The Moon."]
     assert [(e.sentence_id, e.stage) for e in result.report.events if e.outcome == "dropped"][-1] == ("s1.4", "recall")
+
+
+def _draft_of(sentences: int, first: str) -> dict[str, Any]:
+    """A draft of five-word claims."""
+    claims = [{"text": "The Moon causes the tides.", "kind": "claim", "sources": [first]}] * sentences
+    return {"title": "Tides", "segments": [{"heading": "Causes", "sentences": claims}]}
+
+
+def test_long_draft_is_shortened_before_checking(settings: Settings, tides: Tides) -> None:
+    material, chunks = tides
+    backend = scripted_backend()
+    backend.handlers["Draft"] = lambda role, prompt, schema: _draft_of(80, chunks[0].id)  # 400 words
+    backend.handlers["Shortened"] = lambda role, prompt, schema: _draft_of(48, chunks[0].id)  # 240 words
+    brief = Brief(focus="tides", material_ids=[material.id], minutes=2)  # 250-word target
+    result = Pipeline(settings, backend, roles(settings.llm)).run(brief, chunks)
+
+    assert result.report.target_words == 2 * settings.pipeline.words_per_minute
+    assert result.report.draft_words == [400, 240]
+    assert result.report.writer_sentences == 48
+    shorten_prompt = next(p for _, t, p in backend.calls if t == "Shortened")
+    assert "It has 400 spoken words; the budget is 250. Cut about 150 words." in shorten_prompt
+    titles = [t for _, t, _ in backend.calls]
+    assert titles.index("Shortened") < titles.index("VerifierOutput")  # shortened before any check
+
+
+def test_shortening_that_does_not_help_is_ignored(settings: Settings, tides: Tides) -> None:
+    material, chunks = tides
+    backend = scripted_backend()
+    backend.handlers["Draft"] = lambda role, prompt, schema: _draft_of(80, chunks[0].id)
+    backend.handlers["Shortened"] = lambda role, prompt, schema: _draft_of(90, chunks[0].id)
+    brief = Brief(focus="tides", material_ids=[material.id], minutes=2)
+    result = Pipeline(settings, backend, roles(settings.llm)).run(brief, chunks)
+    assert result.report.draft_words == [400, 450]
+    assert result.report.writer_sentences == 80
+
+
+def test_shortening_that_cuts_recall_questions_is_ignored(settings: Settings, tides: Tides) -> None:
+    material, chunks = tides
+    backend = scripted_backend()
+    recall = [{"text": "What causes tides?", "kind": "recall"}, {"text": "The Moon.", "kind": "claim",
+              "sources": [chunks[0].id]}]  # fmt: skip
+
+    def draft(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        d = _draft_of(80, chunks[0].id)
+        d["segments"].append({"heading": "Recall", "sentences": recall})
+        return d
+
+    backend.handlers["Draft"] = draft
+    backend.handlers["Shortened"] = lambda role, prompt, schema: _draft_of(48, chunks[0].id)
+    brief = Brief(focus="tides", material_ids=[material.id], minutes=2, recall_prompts=True)
+    result = Pipeline(settings, backend, roles(settings.llm)).run(brief, chunks)
+    shorten_prompt = next(p for _, t, p in backend.calls if t == "Shortened")
+    assert f"recall segment of {settings.pipeline.recall_questions} questions" in shorten_prompt
+    assert [s.text for s in result.script.segments[-1].sentences] == ["What causes tides?", "The Moon."]
