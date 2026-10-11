@@ -316,7 +316,11 @@ function reportLine(report) {
   const final = report.final || {};
   const failedFirst = (first.unsupported || 0) + (first.contradicted || 0) + (first.framing_misleading || 0);
   const removed = report.events.filter((e) => e.outcome === "dropped").length;
-  return `Verifier: ${report.writer_sentences} sentences written, ${failedFirst} failed the first check, ` +
+  const drafts = report.draft_words || [];
+  const length = drafts.length
+    ? `Length: ${drafts.join(" then ")} words for a ${report.target_words}-word target. `
+    : "";
+  return length + `Verifier: ${report.writer_sentences} sentences written, ${failedFirst} failed the first check, ` +
     `${report.revise_rounds} revision round(s), ${removed} removed, ` +
     `${report.edits_applied} edits kept, ${report.edits_reverted} edits reverted. ` +
     `Final: ${Object.entries(final).map(([k, v]) => `${k} ${v}`).join(", ")}.`;
