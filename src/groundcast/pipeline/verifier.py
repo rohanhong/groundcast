@@ -38,14 +38,25 @@ class CheckItem:
     speaker: str = ""  # "Host A" or "Host B" in a two-host script
 
 
-def passages_for(text: str, cited: list[str], by_id: dict[str, Chunk], index: BM25Index, top_k: int) -> list[Chunk]:
+def passages_for(
+    text: str, cited: list[str], by_id: dict[str, Chunk], index: BM25Index, top_k: int, context: str = ""
+) -> list[Chunk]:
+    """The cited passages plus the BM25 top-k for the sentence.
+
+    With a context (the line before), the query includes it, so a sentence
+    such as "It doubled after that." still finds the passage about its subject (S23).
+    """
     cited_chunks = [by_id[c] for c in cited if c in by_id]
-    extra = index.top_k(text, top_k, exclude={c.id for c in cited_chunks})
+    extra = index.top_k(f"{context} {text}".strip(), top_k, exclude={c.id for c in cited_chunks})
     return cited_chunks + extra
 
 
 def build_items(
-    sentences: list[tuple[Sentence, str]], by_id: dict[str, Chunk], index: BM25Index, top_k: int
+    sentences: list[tuple[Sentence, str]],
+    by_id: dict[str, Chunk],
+    index: BM25Index,
+    top_k: int,
+    query_context: bool = False,
 ) -> list[CheckItem]:
     """sentences: (sentence, previous line) pairs; see Sentence.line."""
     return [
@@ -53,7 +64,7 @@ def build_items(
             s.id,
             s.text,
             context,
-            passages_for(s.text, s.sources, by_id, index, top_k),
+            passages_for(s.text, s.sources, by_id, index, top_k, context if query_context else ""),
             speaker_label(s.speaker) if s.speaker else "",
         )
         for s, context in sentences

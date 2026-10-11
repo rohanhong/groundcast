@@ -47,6 +47,9 @@ class RunMetrics(BaseModel):
     detection_rate: float  # seeded errors flagged / seeded errors
     false_flag_rate: float  # correct sentences flagged / correct sentences
     label_accuracy: float  # exact label matches / items
+    # Mean of detection and of correct sentences passed, so a set with more
+    # errors than correct sentences cannot hide false flags (S18, S19).
+    balanced_accuracy: float
 
 
 class Summary(BaseModel):
@@ -71,6 +74,8 @@ class EvalReport(BaseModel):
     by_tag: dict[str, TagMetrics] = Field(default_factory=dict)
     # Per item: how many runs flagged it, and every label it received.
     items: dict[str, dict[str, object]] = Field(default_factory=dict)
+    # Expected label -> label given -> count, over all runs.
+    confusion: dict[str, dict[str, int]] = Field(default_factory=dict)
 
 
 def _norm(text: str) -> str:
@@ -130,11 +135,14 @@ def run_seeded(
         verdicts = check_sentences(backend, role, settings, chunks, pairs)
         for item in eval_set.items:
             labels[item.id].append(verdicts[item.id].label.value)
+        detection = sum(_flagged(verdicts[i.id].label) for i in errors) / max(1, len(errors))
+        false_flags = sum(_flagged(verdicts[i.id].label) for i in correct) / max(1, len(correct))
         run_metrics.append(
             RunMetrics(
-                detection_rate=sum(_flagged(verdicts[i.id].label) for i in errors) / max(1, len(errors)),
-                false_flag_rate=sum(_flagged(verdicts[i.id].label) for i in correct) / max(1, len(correct)),
+                detection_rate=detection,
+                false_flag_rate=false_flags,
                 label_accuracy=sum(verdicts[i.id].label == i.expected for i in eval_set.items) / len(eval_set.items),
+                balanced_accuracy=(detection + 1 - false_flags) / 2,
             )
         )
     summary = {}
@@ -149,6 +157,11 @@ def run_seeded(
         }
         for i in eval_set.items
     }
+    confusion: dict[str, dict[str, int]] = {}
+    for i in eval_set.items:
+        row = confusion.setdefault(i.expected.value, {})
+        for lbl in labels[i.id]:
+            row[lbl] = row.get(lbl, 0) + 1
     by_tag = {}
     for tag in sorted({t for i in eval_set.items for t in i.tags}):
         tagged = [i for i in eval_set.items if tag in i.tags]
@@ -166,6 +179,7 @@ def run_seeded(
         summary=summary,
         by_tag=by_tag,
         items=items,
+        confusion=confusion,
     )
 
 
@@ -179,6 +193,11 @@ def format_report(report: EvalReport) -> str:
         det = "-" if t.detection_rate is None else f"{t.detection_rate:.3f}"
         ff = "-" if t.false_flag_rate is None else f"{t.false_flag_rate:.3f}"
         lines.append(f"  {tag:16} detection {det:5} ({t.errors} errors)  false flags {ff:5} ({t.correct} correct)")
+    if report.confusion:
+        lines.append("Labels given (rows: expected label), over all runs:")
+        for expected, row in sorted(report.confusion.items()):
+            given = ", ".join(f"{lbl} {n}" for lbl, n in sorted(row.items(), key=lambda kv: -kv[1]))
+            lines.append(f"  {expected:18} {given}")
     misses = [
         f"  {item_id}: expected {d['expected']}, got {', '.join(d['labels'])}"  # type: ignore[arg-type]
         for item_id, d in report.items.items()

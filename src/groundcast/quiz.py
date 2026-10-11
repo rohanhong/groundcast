@@ -187,7 +187,7 @@ def make_quiz(
         for m, o in enumerate(q.options)
     ]
     index = BM25Index(chunks)
-    items = build_items(sentences, by_id, index, settings.pipeline.bm25_top_k)
+    items = build_items(sentences, by_id, index, settings.pipeline.bm25_top_k, settings.pipeline.retrieval_context)
     verdicts = verify_items(backend, roles["verifier"], items, settings.pipeline.verify_batch_size)
 
     quiz_id = secrets.token_hex(4)

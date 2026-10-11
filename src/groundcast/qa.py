@@ -113,7 +113,7 @@ def answer_question(
         for n, s in enumerate(sentences):
             pairs.append((Sentence(id=f"a{n + 1}", text=s.text, kind=SentenceKind.CLAIM, sources=s.sources), previous))
             previous = s.text
-        items = build_items(pairs, by_id, index, settings.pipeline.bm25_top_k)
+        items = build_items(pairs, by_id, index, settings.pipeline.bm25_top_k, settings.pipeline.retrieval_context)
         verdicts = verify_items(backend, roles["verifier"], items, settings.pipeline.verify_batch_size)
         for n, s in enumerate(sentences):
             v = verdicts[f"a{n + 1}"]

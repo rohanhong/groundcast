@@ -122,7 +122,7 @@ class Pipeline:
         report = VerificationReport()
 
         def verify(pairs: list[tuple[Sentence, str]]) -> dict[str, Verdict]:
-            items = build_items(pairs, by_id, index, cfg.bm25_top_k)
+            items = build_items(pairs, by_id, index, cfg.bm25_top_k, cfg.retrieval_context)
             return verify_items(self.backend, self.roles["verifier"], items, cfg.verify_batch_size)
 
         # S3 Write
@@ -164,7 +164,8 @@ class Pipeline:
             report.revise_rounds = round_no
             progress("revise", f"Round {round_no}: revising {len(failed_ids)} sentences that failed verification")
             failed = [
-                (s, ctx, verdicts[s.id], passages_for(s.text, s.sources, by_id, index, cfg.bm25_top_k))
+                (s, ctx, verdicts[s.id], passages_for(s.text, s.sources, by_id, index, cfg.bm25_top_k,
+                                                       ctx if cfg.retrieval_context else ""))
                 for s, ctx in _with_context(script, failed_ids)
             ]
             revisions = {r.sentence_id: r for r in revise_sentences(self.backend, self.roles["writer"], failed).revisions}
@@ -273,5 +274,6 @@ def check_sentences(
     """Verify given sentences outside a session (used by the evaluation)."""
     index = BM25Index(chunks)
     by_id = {c.id: c for c in chunks}
-    items: list[CheckItem] = build_items(sentences, by_id, index, settings.pipeline.bm25_top_k)
+    cfg = settings.pipeline
+    items: list[CheckItem] = build_items(sentences, by_id, index, cfg.bm25_top_k, cfg.retrieval_context)
     return verify_items(backend, role, items, settings.pipeline.verify_batch_size)

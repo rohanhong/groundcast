@@ -70,6 +70,7 @@ pace_decay = 0.7  # weight each new session keeps for the earlier ones
 bm25_top_k = 4
 verify_batch_size = 20
 max_revise_rounds = 2
+retrieval_context = true  # add the line before a sentence to its retrieval query
 writer_max_source_words = 60000
 recall_questions = 3  # when a brief asks for recall prompts
 length_tolerance = 0.15  # drafts longer than the word target by more are shortened

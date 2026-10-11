@@ -118,6 +118,8 @@ class PipelineSettings(_Section):
     verify_batch_size: int = 20
     max_revise_rounds: int = 2
     # Upper bound on material text given to the Writer; larger selections are
+    # Retrieve passages for a sentence with the line before it in the query.
+    retrieval_context: bool = True
     # cut down to the chunks that best match the brief.
     writer_max_source_words: int = 60000
     # A draft longer than the word target by more than this share is sent back
