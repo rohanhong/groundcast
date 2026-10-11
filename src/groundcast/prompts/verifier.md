@@ -24,7 +24,9 @@ Check every fact in the sentence. Label it with exactly one of:
 - framing_misleading: an analogy or example that suggests something false
   or unsupported about the subject.
 - no_claim: pure signposting or a rhetorical question with no factual
-  content.
+  content. A question that takes a fact for granted ("Why did the change
+  cause the rise?" takes for granted that the change caused it) is judged by
+  that fact, like a statement.
 
 When in doubt between supported and unsupported, choose unsupported. A
 sentence that mixes supported and unsupported facts is unsupported.
