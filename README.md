@@ -35,13 +35,14 @@ materials, and only then polishes the style; local text-to-speech renders the
 result as an MP3 you can play in any phone player.
 
 > [!NOTE]
-> Early development: milestone M1 is done and M2 is in progress. A session
-> runs end to end: text-layer PDF, Markdown, or text in; a verified MP3, read
-> by one narrator or two hosts, with chapter marks, and a linked transcript
-> out; typed questions and multiple-choice quizzes about a finished session
-> come from your materials, and a session can end with recall questions,
-> each followed by a pause. Later features, such as the profile, are
-> described below but not built yet.
+> Early development: milestone M1 is done and M2 is in progress. You can
+> describe a session in your own words and confirm the brief it proposes. A
+> session runs end to end: text-layer PDF, Markdown, or text in; a verified
+> MP3, read by one narrator or two hosts, with chapter marks, and a linked
+> transcript out; typed questions and multiple-choice quizzes about a finished
+> session come from your materials, and a session can end with recall
+> questions, each followed by a pause. Later features, such as the profile,
+> are described below but not built yet.
 
 ## ✨ Highlights
 

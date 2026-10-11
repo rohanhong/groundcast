@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from groundcast.config import Settings
 from groundcast.ingest import ExtractionError, ingest_file
+from groundcast.elicit import ChatTurn, ElicitResult, elicit, outline
 from groundcast.llm import LLMBackend, make_backend, roles
 from groundcast.models import Brief, Chunk, Material, Script, SessionRecord, SessionStatus
 from groundcast.qa import QAExchange, answer_question, load_history, save_history
@@ -69,6 +70,11 @@ class Question(BaseModel):
 
 class Answers(BaseModel):
     answers: list[int | None]
+
+
+class Conversation(BaseModel):
+    messages: list[ChatTurn]
+    material_ids: list[str] = []  # selected in the form
 
 
 def create_app(
@@ -147,6 +153,27 @@ def create_app(
         except (FileNotFoundError, ValueError) as exc:
             raise _not_found(exc) from exc
         return {"deleted": material_id}
+
+    @app.post("/api/elicit")
+    def elicit_brief(body: Conversation) -> ElicitResult:
+        limit = settings.elicit.max_message_chars
+        if not body.messages or body.messages[-1].role != "user" or not body.messages[-1].text.strip():
+            raise HTTPException(status_code=422, detail="The conversation must end with the learner's message.")
+        if any(len(t.text) > limit for t in body.messages):
+            raise HTTPException(status_code=422, detail=f"Keep each message under {limit} characters.")
+        materials = store.list_materials()
+        outlines = {m.id: outline(store.get_chunks(m.id), settings.elicit.outline_words) for m in materials}
+        last = next((r.brief for r in store.list_sessions() if r.status == SessionStatus.DONE), None)
+        return elicit(
+            backend or make_backend(settings.llm),
+            roles(settings.llm)["elicitor"],
+            settings,
+            materials,
+            outlines,
+            body.messages,
+            body.material_ids,
+            last,
+        )
 
     @app.post("/api/sessions")
     def create_session(brief: Brief) -> SessionRecord:

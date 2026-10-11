@@ -57,6 +57,9 @@ class LLMSettings(_Section):
     verifier_effort: str = "medium"
     editor_model: str = "opus"
     editor_effort: str = "medium"
+    # Turns a rough request into a brief through a short dialogue (S1); fast replies matter.
+    elicitor_model: str = "sonnet"
+    elicitor_effort: str = "low"
     # Answers the learner's typed questions (S10 text Q&A).
     tutor_model: str = "sonnet"
     tutor_effort: str = "medium"
@@ -124,6 +127,14 @@ class AudioSettings(_Section):
     mp3_bitrate: str = "96k"
 
 
+class ElicitSettings(_Section):
+    # Questions the Elicitor may ask before it must propose a brief.
+    max_questions: int = Field(default=3, ge=0)
+    # Words of outline per material shown to the Elicitor.
+    outline_words: int = Field(default=80, ge=0)
+    max_message_chars: int = Field(default=2000, ge=1)
+
+
 class QASettings(_Section):
     # Passages of the session's materials given to the Tutor per question.
     top_k: int = Field(default=6, ge=1)
@@ -159,6 +170,7 @@ class Settings(_Section):
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
     tts: TTSSettings = Field(default_factory=TTSSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)
+    elicit: ElicitSettings = Field(default_factory=ElicitSettings)
     qa: QASettings = Field(default_factory=QASettings)
     quiz: QuizSettings = Field(default_factory=QuizSettings)
     evaluation: EvaluationSettings = Field(default_factory=EvaluationSettings)

@@ -32,6 +32,9 @@ class Chunk(BaseModel):
     text: str
 
 
+MIN_MINUTES, MAX_MINUTES = 2, 60
+Context = Literal["desk", "commute", "exercise", "revision"]
+Level = Literal["introductory", "intermediate", "advanced"]
 Speaker = Literal["A", "B"]
 ScriptFormat = Literal["narrator", "two_hosts"]
 
@@ -54,9 +57,9 @@ class Brief(BaseModel):
     title: str = ""
     focus: str = Field(description="What the session should cover, in the user's words")
     material_ids: list[str]
-    minutes: int = Field(default=10, ge=2, le=60)
-    context: Literal["desk", "commute", "exercise", "revision"] = "commute"
-    level: Literal["introductory", "intermediate", "advanced"] = "introductory"
+    minutes: int = Field(default=10, ge=MIN_MINUTES, le=MAX_MINUTES)
+    context: Context = "commute"
+    level: Level = "introductory"
     format: ScriptFormat = Field(default="narrator", description="One narrator, or two hosts in conversation")
     recall_prompts: bool = Field(default=False, description="End with recall questions, each followed by a pause")
     notes: str = ""

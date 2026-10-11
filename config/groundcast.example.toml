@@ -26,6 +26,8 @@ verifier_model = "sonnet"  # a different tier from the Writer
 verifier_effort = "medium"
 editor_model = "opus"
 editor_effort = "medium"
+elicitor_model = "sonnet"  # turns a rough request into a brief (S1)
+elicitor_effort = "low"
 tutor_model = "sonnet"  # answers typed questions about a session
 tutor_effort = "medium"
 quiz_model = "sonnet"  # writes multiple-choice quizzes
@@ -74,6 +76,11 @@ disclaimer = "This is an AI-generated audio session, written from your own study
 [audio]
 ffmpeg_bin = "ffmpeg"
 mp3_bitrate = "96k"
+
+[elicit]
+max_questions = 3  # before the Elicitor must propose a brief
+outline_words = 80  # of each material, shown to the Elicitor
+max_message_chars = 2000
 
 [qa]
 top_k = 6  # passages given to the Tutor per question
