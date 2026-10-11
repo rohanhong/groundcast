@@ -13,15 +13,31 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+MaterialKind = Literal["pdf", "markdown", "text", "pptx", "docx", "html", "video", "audio"]
+# processing: text is being extracted in the background (speech recognition);
+# review: the extracted text waits for the user to check and confirm it (spec S0);
+# ready: usable in sessions; failed: extraction stopped with an error.
+MaterialStatus = Literal["processing", "review", "ready", "failed"]
+
+
 class Material(BaseModel):
     id: str  # hash prefix, the first part of every chunk ID
     sha256: str
     filename: str
-    kind: Literal["pdf", "markdown", "text"]
+    kind: MaterialKind
     stored_name: str  # file name inside <data>/materials/
-    pages: int
+    pages: int  # pages, slides, or transcript passages
     words: int
     added_at: datetime = Field(default_factory=utc_now)
+    # Web pages: where the page came from and when it was fetched.
+    source_url: str = ""
+    fetched_at: datetime | None = None
+    duration_s: float | None = None  # video and audio
+    status: MaterialStatus = "ready"
+    error: str = ""
+    reviewed_at: datetime | None = None
+    # Process extracting the text while status is processing.
+    pid: int | None = None
 
 
 class Chunk(BaseModel):
@@ -30,6 +46,9 @@ class Chunk(BaseModel):
     locator: str  # p<page>, s<slide>, or t<start second>
     index: int
     text: str
+    # Recognised text only (speech): mean word probability, 0 to 1.
+    confidence: float | None = None
+    edited: bool = False  # corrected by the user during review
 
 
 MIN_MINUTES, MAX_MINUTES = 2, 60
@@ -48,7 +67,7 @@ class SourceLink(BaseModel):
 
     chunk_id: str
     label: str  # file name and locator
-    path: str  # relative to the data directory, with #page=N for PDFs
+    path: str  # relative to the data directory: the file at its page or moment, or its text view
 
 
 class Brief(BaseModel):

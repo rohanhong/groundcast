@@ -56,7 +56,7 @@ def test_answer_cites_retrieved_passages_and_flags_failures(settings: Settings, 
     assert x.sentences[1].label == "unsupported"
     assert x.sentences[0].sources == [_passage_ids(tutor_prompt)[0]]  # the unknown ID is removed
     assert [s.chunk_id for s in x.sources] == x.sentences[0].sources
-    assert x.sources[0].path == f"materials/{material.stored_name}"
+    assert x.sources[0].path == f"materials/{material.id}.view.html#p1-{x.sources[0].chunk_id.rsplit(':', 1)[1]}"
     # The first answer sentence is checked with the question as its context.
     check = next(p for role, _, p in backend.calls if role == "verifier")
     assert "previous sentence: Learner: Why tides?" in check

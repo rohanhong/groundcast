@@ -80,6 +80,11 @@ def new_session(store: Store, brief: Brief) -> SessionRecord:
         raise ValueError(f"unknown material IDs: {', '.join(missing)}")
     if not brief.material_ids:
         raise ValueError("the brief selects no materials")
+    # Recognised text is used only after the user has checked it (spec S0).
+    unready = [m for m in map(store.get_material, brief.material_ids) if m.status != "ready"]
+    if unready:
+        names = ", ".join(f"{m.filename} ({m.status})" for m in unready)
+        raise ValueError(f"not ready for sessions: {names}; review and confirm the text first")
     session_id = f"{datetime.now():%Y%m%d-%H%M%S}-{secrets.token_hex(2)}"
     record = SessionRecord(id=session_id, brief=brief, pid=os.getpid())
     store.save_session(record)
@@ -242,24 +247,34 @@ def run_session(
 
 
 class SessionRunner:
-    """Runs sessions one at a time in a background thread (one GPU, one CLI)."""
+    """Runs sessions and other GPU work one at a time in a background thread.
+
+    Speech recognition, OCR, and speech synthesis share one 8 GB GPU (spec
+    section 11), so they never run at the same time.
+    """
 
     def __init__(self, store: Store, settings: Settings) -> None:
         self.store = store
         self.settings = settings
-        self._queue: queue.Queue[str] = queue.Queue()
+        self._queue: queue.Queue[str | Callable[[], object]] = queue.Queue()
         self._thread = threading.Thread(target=self._work, name="session-runner", daemon=True)
         self._thread.start()
 
     def submit(self, record: SessionRecord) -> None:
         self._queue.put(record.id)
 
+    def submit_task(self, task: Callable[[], object]) -> None:
+        self._queue.put(task)
+
     def _work(self) -> None:
         while True:
-            session_id = self._queue.get()
+            item = self._queue.get()
             try:
-                run_session(self.store.get_session(session_id), self.store, self.settings)
+                if isinstance(item, str):
+                    run_session(self.store.get_session(item), self.store, self.settings)
+                else:
+                    item()
             except Exception:
-                log.exception("session %s crashed", session_id)
+                log.exception("background job %s crashed", item)
             finally:
                 self._queue.task_done()

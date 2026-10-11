@@ -35,17 +35,19 @@ materials, and only then polishes the style; local text-to-speech renders the
 result as an MP3 you can play in any phone player.
 
 > [!NOTE]
-> Early development: milestone M1 is done and M2 is in progress. You can
-> describe a session in your own words and confirm the brief it proposes. A
-> session runs end to end: text-layer PDF, Markdown, or text in; a verified
-> MP3, read by one narrator or two hosts, with chapter marks, and a linked
-> transcript out; typed questions and multiple-choice quizzes about a finished
-> session come from your materials, and a session can end with recall
-> questions, each followed by a pause. The concepts in your materials go into
-> one table, with your quiz results on each, which you can rename and merge.
-> Preferences set your default voice, speed, and brief, and every change to
-> the profile is logged and can be exported. Later features, such as ranked
-> suggestions, are described below but not built yet.
+> Early development: milestones M1 to M3 are done. Add PDF, PowerPoint, Word,
+> Markdown, or text files, web pages by address, or video and audio, whose
+> speech is recognised on your machine and checked by you before use. Describe
+> a session in your own words and confirm the brief it proposes; you get a
+> verified MP3, read by one narrator or two hosts, with chapter marks, and a
+> transcript whose links open each source at its page, slide, or moment. Typed
+> questions and multiple-choice quizzes about a finished session come from
+> your materials, and a session can end with recall questions, each followed
+> by a pause. The concepts in your materials go into one table, with your quiz
+> results on each, which you can rename and merge. Preferences set your
+> default voice, speed, and brief, and every change to the profile is logged
+> and can be exported. Later features, such as ranked suggestions, are
+> described below but not built yet.
 
 ## ✨ Highlights
 
@@ -93,14 +95,26 @@ result as an MP3 you can play in any phone player.
    pip install "torch==2.14.1+cu130" --index-url https://download.pytorch.org/whl/cu130
    ```
    With `tts.device = "auto"` (the default), groundcast then uses the GPU.
-4. Start the app, then open <http://127.0.0.1:8765/>. It serves the browser UI
+4. Optional: add speech recognition for video and audio (faster-whisper; the
+   default model, about 1.6 GB, downloads on first use):
+   ```bash
+   pip install -e ".[asr]"
+   ```
+   It runs on the CPU as is. For the GPU, add the CUDA 12 libraries that
+   CTranslate2 needs (PyTorch's CUDA libraries are a different version):
+   ```bash
+   pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12>=9,<10"
+   ```
+   On Linux, also add their `lib` folders to `LD_LIBRARY_PATH`.
+5. Start the app, then open <http://127.0.0.1:8765/>. It serves the browser UI
    on `127.0.0.1` only.
    ```bash
    groundcast serve
    ```
 
-The same pipeline runs from the command line: `groundcast ingest <files>`,
-then `groundcast session -m <material id> --focus "<what to cover>"` (add
+The same pipeline runs from the command line: `groundcast ingest <files>`
+(or `--url <address>` for a web page; check recognised speech with
+`groundcast review <material id>`), then `groundcast session -m <material id> --focus "<what to cover>"` (add
 `--format two_hosts` for two hosts, `--recall` for recall questions at the
 end). Ask about a finished session with `groundcast ask <session id>
 "<question>"`, or print a checked quiz with `groundcast quiz <session id>`;
@@ -147,7 +161,8 @@ own licence; weights are downloaded, never committed.
 | [Piper](https://github.com/OHF-Voice/piper1-gpl) | Fallback speech synthesis | GPL-3.0 / per voice | Separate process only |
 | espeak-ng | Optional pronunciation fallback for words Kokoro does not know | GPL | Separate program only (`tts.espeak_bin`) |
 | ffmpeg, poppler | Audio encoding, PDF text | LGPL build, GPL | Separate programs (conda-forge) |
-| Speech recognition, OCR, claim checker | M3, M5, M4 | `<recorded when adopted>` | `<recorded when adopted>` |
+| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) with [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | Speech recognition for video and audio (M3) | MIT / MIT | Python package (the `asr` extra) |
+| OCR, claim checker | M5, M4 | `<recorded when adopted>` | `<recorded when adopted>` |
 
 ## ⚠️ Responsible Use
 

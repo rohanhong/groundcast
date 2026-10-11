@@ -3,6 +3,7 @@
 <data_dir>/
   materials/<id>.<ext>        original files
   materials/<id>.json         Material record
+  materials/<id>.view.html    extracted text with an anchor per page, slide, or passage
   chunks/<id>.json            list of Chunk records
   sessions/<session id>/      brief, script JSON, verification report, MP3, transcript, Q&A, quizzes
   profile.sqlite3             concept table, quiz results, event log (groundcast.profile)
@@ -20,6 +21,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, TypeAdapter
 
+from groundcast.material_view import render_view, view_name
 from groundcast.models import Chunk, Material, SessionRecord
 
 M = TypeVar("M", bound=BaseModel)
@@ -79,18 +81,26 @@ class Store:
         self.sessions_dir = data_dir / "sessions"
         for d in (self.materials_dir, self.chunks_dir, self.sessions_dir):
             d.mkdir(parents=True, exist_ok=True)
+        # Materials added before text views existed get one now.
+        for material in self.list_materials():
+            if not (self.materials_dir / view_name(material)).exists() and material.status == "ready":
+                self.write_view(material, self.get_chunks(material.id))
 
     # Materials and chunks
 
     def material_path(self, material: Material) -> Path:
         return self.materials_dir / material.stored_name
 
-    def save_material(self, material: Material, chunks: list[Chunk]) -> None:
+    def save_material(self, material: Material, chunks: list[Chunk], review_below: float | None = None) -> None:
         write_text_atomic(
             self.chunks_dir / f"{check_id(material.id)}.json",
             json.dumps([c.model_dump() for c in chunks], indent=1),
         )
+        self.write_view(material, chunks, review_below)
         write_model(self.materials_dir / f"{material.id}.json", material)
+
+    def write_view(self, material: Material, chunks: list[Chunk], review_below: float | None = None) -> None:
+        write_text_atomic(self.materials_dir / view_name(material), render_view(material, chunks, review_below))
 
     def get_material(self, material_id: str) -> Material:
         return read_model(self.materials_dir / f"{check_id(material_id)}.json", Material)
@@ -109,6 +119,7 @@ class Store:
     def delete_material(self, material_id: str) -> None:
         material = self.get_material(material_id)
         self.material_path(material).unlink(missing_ok=True)
+        (self.materials_dir / view_name(material)).unlink(missing_ok=True)
         (self.chunks_dir / f"{material.id}.json").unlink(missing_ok=True)
         (self.materials_dir / f"{material.id}.json").unlink(missing_ok=True)
 

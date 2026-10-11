@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import shutil
 import tempfile
 import threading
@@ -18,7 +19,15 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from groundcast.config import Settings
-from groundcast.ingest import ExtractionError, ingest_file
+from groundcast.ingest import (
+    ExtractionError,
+    ingest_file,
+    ingest_url,
+    interrupted_recognitions,
+    recognise_material,
+    review_material,
+)
+from groundcast.ingest.asr import Transcriber
 from groundcast.elicit import ChatTurn, ElicitResult, elicit, outline
 from groundcast.llm import LLMBackend, make_backend, roles
 from groundcast.models import Brief, Chunk, Material, Script, SessionRecord, SessionStatus
@@ -43,6 +52,8 @@ from groundcast.sessions import REPORT_FILE, SCRIPT_FILE, SessionRunner, fail_in
 from groundcast.storage import read_model
 from groundcast.storage import Store
 
+
+log = logging.getLogger(__name__)
 
 LOOPBACK_NAMES = frozenset({"127.0.0.1", "localhost", "::1"})
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
@@ -83,6 +94,14 @@ class Question(BaseModel):
     question: str
 
 
+class Address(BaseModel):
+    url: str
+
+
+class Review(BaseModel):
+    corrections: dict[str, str] = {}  # chunk ID -> corrected text; empty text drops the passage
+
+
 class Answers(BaseModel):
     answers: list[int | None]
 
@@ -105,17 +124,31 @@ class Conversation(BaseModel):
 
 
 def create_app(
-    settings: Settings, runner: SessionRunner | None = None, backend: LLMBackend | None = None
+    settings: Settings,
+    runner: SessionRunner | None = None,
+    backend: LLMBackend | None = None,
+    transcriber: Transcriber | None = None,
 ) -> FastAPI:
     store = Store(settings.data_dir)
     profile = ProfileDB(settings.data_dir)
     # One question or quiz at a time keeps each session's qa.json and quiz.json consistent.
     files_lock = threading.Lock()
 
+    def queue_recognition(material_id: str) -> None:
+        def task() -> None:
+            try:
+                recognise_material(store, settings, material_id, transcriber)
+            except ExtractionError as exc:  # recorded on the material
+                log.warning("speech recognition of %s failed: %s", material_id, exc)
+
+        app.state.runner.submit_task(task)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         fail_interrupted(store)
         app.state.runner = runner or SessionRunner(store, settings)
+        for material in interrupted_recognitions(store):
+            queue_recognition(material.id)
         yield
 
     app = FastAPI(title="groundcast", lifespan=lifespan)
@@ -133,7 +166,12 @@ def create_app(
         )
         if problem:
             return JSONResponse({"detail": f"Refused: {problem}."}, status_code=403)
-        return await call_next(request)
+        response = await call_next(request)
+        if request.url.path.startswith("/data/materials/") and request.url.path.lower().endswith((".html", ".htm")):
+            # A saved web page is someone else's HTML: show it without its scripts and
+            # outside the app's origin, so it cannot call the API.
+            response.headers["Content-Security-Policy"] = "sandbox"
+        return response
 
     def _not_found(exc: Exception) -> HTTPException:
         return HTTPException(status_code=404, detail=str(exc))
@@ -148,6 +186,7 @@ def create_app(
             "second_voice": current.tts.second_voice,
             "speed": current.tts.speed,
             "words_per_minute": current.pipeline.words_per_minute,
+            "review_below": current.asr.review_below,
         }
 
     @app.get("/api/materials")
@@ -164,10 +203,42 @@ def create_app(
                 with path.open("wb") as fh:
                     shutil.copyfileobj(upload.file, fh)
                 try:
-                    added.append(ingest_file(path, store, settings, filename=name))
+                    material = ingest_file(path, store, settings, filename=name, defer=True)
                 except ExtractionError as exc:
                     raise HTTPException(status_code=422, detail=f"{name}: {exc}") from exc
+                if material.status == "processing":
+                    queue_recognition(material.id)
+                added.append(material)
         return added
+
+    @app.post("/api/materials/url")
+    def add_web_page(body: Address) -> Material:
+        try:
+            return ingest_url(body.url, store, settings)
+        except ExtractionError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.post("/api/materials/{material_id}/review")
+    def confirm_material(material_id: str, body: Review) -> Material:
+        try:
+            return review_material(store, material_id, body.corrections)
+        except FileNotFoundError as exc:
+            raise _not_found(exc) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.post("/api/materials/{material_id}/retry")
+    def retry_material(material_id: str) -> Material:
+        try:
+            material = store.get_material(material_id)
+        except (FileNotFoundError, ValueError) as exc:
+            raise _not_found(exc) from exc
+        if material.status != "failed":
+            raise HTTPException(status_code=409, detail=f"{material.filename} is {material.status}, not failed")
+        material.status, material.error = "processing", ""
+        store.save_material(material, [])
+        queue_recognition(material.id)
+        return material
 
     @app.get("/api/materials/{material_id}/chunks")
     def material_chunks(material_id: str) -> list[Chunk]:
@@ -192,7 +263,7 @@ def create_app(
             raise HTTPException(status_code=422, detail="The conversation must end with the learner's message.")
         if any(len(t.text) > limit for t in body.messages):
             raise HTTPException(status_code=422, detail=f"Keep each message under {limit} characters.")
-        materials = store.list_materials()
+        materials = [m for m in store.list_materials() if m.status == "ready"]
         outlines = {m.id: outline(store.get_chunks(m.id), settings.elicit.outline_words) for m in materials}
         last = next((r.brief for r in store.list_sessions() if r.status == SessionStatus.DONE), None)
         prefs = load_preferences(profile)
@@ -366,6 +437,8 @@ def create_app(
             chunks = store.get_chunks(material_id)
         except (FileNotFoundError, ValueError) as exc:
             raise _not_found(exc) from exc
+        if material.status != "ready":
+            raise HTTPException(status_code=409, detail=f"{material.filename} is {material.status}, not ready")
         with files_lock:
             extract_concepts(backend or make_backend(settings.llm), roles(settings.llm)["concepts"], settings,
                              profile, material, chunks)  # fmt: skip

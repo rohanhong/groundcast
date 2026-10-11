@@ -79,6 +79,28 @@ class LLMSettings(_Section):
 class IngestSettings(_Section):
     pdftotext_bin: str = "pdftotext"
     chunk_max_words: int = 180
+    # PowerPoint speaker notes join their slide's text.
+    slide_notes: bool = True
+    # Web pages added by address.
+    fetch_timeout_s: float = Field(default=30.0, gt=0)
+    fetch_max_bytes: int = Field(default=20_000_000, ge=1)
+    user_agent: str = "groundcast (local study tool)"
+
+
+class ASRSettings(_Section):
+    """Speech recognition for video and audio materials (faster-whisper)."""
+
+    engine: Literal["faster-whisper", "none"] = "faster-whisper"
+    model: str = "large-v3-turbo"  # a faster-whisper model name, downloaded into model_dir
+    device: str = "auto"  # auto, cpu, or cuda
+    compute_type: str = "auto"  # auto: float16 on the GPU, int8 on the CPU
+    beam_size: int = Field(default=5, ge=1)
+    vad_filter: bool = True  # skip long silences and music
+    # A pause this long, or a passage this long, starts a new passage.
+    paragraph_gap_s: float = Field(default=2.0, gt=0)
+    max_passage_s: float = Field(default=90.0, gt=0)
+    # Passages whose mean word probability is lower are highlighted for review.
+    review_below: float = Field(default=0.8, ge=0.0, le=1.0)
 
 
 class PipelineSettings(_Section):
@@ -196,6 +218,7 @@ class Settings(_Section):
     server: ServerSettings = Field(default_factory=ServerSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
     ingest: IngestSettings = Field(default_factory=IngestSettings)
+    asr: ASRSettings = Field(default_factory=ASRSettings)
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
     tts: TTSSettings = Field(default_factory=TTSSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)

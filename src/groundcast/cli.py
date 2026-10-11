@@ -38,23 +38,62 @@ def cmd_serve(args: argparse.Namespace) -> int:
     return 0
 
 
+def _material_line(m) -> str:  # type: ignore[no-untyped-def]
+    status = "" if m.status == "ready" else f"  [{m.status}{': ' + m.error if m.error else ''}]"
+    return f"{m.id}  {m.filename}  {m.kind}, {m.pages} unit(s), {m.words} words{status}"
+
+
 def cmd_ingest(args: argparse.Namespace) -> int:
-    from groundcast.ingest import ingest_file
+    from groundcast.ingest import ExtractionError, ingest_file, ingest_url, recognise_material
     from groundcast.storage import Store
 
     settings = _settings(args)
     store = Store(settings.data_dir)
-    for name in args.files:
-        m = ingest_file(Path(name), store, settings)
-        print(f"{m.id}  {m.filename}  {m.pages} page(s), {m.words} words")
-    return 0
+    failed = 0
+    for name in args.files + args.url:
+        try:
+            if name in args.url:
+                m = ingest_url(name, store, settings)
+            else:
+                m = ingest_file(Path(name), store, settings, defer=True)
+                if m.status in ("processing", "failed"):  # a failed recognition is tried again
+                    m = recognise_material(store, settings, m.id, progress=lambda msg: print(msg, end="\r"))
+                    print()
+        except ExtractionError as exc:
+            print(f"{name}: {exc}", file=sys.stderr)
+            failed += 1
+            continue
+        print(_material_line(m))
+        if m.status == "review":
+            print(f"  Check the recognised text, then confirm it: groundcast review {m.id} (or in the web app)")
+    return 1 if failed else 0
 
 
 def cmd_materials(args: argparse.Namespace) -> int:
     from groundcast.storage import Store
 
     for m in Store(_settings(args).data_dir).list_materials():
-        print(f"{m.id}  {m.filename}  {m.pages} page(s), {m.words} words")
+        print(_material_line(m))
+    return 0
+
+
+def cmd_review(args: argparse.Namespace) -> int:
+    from groundcast.ingest import review_material
+    from groundcast.material_view import place
+    from groundcast.storage import Store
+
+    settings = _settings(args)
+    store = Store(settings.data_dir)
+    material = store.get_material(args.material)
+    if not args.confirm:
+        for c in store.get_chunks(material.id):
+            low = c.confidence is not None and c.confidence < settings.asr.review_below
+            flag = f"  <- low confidence {c.confidence:.2f}" if low else ""
+            print(f"[{c.id}] {place(c.locator, material)}{flag}\n{c.text}\n")
+        print(f"{material.filename} is {material.status}. Correct passages in the web app, or confirm with --confirm.")
+        return 0
+    material = review_material(store, material.id, {})
+    print(f"{material.filename} is ready for sessions.")
     return 0
 
 
@@ -252,11 +291,17 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("paths", help="show the config file, data, and model paths").set_defaults(func=cmd_paths)
     sub.add_parser("serve", help="run the local web app").set_defaults(func=cmd_serve)
 
-    p = sub.add_parser("ingest", help="add material files to the data directory")
-    p.add_argument("files", nargs="+")
+    p = sub.add_parser("ingest", help="add material files or web pages to the data directory")
+    p.add_argument("files", nargs="*", help="PDF, PowerPoint, Word, Markdown, text, HTML, video, or audio files")
+    p.add_argument("--url", action="append", default=[], help="a web page to fetch (repeatable)")
     p.set_defaults(func=cmd_ingest)
 
     sub.add_parser("materials", help="list materials").set_defaults(func=cmd_materials)
+
+    p = sub.add_parser("review", help="show recognised text of a video or audio material; --confirm accepts it")
+    p.add_argument("material", help="material ID")
+    p.add_argument("--confirm", action="store_true", help="mark the text as checked, so sessions may use it")
+    p.set_defaults(func=cmd_review)
 
     p = sub.add_parser("session", help="produce one session from the command line")
     p.add_argument("--material", "-m", action="append", required=True, help="material ID (repeatable)")

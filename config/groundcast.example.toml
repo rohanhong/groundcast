@@ -46,6 +46,22 @@ haiku = "claude-haiku-5-5"
 [ingest]
 pdftotext_bin = "pdftotext"
 chunk_max_words = 180
+slide_notes = true  # PowerPoint speaker notes join their slide's text
+fetch_timeout_s = 30.0  # web pages added by address
+fetch_max_bytes = 20000000
+user_agent = "groundcast (local study tool)"
+
+[asr]
+# Speech recognition for video and audio (needs the "asr" extra).
+engine = "faster-whisper"  # or "none"
+model = "large-v3-turbo"  # downloaded into model_dir on first use
+device = "auto"  # auto, cpu, or cuda
+compute_type = "auto"  # float16 on the GPU, int8 on the CPU
+beam_size = 5
+vad_filter = true  # skip long silences and music
+paragraph_gap_s = 2.0  # a pause this long starts a new passage
+max_passage_s = 90.0
+review_below = 0.8  # passages with a lower mean word probability are highlighted for review
 
 [pipeline]
 words_per_minute = 125  # of finished audio at tts.speed 1.0; see the session log

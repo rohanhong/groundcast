@@ -33,6 +33,21 @@ async function api(path, options = {}) {
 
 // Materials
 
+const UNIT_NAMES = { pptx: "slide", video: "passage", audio: "passage" };
+const STATUS_TEXT = {
+  processing: "recognising speech...",
+  review: "waiting for your check",
+  failed: "failed",
+};
+let materialTimer = null;
+
+function sizeText(m) {
+  const unit = UNIT_NAMES[m.kind] || "page";
+  const parts = [`${m.pages} ${unit}${m.pages === 1 ? "" : "s"}`, `${m.words} words`];
+  if (m.duration_s) parts.unshift(`${Math.round(m.duration_s / 60)} min`);
+  return ` (${m.kind}, ${parts.join(", ")})`;
+}
+
 async function loadMaterials() {
   const checked = new Set(selectedMaterials());
   const list = $("materials");
@@ -42,17 +57,110 @@ async function loadMaterials() {
     list.append(el("li", { class: "muted" }, "No materials yet."));
   }
   for (const m of materials) {
+    const ready = m.status === "ready";
     const box = el("input", { type: "checkbox", value: m.id, "data-name": m.filename });
-    box.checked = checked.size === 0 || checked.has(m.id);
+    box.checked = ready && (checked.size === 0 || checked.has(m.id));
+    box.disabled = !ready;
+    const actions = [];
+    if (m.status === "review") {
+      actions.push(el("button", { class: "link", type: "button", onclick: () => showReview(m) }, "Check text"));
+    } else if (ready) {
+      actions.push(el("button", { class: "link", type: "button", onclick: () => showChunks(m) }, "View text"));
+    }
+    if (m.status === "failed") {
+      actions.push(el("button", { class: "link", type: "button", onclick: () => retryMaterial(m) }, "Try again"));
+    }
+    actions.push(el("a", { href: m.source_url || `/data/materials/${m.stored_name}`, target: "_blank" },
+      m.source_url ? "Open page" : "Open file"));
+    actions.push(el("button", { class: "link", type: "button", onclick: () => deleteMaterial(m) }, "Remove"));
+    const status = ready ? "" : ` ${STATUS_TEXT[m.status]}${m.error ? `: ${m.error}` : ""}`;
     list.append(el("li", {},
-      el("label", {}, box, " ", m.filename,
-        el("span", { class: "muted" }, ` (${m.pages} page${m.pages === 1 ? "" : "s"}, ${m.words} words)`)),
-      el("button", { class: "link", type: "button", onclick: () => showChunks(m) }, "View text"),
-      el("a", { href: `/data/materials/${m.stored_name}`, target: "_blank" }, "Open file"),
-      el("button", { class: "link", type: "button", onclick: () => deleteMaterial(m) }, "Remove"),
+      el("label", {}, box, " ", m.filename, el("span", { class: "muted" }, sizeText(m)),
+        el("span", { class: `status-${m.status}` }, status)),
+      ...actions,
     ));
   }
+  // Recognition runs in the background; refresh until it is done.
+  clearTimeout(materialTimer);
+  if (materials.some((m) => m.status === "processing")) {
+    materialTimer = setTimeout(() => loadMaterials().catch(() => {}), POLL_MS);
+  }
 }
+
+async function retryMaterial(material) {
+  await api(`/api/materials/${material.id}/retry`, { method: "POST" });
+  await loadMaterials();
+}
+
+let reviewing = null; // { material, chunks }
+
+function clockText(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = String(seconds % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
+}
+
+async function showReview(material) {
+  const [chunks, settings] = await Promise.all([
+    api(`/api/materials/${material.id}/chunks`), api("/api/settings")]);
+  reviewing = { material, chunks };
+  $("review-title").textContent = `Check the recognised text: ${material.filename}`;
+  $("review-list").replaceChildren(...chunks.map((c) => {
+    const seconds = Number(c.locator.slice(1));
+    const at = c.locator.startsWith("t") ? clockText(seconds) : c.locator;
+    const media = c.locator.startsWith("t") ? `#t=${seconds}` : "";
+    const low = c.confidence !== null && c.confidence < settings.review_below;
+    const text = el("textarea", { rows: "3", "data-id": c.id });
+    text.value = c.text;
+    return el("li", { class: low ? "low-confidence" : "" },
+      el("a", { href: `/data/materials/${material.stored_name}${media}`, target: "_blank" }, `Play from ${at}`),
+      low ? el("span", { class: "low" }, ` low confidence (${c.confidence.toFixed(2)})`) : "",
+      text);
+  }));
+  $("review-status").textContent = "";
+  $("review-view").hidden = false;
+  $("review-view").scrollIntoView({ behavior: "smooth" });
+}
+
+$("review-cancel").addEventListener("click", () => { $("review-view").hidden = true; reviewing = null; });
+
+$("review-confirm").addEventListener("click", async () => {
+  if (!reviewing) return;
+  const corrections = {};
+  for (const box of document.querySelectorAll("#review-list textarea")) {
+    const original = reviewing.chunks.find((c) => c.id === box.dataset.id);
+    if (box.value.trim() !== original.text) corrections[box.dataset.id] = box.value;
+  }
+  $("review-status").textContent = "Saving...";
+  try {
+    await api(`/api/materials/${reviewing.material.id}/review`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ corrections }),
+    });
+    $("review-view").hidden = true;
+    reviewing = null;
+    await loadMaterials();
+  } catch (error) {
+    $("review-status").textContent = `Could not save: ${error.message}`;
+  }
+});
+
+$("url-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const url = $("url-input").value.trim();
+  if (!url) return;
+  $("upload-status").textContent = "Fetching the page...";
+  try {
+    const m = await api("/api/materials/url", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }),
+    });
+    $("upload-status").textContent = `Added ${m.filename}. Check the extracted text before using it.`;
+    $("url-input").value = "";
+    await loadMaterials();
+  } catch (error) {
+    $("upload-status").textContent = `Could not add the page: ${error.message}`;
+  }
+});
 
 function selectedMaterials() {
   return [...document.querySelectorAll("#materials input[type=checkbox]:checked")].map((b) => b.value);
@@ -79,10 +187,12 @@ $("upload-form").addEventListener("submit", async (event) => {
   if (!files.length) return;
   const form = new FormData();
   for (const file of files) form.append("files", file);
-  $("upload-status").textContent = "Extracting text...";
+  $("upload-status").textContent = "Uploading and extracting text...";
   try {
     const added = await api("/api/materials", { method: "POST", body: form });
-    $("upload-status").textContent = `Added ${added.length} file(s). Check the extracted text before using it.`;
+    const waiting = added.filter((m) => m.status !== "ready").length;
+    $("upload-status").textContent = `Added ${added.length} file(s). Check the extracted text before using it.` +
+      (waiting ? ` Speech recognition runs in the background; check its text when it is done.` : "");
     $("upload-input").value = "";
     await loadMaterials();
   } catch (error) {

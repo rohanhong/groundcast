@@ -30,7 +30,7 @@
 groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学习资料（PDF、幻灯片、笔记、网页、视频）变成播客式的学习音频，适合通勤、运动或考前复习时收听。一条固定的 LLM 角色流水线先撰写脚本，再逐条核对每个事实陈述是否有资料依据，最后才润色文风；本地语音合成把结果渲染成 MP3，可在任意手机播放器中收听。
 
 > [!NOTE]
-> 早期开发阶段：里程碑 M1 已完成，M2 正在开发中。你可以用自己的话描述想要的会话，再确认它提出的简报。一次会话已能端到端运行：输入带文字层的 PDF、Markdown 或纯文本，输出经过核对、带章节标记的 MP3（单人旁白或双主持人）与带链接的文稿；会话完成后，打字提问的回答和选择题测验都来自你的资料。会话结尾还可以加入回忆提问，每题后留出停顿。资料中的概念汇总到一张概念表里，附带你在每个概念上的测验结果，可以重命名与合并。偏好设置决定默认的声音、语速和简报，档案的每次改动都有记录，并可导出。排序推荐等后续功能在下文中有所描述，但尚未实现。
+> 早期开发阶段：里程碑 M1 至 M3 已完成。可以添加 PDF、PowerPoint、Word、Markdown 或纯文本文件，按网址添加网页，也可以添加视频和音频：其中的语音在本机识别，经你核对后才会使用。用自己的话描述想要的会话，再确认它提出的简报，就能得到经过核对、带章节标记的 MP3（单人旁白或双主持人），以及一份文稿，其中的链接会在对应的页码、幻灯片或时间点打开每个来源。会话完成后，打字提问的回答和选择题测验都来自你的资料。会话结尾还可以加入回忆提问，每题后留出停顿。资料中的概念汇总到一张概念表里，附带你在每个概念上的测验结果，可以重命名与合并。偏好设置决定默认的声音、语速和简报，档案的每次改动都有记录，并可导出。排序推荐等后续功能在下文中有所描述，但尚未实现。
 
 ## ✨ 亮点
 
@@ -64,12 +64,21 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    pip install "torch==2.14.1+cu130" --index-url https://download.pytorch.org/whl/cu130
    ```
    在默认设置 `tts.device = "auto"` 下，groundcast 随后会自动使用 GPU。
-4. 启动应用，然后打开 <http://127.0.0.1:8765/>。浏览器界面只在 `127.0.0.1` 上提供服务。
+4. 可选：为视频和音频安装语音识别（faster-whisper；默认模型约 1.6 GB，首次使用时下载）：
+   ```bash
+   pip install -e ".[asr]"
+   ```
+   默认在 CPU 上运行。若要使用 GPU，再安装 CTranslate2 所需的 CUDA 12 库（PyTorch 自带的 CUDA 库版本不同）：
+   ```bash
+   pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12>=9,<10"
+   ```
+   在 Linux 上，还需把它们的 `lib` 目录加入 `LD_LIBRARY_PATH`。
+5. 启动应用，然后打开 <http://127.0.0.1:8765/>。浏览器界面只在 `127.0.0.1` 上提供服务。
    ```bash
    groundcast serve
    ```
 
-同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`，再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好。运行 `groundcast --help` 查看全部命令。
+同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`（网页用 `--url <网址>`；用 `groundcast review <material id>` 核对识别出的语音文本），再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好。运行 `groundcast --help` 查看全部命令。
 
 ## 🗺️ 路线图
 
@@ -100,7 +109,8 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 | [Piper](https://github.com/OHF-Voice/piper1-gpl) | 备用语音合成 | GPL-3.0 / 按音色而定 | 仅作为独立进程 |
 | espeak-ng | 可选的发音回退，用于 Kokoro 不认识的词 | GPL | 仅作为独立程序（`tts.espeak_bin`） |
 | ffmpeg、poppler | 音频编码、PDF 文本提取 | LGPL 构建、GPL | 独立程序（conda-forge） |
-| 语音识别、OCR、声明核查器 | M3、M5、M4 | `<recorded when adopted>` | `<recorded when adopted>` |
+| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 与 [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | 视频与音频的语音识别（M3） | MIT / MIT | Python 包（`asr` 附加依赖） |
+| OCR、声明核查器 | M5、M4 | `<recorded when adopted>` | `<recorded when adopted>` |
 
 ## ⚠️ 负责任地使用
 

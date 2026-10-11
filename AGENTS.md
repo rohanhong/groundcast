@@ -15,8 +15,10 @@ which every statement is grounded in those materials.
 - Activate it: `conda activate groundcast_env_py312`
 - Apply edits to `environment.yml`: `conda env update -f environment.yml`
   (it installs this package in editable mode with the `dev` extra).
-- Add speech synthesis: `pip install -e ".[tts]"`; the API backend:
-  `pip install -e ".[api]"`.
+- Add speech synthesis: `pip install -e ".[tts]"`; speech recognition for
+  video and audio: `pip install -e ".[asr]"` (for its GPU use, also
+  `pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12>=9,<10"`); the API
+  backend: `pip install -e ".[api]"`.
 - GPU speech synthesis (the owner's machine: RTX 3070 Laptop, sm_86, driver
   595.97): `pip install "torch==2.14.1+cu130" --index-url
   https://download.pytorch.org/whl/cu130`. Re-run it after anything that
@@ -31,12 +33,15 @@ which every statement is grounded in those materials.
 
 ## Code layout
 
-- `src/groundcast/`: `ingest/` (S0), `pipeline/` (S3 to S7: writer,
-  verifier, editor, run), `llm/` (the `LLMBackend` interface and its CLI and
-  API backends), `elicit.py` (S1, brief by dialogue), `tts/`, `sessions.py`
-  (S9 export), `qa.py` and `quiz.py` (S10 text Q&A and quizzes), `profile/`
-  (the SQLite profile: preferences, concept table, quiz results, event log),
-  `web/` (FastAPI app and static UI), `evaluation/`.
+- `src/groundcast/`: `ingest/` (S0: PDF, Office, web pages, and speech
+  recognition for video and audio, whose text waits for the user's review),
+  `material_view.py` (source labels, links, and the per-material text view),
+  `pipeline/` (S3 to S7: writer, verifier, editor, run), `llm/` (the
+  `LLMBackend` interface and its CLI and API backends), `elicit.py` (S1,
+  brief by dialogue), `tts/`, `sessions.py` (S9 export), `qa.py` and
+  `quiz.py` (S10 text Q&A and quizzes), `profile/` (the SQLite profile:
+  preferences, concept table, quiz results, event log), `web/` (FastAPI app
+  and static UI), `evaluation/`.
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
   the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are
   added to the Writer prompt for two-host sessions and recall prompts.

@@ -83,6 +83,11 @@ button:disabled { opacity: .5; cursor: default; }
 .list li:first-child { border-top: 0; }
 .chunks { font-size: .85rem; max-height: 22rem; overflow: auto; }
 .chunks code { color: var(--muted); }
+.review { font-size: .9rem; padding-left: 1.4rem; }
+.review li { margin: .7rem 0; }
+.review li.low-confidence textarea { border-color: var(--warn); }
+.low { color: var(--warn); }
+.status-review, .status-processing { color: var(--warn); }
 .status-done { color: var(--ok); }
 .status-failed { color: var(--bad); }
 .status-running, .status-queued { color: var(--warn); }

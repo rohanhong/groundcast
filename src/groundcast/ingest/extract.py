@@ -1,7 +1,10 @@
-"""Text extraction: file -> pages -> paragraph blocks.
+"""Text extraction: file -> units (pages, slides, passages) -> paragraph blocks.
 
 PDF text comes from poppler's pdftotext, run as a separate program (GPL).
-Markdown and plain text have no pages and count as one page.
+Markdown, plain text, and web pages have no pages and count as one page.
+PowerPoint and Word files are read by groundcast.ingest.office, web pages by
+groundcast.ingest.web; video and audio go through speech recognition
+(groundcast.ingest.asr), which is slow and runs apart from this module.
 """
 
 from __future__ import annotations
@@ -10,12 +13,35 @@ import re
 import subprocess
 from pathlib import Path
 
+from groundcast.config import Settings
+from groundcast.ingest.office import docx_units, pptx_units
+from groundcast.ingest.units import ExtractionError, Unit
+from groundcast.ingest.web import decode_html, html_units
+
 KIND_BY_SUFFIX = {
     ".pdf": "pdf",
     ".md": "markdown",
     ".markdown": "markdown",
     ".txt": "text",
+    ".pptx": "pptx",
+    ".docx": "docx",
+    ".html": "html",
+    ".htm": "html",
+    ".mp4": "video",
+    ".mkv": "video",
+    ".webm": "video",
+    ".mov": "video",
+    ".m4v": "video",
+    ".avi": "video",
+    ".mp3": "audio",
+    ".m4a": "audio",
+    ".wav": "audio",
+    ".ogg": "audio",
+    ".opus": "audio",
+    ".flac": "audio",
 }
+# Kinds whose text comes from recognition and waits for the user's review.
+RECOGNISED_KINDS = frozenset({"video", "audio"})
 
 _BLANK_LINES = re.compile(r"\n\s*\n")
 _MD_IMAGE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
@@ -24,9 +50,7 @@ _MD_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+")
 _MD_EMPHASIS = re.compile(r"(\*\*|__|\*|`)")
 _FRONT_MATTER = re.compile(r"\A---\n.*?\n---\n", re.DOTALL)
 
-
-class ExtractionError(RuntimeError):
-    pass
+__all__ = ["ExtractionError", "Unit", "detect_kind", "extract_units"]
 
 
 def detect_kind(filename: str) -> str:
@@ -90,11 +114,19 @@ def markdown_to_text(text: str) -> str:
     return "\n".join(out_lines)
 
 
-def extract_pages(path: Path, kind: str, pdftotext_bin: str) -> list[list[str]]:
-    """Return a list of pages, each a list of paragraph blocks."""
+def extract_units(path: Path, kind: str, settings: Settings) -> list[Unit]:
+    """Return the material's pages, slides, or passages, each a list of paragraph blocks."""
     if kind == "pdf":
-        return [paragraphs(p) for p in pdf_pages(path, pdftotext_bin)]
+        return [Unit(f"p{n}", paragraphs(p)) for n, p in enumerate(pdf_pages(path, settings.ingest.pdftotext_bin), 1)]
+    if kind == "pptx":
+        return pptx_units(path, settings.ingest.slide_notes)
+    if kind == "docx":
+        return docx_units(path)
+    if kind == "html":
+        return html_units(decode_html(path.read_bytes()))
+    if kind in RECOGNISED_KINDS:
+        raise ExtractionError(f"{kind} needs speech recognition (groundcast.ingest.recognise_material)")
     text = decode_text(path.read_bytes())
     if kind == "markdown":
         text = markdown_to_text(text)
-    return [paragraphs(text)]
+    return [Unit("p1", paragraphs(text))]

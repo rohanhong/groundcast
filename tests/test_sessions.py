@@ -37,7 +37,7 @@ def test_session_produces_mp3_and_transcript(settings: Settings, store: Store, t
         assert (d / name).is_file(), name
     assert not (d / "session.wav").exists()
     html = (d / TRANSCRIPT_FILE).read_text(encoding="utf-8")
-    assert f"../../materials/{material.stored_name}" in html
+    assert f"../../materials/{material.id}.view.html#p1-1" in html
     assert settings.tts.disclaimer in html
     # One ID3 chapter per segment, titled with its heading.
     head = (d / AUDIO_FILE).read_bytes()[:4096]

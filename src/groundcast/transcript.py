@@ -12,6 +12,7 @@ from html import escape
 
 from collections.abc import Iterable
 
+from groundcast.material_view import chunk_label, material_path
 from groundcast.models import Chunk, Material, Script, SourceLink, speaker_label
 
 _STYLE = """
@@ -35,21 +36,6 @@ h2 { font-size: 1.15rem; margin-top: 2rem; }
 p.line { margin: .35rem 0; }
 ol.sources { font-size: .85rem; color: var(--muted); }
 """
-
-
-def material_path(chunk: Chunk, material: Material) -> str:
-    """Path of a chunk's material relative to the data directory, at its page for PDFs."""
-    path = f"materials/{material.stored_name}"
-    if material.kind == "pdf" and chunk.locator.startswith("p"):
-        path += f"#page={chunk.locator[1:]}"
-    return path
-
-
-def chunk_label(chunk: Chunk, material: Material) -> str:
-    """File name plus where the chunk is: page and passage for PDFs, passage otherwise."""
-    if material.kind == "pdf" and chunk.locator.startswith("p"):
-        return f"{material.filename}, page {chunk.locator[1:]}, passage {chunk.index}"
-    return f"{material.filename}, passage {chunk.index}"
 
 
 def source_href(chunk: Chunk, material: Material) -> str:

@@ -15,10 +15,17 @@
   <main>
     <section>
       <h2>1. Materials</h2>
-      <p class="muted">Text-layer PDF, Markdown, or plain text. Files stay in your local data directory.</p>
+      <p class="muted">Text-layer PDF, PowerPoint, Word, Markdown, plain text, saved web pages, video, or audio.
+        Files stay in your local data directory. Speech in video and audio is recognised on this machine;
+        check and correct the text before you use it.</p>
       <form id="upload-form">
-        <input type="file" id="upload-input" multiple accept=".pdf,.md,.markdown,.txt">
+        <input type="file" id="upload-input" multiple
+          accept=".pdf,.pptx,.docx,.md,.markdown,.txt,.html,.htm,.mp4,.mkv,.webm,.mov,.m4v,.avi,.mp3,.m4a,.wav,.ogg,.opus,.flac">
         <button type="submit">Add</button>
+      </form>
+      <form id="url-form" class="qa-form">
+        <input id="url-input" type="text" inputmode="url" placeholder="Or a web page address: https://...">
+        <button type="submit">Fetch</button>
       </form>
       <p id="upload-status" class="muted" role="status"></p>
       <ul id="materials" class="list"></ul>
@@ -26,6 +33,16 @@
         <summary id="chunk-title"></summary>
         <ol id="chunk-list" class="chunks"></ol>
       </details>
+      <div id="review-view" hidden>
+        <h3 id="review-title"></h3>
+        <p class="muted">Recognised speech can be wrong, and the Verifier treats this text as the truth. Listen
+          where needed, correct each passage, clear a passage to drop it, then confirm. Passages marked
+          <span class="low">low confidence</span> deserve a closer look.</p>
+        <ol id="review-list" class="review"></ol>
+        <button id="review-confirm" type="button">Confirm text</button>
+        <button id="review-cancel" type="button" class="link">Close</button>
+        <p id="review-status" class="muted" role="status"></p>
+      </div>
     </section>
 
     <section>
