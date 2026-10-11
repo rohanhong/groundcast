@@ -2,7 +2,8 @@
 
 An evaluation set is a JSON file listing self-written materials and script
 sentences with the label the Verifier should give. Each item locates the chunk
-the Writer would have cited by a quote from it. Runs are repeated because a
+the Writer would have cited by a quote from it. An item from a two-host
+script names its speaker, and its context names the other host's line. Runs are repeated because a
 single LLM run is noisy; the report gives the mean and range per metric, and
 the rates per item tag (for example the harder items, or one error type).
 """
@@ -21,7 +22,7 @@ from pydantic import BaseModel, Field
 from groundcast.config import EvaluationSettings, Settings
 from groundcast.ingest import ingest_file
 from groundcast.llm import LLMBackend, roles
-from groundcast.models import PASSING_LABELS, Chunk, Label, Sentence, SentenceKind
+from groundcast.models import PASSING_LABELS, Chunk, Label, Sentence, SentenceKind, Speaker
 from groundcast.pipeline.run import check_sentences
 from groundcast.storage import Store
 
@@ -32,6 +33,7 @@ class EvalItem(BaseModel):
     quote: str
     text: str
     context: str = ""
+    speaker: Speaker | None = None
     tags: list[str] = Field(default_factory=list)
 
 
@@ -108,7 +110,13 @@ def run_seeded(
             chunks.extend(store.get_chunks(material.id))
     pairs = [
         (
-            Sentence(id=item.id, text=item.text, kind=SentenceKind.CLAIM, sources=[resolve_quote(item.quote, chunks)]),
+            Sentence(
+                id=item.id,
+                text=item.text,
+                kind=SentenceKind.CLAIM,
+                sources=[resolve_quote(item.quote, chunks)],
+                speaker=item.speaker,
+            ),
             item.context,
         )
         for item in eval_set.items
