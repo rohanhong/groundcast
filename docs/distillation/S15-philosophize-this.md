@@ -1,0 +1,25 @@
+# S15 Philosophize This! (structure only)
+
+- Source: Philosophize This! (Stephen West), single-narrator scripted explainer. Official episode transcripts on philosophizethis.org: Episode #001 (Pre-Socratics to Democritus, 2013), Episode #028 (Descartes, part 1, 2014), Episode #145 (Bergson's essay on laughter, part 1, 2020). Local copies: `S15-philosophize-this-ep001.html`, `S15-philosophize-this-descartes-pt1.html` (episode #028), `S15-philosophize-this-ep145.html`.
+- Read: 2026-10-12; all three transcripts in full, for structure only. No wording is taken. Positions are approximate shares of the transcript.
+
+## Candidate rules
+
+| Rule (our words) | Locator | Role | Pass example (ours) | Fail example (ours) |
+|---|---|---|---|---|
+| Open with a question addressed to the listener that the session will work through. | #145, opening (first 5%): a direct question about the topic before any history | Writer | "Why does a lake with two rivers flowing in stay the same height all summer?" | "This session covers the hydrology of Lake Marrow." as the only opening. |
+| Give an explicit plan of the session after the opening: how many parts and in what order. | #145, about 25%: the narrator lays out the order of the episode (claim first, then history, then return) | Writer | "Here's the plan: first the two streams, then the drain, then what happens in a dry year." | Starting the first part with no outline of the rest. |
+| State the conclusion early, say plainly it will make full sense later, explain the parts, then come back to the same conclusion in the same words. | #145, about 25% to 30% (thesis stated, flagged as not yet clear) and later return | Writer | "The short answer: the lake level is a balance. That may sound vague now; by the end it won't." ... closing: "So, the lake level is a balance." | The conclusion appears only at the end, in different words from any earlier hint. |
+| Before a key idea, set out the problem it answers, so the listener knows why it matters. Only when the passages give that problem. | #028, first third: the crisis of certainty set up before the famous claim is explained | Writer | "Before the dam, the lake flooded the village every few years. That is the problem the dam solved." (passages state it) | Explaining the dam's design with no word on why it was built. |
+| Define terms in one plain sentence each; when two terms are paired, define them side by side to show the contrast. | #028, about 35%: two opposed terms defined in consecutive sentences | Writer | "An inflow brings water into the lake. An outflow takes water out." | Defining "inflow" in segment 1 and "outflow" in segment 3, after both have been used. |
+| Invented examples are marked as invented by their opening ("think of", "imagine", "say you"), are everyday and concrete, and come right after the abstract idea they illustrate. | #145, about 30% and 35%: an everyday object, then an everyday scene, each introduced as a hypothetical | Writer (framing) | "Say you pour a bucket into a full bath with the plug out. The level barely changes." (marked framing) | An invented scene told as if it happened at Lake Marrow. |
+| Voice the listener's likely objection and answer it. In groundcast the objection and the answer both come from the passages; in two-host form Host B raises it. | #001, about 95% (an anticipated objection about naming); #145, about 85% | Writer; Writer (dialogue) | "You might ask: if the Pell floods in May, why isn't the lake highest in May? The notes say the Askra drains faster then." | Raising an objection and leaving it unanswered, or answering from general knowledge. |
+| Link to concepts from earlier sessions by name when the learner has met them. | #028, about 25% to 35% and #145, about 90%: references to earlier episodes by topic | Writer | "Last time you met the Pell; today it's the Askra's turn." (brief lists the earlier session) | Assuming the listener remembers a term from an earlier session without naming it or saying where it came from. |
+| Close by tying the parts together, then preview what comes next. A closing reflective question may follow the recap but does not replace recall questions. | #001, closing (tie-together, then a reflective question); #028 and #145, closing (preview of next episode) | Writer | Recap of the three parts, then "Next session: the lake in winter." | Ending on an open musing with no recap. |
+
+## Not adopted
+
+- Long comic digressions, pop-culture asides, and charged real-world examples: they are extraneous material that competes with the key points (S25, coherence), and real-world examples bring in claims the passages do not hold.
+- Narrator hedges about his own expertise and persona: groundcast hosts are synthetic and have no persona; uncertainty is expressed through the passages' own qualifiers.
+- Episodes of 30 minutes or more of continuous narration with no recaps: T1 (S05, transient information) outranks this format.
+- Production and housekeeping talk (release schedule, sponsors).
