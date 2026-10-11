@@ -107,6 +107,16 @@ class AudioSettings(_Section):
     mp3_bitrate: str = "96k"
 
 
+class EvaluationSettings(_Section):
+    # Pass thresholds for `groundcast eval`, on the means over all runs (spec
+    # section 13). Set on 2026-10-11 from the M1 baseline on evals/seeded/.
+    min_detection_rate: float = Field(default=0.95, ge=0.0, le=1.0)
+    max_false_flag_rate: float = Field(default=0.08, ge=0.0, le=1.0)
+    # Seeded errors carrying this tag must also reach min_hard_detection_rate.
+    hard_tag: str = "hard"
+    min_hard_detection_rate: float = Field(default=0.90, ge=0.0, le=1.0)
+
+
 class Settings(_Section):
     data_dir: Path = Field(default_factory=lambda: Path(platformdirs.user_data_dir(APP_NAME, appauthor=False)))
     model_dir: Path = Field(default_factory=lambda: Path(platformdirs.user_cache_dir(APP_NAME, appauthor=False)) / "models")
@@ -116,6 +126,7 @@ class Settings(_Section):
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
     tts: TTSSettings = Field(default_factory=TTSSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)
+    evaluation: EvaluationSettings = Field(default_factory=EvaluationSettings)
 
 
 def default_config_path() -> Path:

@@ -82,7 +82,7 @@ def cmd_session(args: argparse.Namespace) -> int:
 
 
 def cmd_eval(args: argparse.Namespace) -> int:
-    from groundcast.evaluation.seeded import format_report, run_seeded, save_report
+    from groundcast.evaluation.seeded import format_report, run_seeded, save_report, threshold_failures
     from groundcast.llm import make_backend
 
     settings = _settings(args)
@@ -92,7 +92,11 @@ def cmd_eval(args: argparse.Namespace) -> int:
     save_report(report, out)
     print(format_report(report))
     print(f"Report: {out}")
-    return 0
+    failures = threshold_failures(report, settings.evaluation)
+    for failure in failures:
+        print(f"FAIL: {failure}")
+    print("Thresholds: " + ("not met" if failures else "met"))
+    return 1 if failures else 0
 
 
 def _default_eval_set() -> Path:

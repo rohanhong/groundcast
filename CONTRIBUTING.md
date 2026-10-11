@@ -34,7 +34,9 @@ never in a public issue.
    silent speech engine, so they need neither Claude nor the Kokoro model.
 5. When a change touches the Verifier or its prompt, also run the seeded-error
    test, `groundcast eval`, which calls the configured LLM backend, and compare
-   its detection and false-flag rates with the previous run.
+   its detection and false-flag rates with the previous run. It exits with a
+   non-zero status when the rates miss the pass thresholds in the
+   `[evaluation]` settings.
 
 ## Workflow
 

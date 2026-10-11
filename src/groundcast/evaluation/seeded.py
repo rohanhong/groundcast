@@ -3,7 +3,8 @@
 An evaluation set is a JSON file listing self-written materials and script
 sentences with the label the Verifier should give. Each item locates the chunk
 the Writer would have cited by a quote from it. Runs are repeated because a
-single LLM run is noisy; the report gives the mean and range per metric.
+single LLM run is noisy; the report gives the mean and range per metric, and
+the rates per item tag (for example the harder items, or one error type).
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from groundcast.config import Settings
+from groundcast.config import EvaluationSettings, Settings
 from groundcast.ingest import ingest_file
 from groundcast.llm import LLMBackend, roles
 from groundcast.models import PASSING_LABELS, Chunk, Label, Sentence, SentenceKind
@@ -31,6 +32,7 @@ class EvalItem(BaseModel):
     quote: str
     text: str
     context: str = ""
+    tags: list[str] = Field(default_factory=list)
 
 
 class EvalSet(BaseModel):
@@ -51,12 +53,20 @@ class Summary(BaseModel):
     max: float
 
 
+class TagMetrics(BaseModel):
+    errors: int
+    correct: int
+    detection_rate: float | None  # over all runs; None when the tag has no seeded errors
+    false_flag_rate: float | None  # over all runs; None when the tag has no correct sentences
+
+
 class EvalReport(BaseModel):
     set_path: str
     verifier_model: str
     verifier_effort: str
     runs: list[RunMetrics]
     summary: dict[str, Summary]
+    by_tag: dict[str, TagMetrics] = Field(default_factory=dict)
     # Per item: how many runs flagged it, and every label it received.
     items: dict[str, dict[str, object]] = Field(default_factory=dict)
 
@@ -74,6 +84,11 @@ def resolve_quote(quote: str, chunks: list[Chunk]) -> str:
 
 def _flagged(label: Label) -> bool:
     return label not in PASSING_LABELS
+
+
+def _flag_share(items: list[EvalItem], labels: dict[str, list[str]]) -> float | None:
+    verdicts = [Label(lbl) for i in items for lbl in labels[i.id]]
+    return sum(map(_flagged, verdicts)) / len(verdicts) if verdicts else None
 
 
 def run_seeded(
@@ -126,12 +141,22 @@ def run_seeded(
         }
         for i in eval_set.items
     }
+    by_tag = {}
+    for tag in sorted({t for i in eval_set.items for t in i.tags}):
+        tagged = [i for i in eval_set.items if tag in i.tags]
+        by_tag[tag] = TagMetrics(
+            errors=sum(_flagged(i.expected) for i in tagged),
+            correct=sum(not _flagged(i.expected) for i in tagged),
+            detection_rate=_flag_share([i for i in tagged if _flagged(i.expected)], labels),
+            false_flag_rate=_flag_share([i for i in tagged if not _flagged(i.expected)], labels),
+        )
     return EvalReport(
         set_path=str(set_path),
         verifier_model=role.model,
         verifier_effort=role.effort,
         runs=run_metrics,
         summary=summary,
+        by_tag=by_tag,
         items=items,
     )
 
@@ -140,6 +165,12 @@ def format_report(report: EvalReport) -> str:
     lines = [f"Verifier {report.verifier_model} ({report.verifier_effort}), {len(report.runs)} run(s)"]
     for name, s in report.summary.items():
         lines.append(f"  {name:16} mean {s.mean:.3f}  min {s.min:.3f}  max {s.max:.3f}")
+    if report.by_tag:
+        lines.append("Per tag, over all runs (detection on seeded errors, false flags on correct sentences):")
+    for tag, t in report.by_tag.items():
+        det = "-" if t.detection_rate is None else f"{t.detection_rate:.3f}"
+        ff = "-" if t.false_flag_rate is None else f"{t.false_flag_rate:.3f}"
+        lines.append(f"  {tag:16} detection {det:5} ({t.errors} errors)  false flags {ff:5} ({t.correct} correct)")
     misses = [
         f"  {item_id}: expected {d['expected']}, got {', '.join(d['labels'])}"  # type: ignore[arg-type]
         for item_id, d in report.items.items()
@@ -149,6 +180,25 @@ def format_report(report: EvalReport) -> str:
         lines.append("Items with a label other than the expected one:")
         lines.extend(misses)
     return "\n".join(lines)
+
+
+def threshold_failures(report: EvalReport, limits: EvaluationSettings) -> list[str]:
+    """Each pass threshold the report misses, as a sentence; empty when it passes."""
+    failures = []
+    detection = report.summary["detection_rate"].mean
+    if detection < limits.min_detection_rate:
+        failures.append(f"detection rate {detection:.3f} is below {limits.min_detection_rate:.3f}")
+    false_flags = report.summary["false_flag_rate"].mean
+    if false_flags > limits.max_false_flag_rate:
+        failures.append(f"false-flag rate {false_flags:.3f} is above {limits.max_false_flag_rate:.3f}")
+    hard = report.by_tag.get(limits.hard_tag)
+    if hard is None or hard.detection_rate is None:
+        failures.append(f"no seeded errors carry the tag {limits.hard_tag!r}")
+    elif hard.detection_rate < limits.min_hard_detection_rate:
+        failures.append(
+            f"{limits.hard_tag!r} detection rate {hard.detection_rate:.3f} is below {limits.min_hard_detection_rate:.3f}"
+        )
+    return failures
 
 
 def save_report(report: EvalReport, path: Path) -> None:

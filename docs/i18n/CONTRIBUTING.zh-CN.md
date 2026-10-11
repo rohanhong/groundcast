@@ -22,7 +22,7 @@
    ```
 3. 修改 `environment.yml` 后，用 `conda env update -f environment.yml` 同步到环境。
 4. 运行测试：`python -m pytest`。测试使用模拟的 LLM 后端和静音的语音引擎，因此既不需要 Claude，也不需要 Kokoro 模型。
-5. 如果改动涉及 Verifier 或其提示词，还要运行预埋错误测试 `groundcast eval`（会调用已配置的 LLM 后端），并把检出率与误报率同上一次的结果比较。
+5. 如果改动涉及 Verifier 或其提示词，还要运行预埋错误测试 `groundcast eval`（会调用已配置的 LLM 后端），并把检出率与误报率同上一次的结果比较。如果这些比率未达到 `[evaluation]` 设置中的通过线，该命令以非零状态退出。
 
 ## 工作流程
 

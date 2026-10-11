@@ -65,3 +65,10 @@ disclaimer = "This is an AI-generated audio session, written from your own study
 [audio]
 ffmpeg_bin = "ffmpeg"
 mp3_bitrate = "96k"
+
+[evaluation]
+# Pass thresholds for `groundcast eval`, on the means over all runs.
+min_detection_rate = 0.95
+max_false_flag_rate = 0.08
+hard_tag = "hard"  # seeded errors with this tag must also reach the next value
+min_hard_detection_rate = 0.90

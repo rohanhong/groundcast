@@ -25,7 +25,9 @@ which every statement is grounded in those materials.
 - Run the app: `groundcast serve` (http://127.0.0.1:8765/); other commands:
   `groundcast --help`.
 - Verifier baseline: `groundcast eval --runs 3` (calls the configured LLM
-  backend; reports detection and false-flag rates on `evals/seeded/`).
+  backend; reports detection and false-flag rates on `evals/seeded/`,
+  overall and per item tag, such as `hard` or one error type; exits non-zero
+  when they miss the pass thresholds in the `[evaluation]` settings).
 
 ## Code layout
 
