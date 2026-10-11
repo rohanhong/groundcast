@@ -17,13 +17,13 @@ from pydantic import BaseModel, Field
 
 from groundcast.config import Settings
 from groundcast.llm import LLMBackend, Role
-from groundcast.models import Chunk, Label, Material, Sentence, SentenceKind, utc_now
+from groundcast.models import Chunk, Label, Material, Sentence, SentenceKind, SourceLink, utc_now
 from groundcast.pipeline.common import format_passages, load_prompt
 from groundcast.pipeline.verifier import build_items, verify_items
 from groundcast.pipeline.writer import clean_sources
 from groundcast.retrieval import BM25Index
 from groundcast.storage import Store, read_model, write_model
-from groundcast.transcript import material_path
+from groundcast.transcript import source_links
 
 QA_FILE = "qa.json"
 
@@ -36,12 +36,6 @@ class AnswerSentence(BaseModel):
 class TutorAnswer(BaseModel):
     covered: bool = Field(description="Whether the passages answer the question, at least in part")
     sentences: list[AnswerSentence]
-
-
-class QASource(BaseModel):
-    chunk_id: str
-    label: str  # file name and locator, for display
-    path: str  # relative to the data directory, with #page=N for PDFs
 
 
 class QASentence(BaseModel):
@@ -57,7 +51,7 @@ class QAExchange(BaseModel):
     question: str
     covered: bool
     sentences: list[QASentence]
-    sources: list[QASource] = Field(default_factory=list)
+    sources: list[SourceLink] = Field(default_factory=list)
     asked_at: datetime = Field(default_factory=utc_now)
 
 
@@ -125,15 +119,7 @@ def answer_question(
             v = verdicts[f"a{n + 1}"]
             s.verified, s.label, s.rationale = v.passed, v.label, v.rationale
 
-    by_id = {c.id: c for c in passages}
-    cited = list(dict.fromkeys(cid for s in sentences for cid in s.sources))
-    sources = []
-    for cid in cited:
-        chunk = by_id[cid]
-        material = materials[chunk.material_id]
-        sources.append(
-            QASource(chunk_id=cid, label=f"{material.filename}, {chunk.locator}", path=material_path(chunk, material))
-        )
+    sources = source_links((cid for s in sentences for cid in s.sources), {c.id: c for c in passages}, materials)
     return QAExchange(
         id=secrets.token_hex(4), question=question, covered=out.covered, sentences=sentences, sources=sources
     )

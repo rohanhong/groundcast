@@ -10,7 +10,9 @@ from __future__ import annotations
 from datetime import datetime
 from html import escape
 
-from groundcast.models import Chunk, Material, Script, speaker_label
+from collections.abc import Iterable
+
+from groundcast.models import Chunk, Material, Script, SourceLink, speaker_label
 
 _STYLE = """
 :root { --fg: #1d1f23; --muted: #5d6470; --bg: #ffffff; --accent: #3b5bdb; --warn: #b54708; }
@@ -41,8 +43,29 @@ def material_path(chunk: Chunk, material: Material) -> str:
     return path
 
 
+def chunk_label(chunk: Chunk, material: Material) -> str:
+    """File name plus where the chunk is: page and passage for PDFs, passage otherwise."""
+    if material.kind == "pdf" and chunk.locator.startswith("p"):
+        return f"{material.filename}, page {chunk.locator[1:]}, passage {chunk.index}"
+    return f"{material.filename}, passage {chunk.index}"
+
+
 def source_href(chunk: Chunk, material: Material) -> str:
     return "../../" + material_path(chunk, material)
+
+
+def source_links(
+    chunk_ids: Iterable[str], chunks: dict[str, Chunk], materials: dict[str, Material]
+) -> list[SourceLink]:
+    """Links for the given chunk IDs, once each, in first-cited order."""
+    links = []
+    for cid in dict.fromkeys(chunk_ids):
+        chunk = chunks[cid]
+        material = materials[chunk.material_id]
+        links.append(
+            SourceLink(chunk_id=cid, label=chunk_label(chunk, material), path=material_path(chunk, material))
+        )
+    return links
 
 
 def render_transcript(
@@ -101,8 +124,8 @@ def render_transcript(
             material = materials[chunk.material_id]
             excerpt = chunk.text if len(chunk.text) <= 240 else chunk.text[:237] + "..."
             parts.append(
-                f'<li><a href="{escape(source_href(chunk, material))}">{escape(material.filename)}, '
-                f"{escape(chunk.locator)}</a>: {escape(excerpt)}</li>"
+                f'<li><a href="{escape(source_href(chunk, material))}">{escape(chunk_label(chunk, material))}'
+                f"</a>: {escape(excerpt)}</li>"
             )
         parts.append("</ol>")
     parts.append("</body></html>")

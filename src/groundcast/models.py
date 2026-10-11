@@ -40,6 +40,14 @@ def speaker_label(speaker: str) -> str:
     return f"Host {speaker}"
 
 
+class SourceLink(BaseModel):
+    """A cited chunk as shown in the web app: a label and a path to open it."""
+
+    chunk_id: str
+    label: str  # file name and locator
+    path: str  # relative to the data directory, with #page=N for PDFs
+
+
 class Brief(BaseModel):
     """Session brief (S1). M1 collects it with a short form."""
 
