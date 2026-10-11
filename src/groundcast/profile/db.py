@@ -52,6 +52,11 @@ CREATE TABLE IF NOT EXISTS preferences (
     value TEXT NOT NULL,           -- JSON
     updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS inferred (
+    key TEXT PRIMARY KEY,          -- a brief setting whose inferred value is confident enough to use
+    value TEXT NOT NULL,           -- JSON
+    updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS voice_pace (
     key TEXT PRIMARY KEY,          -- <speech engine>:<voice>
     words REAL NOT NULL,           -- these four are sums in which older sessions count less

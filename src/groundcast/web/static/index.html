@@ -47,6 +47,10 @@
 
     <section>
       <h2>2. Brief</h2>
+      <div id="suggestions" hidden>
+        <p class="muted">Suggested for you. Each says why; using one only fills in the form.</p>
+        <ol id="suggestion-list" class="suggestions"></ol>
+      </div>
       <details id="chat" open>
         <summary>Describe it in your own words</summary>
         <div id="chat-log" class="chat-log"></div>
@@ -179,6 +183,13 @@
         <button type="submit">Save preferences</button>
       </form>
       <p id="prefs-status" class="muted" role="status"></p>
+      <details id="learned">
+        <summary>What groundcast has learned from your sessions</summary>
+        <p class="muted">Used only to fill in suggestions, and only once confident; your preferences above always
+          win. Keep a value to make it a preference.</p>
+        <ul id="learned-list" class="list"></ul>
+        <p id="acceptance" class="muted"></p>
+      </details>
       <details id="events">
         <summary>Change log</summary>
         <ol id="event-list" class="chunks"></ol>

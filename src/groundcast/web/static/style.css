@@ -84,6 +84,10 @@ button:disabled { opacity: .5; cursor: default; }
 .chunks { font-size: .85rem; max-height: 22rem; overflow: auto; }
 .chunks code { color: var(--muted); }
 .review { font-size: .9rem; padding-left: 1.4rem; }
+.suggestions { padding-left: 1.4rem; margin: .3rem 0 .8rem; }
+.suggestions li { margin: .4rem 0; }
+ul.why { margin: .1rem 0 0; padding-left: 1.1rem; font-size: .85rem; }
+details#learned summary { cursor: pointer; color: var(--accent); margin-top: .5rem; }
 .review li { margin: .7rem 0; }
 .review li.low-confidence textarea { border-color: var(--warn); }
 .low { color: var(--warn); }

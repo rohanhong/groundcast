@@ -153,6 +153,17 @@ max_question_chars = 1000
 questions = 5  # asked for; the Verifier may drop some
 options = 4
 
+[suggest]
+# Suggestions at session start, prefilled from your preferences and from what
+# your past sessions show; nothing inferred is used without saying why.
+infer = true  # learn brief defaults from past sessions
+half_life_days = 30.0  # a session's weight halves this often
+min_evidence = 3.0  # sessions' worth of weight before an inferred value counts fully
+min_confidence = 0.6  # inferred values below this are shown but not used
+weak_mastery = 0.6  # concepts with a lower share of right quiz answers are suggested for revision
+weak_topics = 3  # concepts in one revision suggestion
+max_suggestions = 4
+
 [evaluation]
 # Pass thresholds for `groundcast eval`, on the means over all runs.
 min_detection_rate = 0.95

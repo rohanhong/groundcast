@@ -30,7 +30,7 @@
 groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学习资料（PDF、幻灯片、笔记、网页、视频）变成播客式的学习音频，适合通勤、运动或考前复习时收听。一条固定的 LLM 角色流水线先撰写脚本，再逐条核对每个事实陈述是否有资料依据，最后才润色文风；本地语音合成把结果渲染成 MP3，可在任意手机播放器中收听。
 
 > [!NOTE]
-> 早期开发阶段：里程碑 M1 至 M3 已完成。可以添加 PDF、PowerPoint、Word、Markdown 或纯文本文件，按网址添加网页，也可以添加视频和音频：其中的语音在本机识别，经你核对后才会使用。用自己的话描述想要的会话，再确认它提出的简报，就能得到经过核对、带章节标记的 MP3（单人旁白或双主持人），以及一份文稿，其中的链接会在对应的页码、幻灯片或时间点打开每个来源。会话完成后，打字提问的回答和选择题测验都来自你的资料。会话结尾还可以加入回忆提问，每题后留出停顿。资料中的概念汇总到一张概念表里，附带你在每个概念上的测验结果，可以重命名与合并。偏好设置决定默认的声音、语速和简报，档案的每次改动都有记录，并可导出。排序推荐等后续功能在下文中有所描述，但尚未实现。
+> 早期开发阶段：里程碑 M1 至 M3 已完成。可以添加 PDF、PowerPoint、Word、Markdown 或纯文本文件，按网址添加网页，也可以添加视频和音频：其中的语音在本机识别，经你核对后才会使用。用自己的话描述想要的会话，再确认它提出的简报，就能得到经过核对、带章节标记的 MP3（单人旁白或双主持人），以及一份文稿，其中的链接会在对应的页码、幻灯片或时间点打开每个来源。会话完成后，打字提问的回答和选择题测验都来自你的资料。会话结尾还可以加入回忆提问，每题后留出停顿。资料中的概念汇总到一张概念表里，附带你在每个概念上的测验结果，可以重命名与合并。偏好设置决定默认的声音、语速和简报，档案的每次改动都有记录，并可导出。开始会话时，排序的建议会说明为何适合你；groundcast 从你过去的会话中推断出的内容都会展示给你，从不悄悄使用。
 
 ## ✨ 亮点
 
@@ -78,7 +78,7 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    groundcast serve
    ```
 
-同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`（网页用 `--url <网址>`；用 `groundcast review <material id>` 核对识别出的语音文本），再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好。运行 `groundcast --help` 查看全部命令。
+同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`（网页用 `--url <网址>`；用 `groundcast review <material id>` 核对识别出的语音文本），再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好；用 `groundcast suggest` 查看排序的建议。运行 `groundcast --help` 查看全部命令。
 
 ## 🗺️ 路线图
 

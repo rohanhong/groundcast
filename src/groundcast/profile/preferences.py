@@ -2,8 +2,8 @@
 
 The learner sets them; an unset preference falls back to the configured
 default. A value given in a session's brief wins over a preference, and a
-preference wins over the configuration and, from M4 on, over anything
-inferred. Every change is an event with its old and new value, so a change
+preference wins over anything inferred (groundcast.profile.suggest) and over
+the configuration. Every change is an event with its old and new value, so a change
 can be undone; undoing is itself a logged change.
 """
 
@@ -36,8 +36,10 @@ class Preferences(BaseModel):
     context: Context | None = None
     level: Level | None = None
     quiz_questions: int | None = Field(default=None, ge=1, le=20)
-    # Off stops concept extraction, the profile's only inference so far (8.3).
+    # Off stops concept extraction from materials.
     extract_concepts: bool | None = None
+    # Off stops learning brief defaults from past sessions (8.3: inference can be switched off).
+    infer_preferences: bool | None = None
 
 
 class PreferenceView(BaseModel):
@@ -55,6 +57,7 @@ def defaults(settings: Settings) -> dict[str, Any]:
         **{k: Brief.model_fields[k].default for k in BRIEF_KEYS},
         "quiz_questions": settings.quiz.questions,
         "extract_concepts": settings.concepts.extract_on_session,
+        "infer_preferences": settings.suggest.infer,
     }
 
 
@@ -139,7 +142,7 @@ def undo(db: ProfileDB, settings: Settings, event_id: int) -> Preferences:
 
 
 # Rows that refer to concepts come before the concepts table, so deleting in order keeps the keys valid.
-TABLES = ("preferences", "voice_pace", "extractions", "quiz_results", "concept_sources", "concepts", "events")
+TABLES = ("preferences", "inferred", "voice_pace", "extractions", "quiz_results", "concept_sources", "concepts", "events")
 
 
 def export_profile(db: ProfileDB) -> dict[str, list[dict[str, Any]]]:

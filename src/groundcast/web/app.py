@@ -46,6 +46,7 @@ from groundcast.profile.preferences import (
     voice_choices,
 )
 from groundcast.profile.extract import extract_concepts
+from groundcast.profile.suggest import Suggestion, SuggestionView, record_outcome, suggest
 from groundcast.qa import QAExchange, answer_question, load_history, save_history
 from groundcast.quiz import AttemptResult, QuizView, grade, load_quizzes, make_quiz, save_quizzes, view
 from groundcast.sessions import REPORT_FILE, SCRIPT_FILE, SessionRunner, fail_interrupted, new_session
@@ -116,6 +117,11 @@ class Rename(BaseModel):
 
 class Merge(BaseModel):
     into: str
+
+
+class Outcome(BaseModel):
+    suggestion: Suggestion
+    brief: Brief  # the brief the session was started with
 
 
 class Conversation(BaseModel):
@@ -474,6 +480,14 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return _preference_view()
+
+    @app.get("/api/suggestions")
+    def get_suggestions() -> SuggestionView:
+        return suggest(profile, settings, store.list_materials(), store.list_sessions())
+
+    @app.post("/api/suggestions/outcome")
+    def suggestion_outcome(body: Outcome) -> dict[str, bool]:
+        return {"accepted": record_outcome(profile, body.suggestion, body.brief)}
 
     @app.get("/api/profile/export")
     def get_profile_export() -> dict[str, list[dict[str, object]]]:

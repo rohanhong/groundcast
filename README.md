@@ -46,8 +46,9 @@ result as an MP3 you can play in any phone player.
 > by a pause. The concepts in your materials go into one table, with your quiz
 > results on each, which you can rename and merge. Preferences set your
 > default voice, speed, and brief, and every change to the profile is logged
-> and can be exported. Later features, such as ranked suggestions, are
-> described below but not built yet.
+> and can be exported. At session start, ranked suggestions say why they fit
+> you; what groundcast infers from your past sessions is shown to you and
+> never used silently.
 
 ## ✨ Highlights
 
@@ -119,7 +120,8 @@ The same pipeline runs from the command line: `groundcast ingest <files>`
 end). Ask about a finished session with `groundcast ask <session id>
 "<question>"`, or print a checked quiz with `groundcast quiz <session id>`;
 list the concept table with `groundcast concepts`; set preferences with
-`groundcast prefs --set speed=1.1`. Run `groundcast --help` for every
+`groundcast prefs --set speed=1.1`; see ranked suggestions with
+`groundcast suggest`. Run `groundcast --help` for every
 command.
 
 ## 🗺️ Roadmap

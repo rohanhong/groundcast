@@ -207,6 +207,18 @@ class QuizSettings(_Section):
     options: int = Field(default=4, ge=2, le=6)
 
 
+class SuggestSettings(_Section):
+    """Inferred preferences and ranked suggestions at session start (spec 8.2)."""
+
+    infer: bool = True  # learn brief defaults from past sessions; the learner can switch it off
+    half_life_days: float = Field(default=30.0, gt=0)  # a session's weight halves this often
+    min_evidence: float = Field(default=3.0, gt=0)  # sessions' worth of weight for full confidence
+    min_confidence: float = Field(default=0.6, ge=0.0, le=1.0)  # below this, an inferred value is only shown
+    weak_mastery: float = Field(default=0.6, ge=0.0, le=1.0)  # concepts below this are suggested for revision
+    weak_topics: int = Field(default=3, ge=1)  # concepts in one revision suggestion
+    max_suggestions: int = Field(default=4, ge=1)
+
+
 class EvaluationSettings(_Section):
     # Pass thresholds for `groundcast eval`, on the means over all runs (spec
     # section 13). Set on 2026-10-11 from the M1 baseline on evals/seeded/.
@@ -231,6 +243,7 @@ class Settings(_Section):
     elicit: ElicitSettings = Field(default_factory=ElicitSettings)
     qa: QASettings = Field(default_factory=QASettings)
     quiz: QuizSettings = Field(default_factory=QuizSettings)
+    suggest: SuggestSettings = Field(default_factory=SuggestSettings)
     evaluation: EvaluationSettings = Field(default_factory=EvaluationSettings)
 
 

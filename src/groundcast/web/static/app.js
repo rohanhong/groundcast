@@ -292,6 +292,7 @@ $("chat-form").addEventListener("submit", async (event) => {
 
 $("chat-use").addEventListener("click", () => {
   if (!proposal) return;
+  activeSuggestion = null;
   applyBrief(proposal);
   $("brief-form").requestSubmit(); // opens the review step; nothing starts until confirmed
 });
@@ -317,6 +318,16 @@ $("brief-confirm").addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(pendingBrief),
     });
+    if (activeSuggestion) {
+      // Whether the suggestion was taken as it was or edited first (spec 13, personalisation).
+      await api("/api/suggestions/outcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suggestion: activeSuggestion, brief: pendingBrief }),
+      }).catch(() => {});
+      activeSuggestion = null;
+      loadSuggestions().catch(() => {});
+    }
     $("brief-status").textContent = "Session started. Progress appears below.";
     $("brief-review").hidden = true;
     $("brief-form").hidden = false;
@@ -610,12 +621,63 @@ async function loadEvents() {
   }));
 }
 
+// Suggestions (spec 8.2): ranked, each with its reasons; using one fills the form
+
+let activeSuggestion = null;
+
+const LEARNED_LABELS = { minutes: "Length", format: "Format", recall_prompts: "Recall questions",
+  context: "Listening context", level: "Level" };
+
+function learnedValue(key, value) {
+  if (key === "minutes") return `${value} minutes`;
+  if (key === "recall_prompts") return value ? "yes" : "no";
+  if (key === "format") return value === "two_hosts" ? "two hosts" : "one narrator";
+  return String(value);
+}
+
+async function loadSuggestions() {
+  const view = await api("/api/suggestions");
+  $("suggestion-list").replaceChildren(...view.suggestions.map((s) => el("li", {},
+    el("strong", {}, s.title), " ",
+    el("button", { class: "link", type: "button", onclick: () => {
+      applyBrief(s.brief);
+      activeSuggestion = s;
+      $("brief-form").requestSubmit(); // opens the review step; edit there or go back to change it
+    } }, "Use this"),
+    el("ul", { class: "muted why" }, ...s.why.map((w) => el("li", {}, w))))));
+  $("suggestions").hidden = !view.suggestions.length;
+  $("learned-list").replaceChildren(...(view.inference_on ? view.inferred : []).map((i) => el("li", {},
+    `${LEARNED_LABELS[i.key]}: ${learnedValue(i.key, i.value)} `,
+    el("span", { class: "muted" },
+      `(chosen in ${i.sessions} of ${i.of_sessions} sessions, confidence ${i.confidence.toFixed(2)}` +
+      `${i.applied ? ", used in suggestions" : ", not used yet"}) `),
+    el("button", { class: "link", type: "button", onclick: () => keepLearned(i) }, "Keep as preference"))));
+  if (!view.inference_on) {
+    $("learned-list").append(el("li", { class: "muted" }, "Learning from your sessions is switched off."));
+  } else if (!view.inferred.length) {
+    $("learned-list").append(el("li", { class: "muted" }, "Nothing yet: it learns from the sessions you start."));
+  }
+  const a = view.acceptance;
+  $("acceptance").textContent = a.rate === null ? "" :
+    `Suggestions taken without changes: ${a.accepted} of ${a.accepted + a.edited}.`;
+}
+
+async function keepLearned(inferred) {
+  showPreferences(await api("/api/preferences", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ changes: { [inferred.key]: inferred.value } }),
+  }));
+  $("prefs-status").textContent = `Saved: ${inferred.key}.`;
+  await loadSuggestions();
+}
+
 // Preferences
 
 const PREF_KEYS = ["voice", "second_voice", "speed", "minutes", "format", "context", "level",
-  "quiz_questions", "recall_prompts", "extract_concepts"];
+  "quiz_questions", "recall_prompts", "extract_concepts", "infer_preferences"];
 const NUMBER_KEYS = new Set(["speed", "minutes", "quiz_questions"]);
-const BOOL_KEYS = new Set(["recall_prompts", "extract_concepts"]);
+const BOOL_KEYS = new Set(["recall_prompts", "extract_concepts", "infer_preferences"]);
 let savedPrefs = {};
 
 function showPreferences(view) {
@@ -686,6 +748,7 @@ async function showSettingsLine() {
 async function init() {
   await Promise.all([loadMaterials(), loadSessions(), loadConcepts(),
     api("/api/preferences").then(showPreferences)]);
+  await loadSuggestions().catch(() => {}); // after the preferences have set the form's defaults
 }
 
 init().catch((error) => {

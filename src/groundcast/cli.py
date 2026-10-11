@@ -236,6 +236,32 @@ def cmd_prefs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_suggest(args: argparse.Namespace) -> int:
+    from groundcast.profile.db import ProfileDB
+    from groundcast.profile.suggest import suggest
+    from groundcast.storage import Store
+
+    settings = _settings(args)
+    store = Store(settings.data_dir)
+    view = suggest(ProfileDB(settings.data_dir), settings, store.list_materials(), store.list_sessions())
+    for n, s in enumerate(view.suggestions, start=1):
+        b = s.brief
+        print(f"{n}. {s.title}\n   {b.minutes} min, {b.format}, {b.context}, {b.level}, recall {b.recall_prompts}; "
+              f"materials {', '.join(b.material_ids)}")  # fmt: skip
+        for line in s.why:
+            print(f"   - {line}")
+    if not view.suggestions:
+        print("No suggestions yet: add materials first.")
+    print("Learned from your sessions:" if view.inference_on else "Learning from sessions is switched off.")
+    for i in view.inferred:
+        state = "used" if i.applied else "not yet used"
+        print(f"  {i.key} = {i.value!r} (confidence {i.confidence:.2f}, {i.sessions} of {i.of_sessions}; {state})")
+    a = view.acceptance
+    rate = "-" if a.rate is None else f"{a.rate:.2f}"
+    print(f"Suggestions accepted without edits: {a.accepted} of {a.accepted + a.edited} ({rate})")
+    return 0
+
+
 def cmd_profile(args: argparse.Namespace) -> int:
     import json
 
@@ -347,6 +373,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="for example speed=1.1")
     p.add_argument("--clear", action="append", default=[], metavar="KEY", help="go back to the configured default")
     p.set_defaults(func=cmd_prefs)
+
+    p = sub.add_parser("suggest", help="show ranked session suggestions and what was learned from past sessions")
+    p.set_defaults(func=cmd_suggest)
 
     p = sub.add_parser("profile", help="export or delete the whole profile")
     p.add_argument("--export", metavar="FILE", help="write every profile table to a JSON file")
