@@ -152,6 +152,12 @@ class TTSSettings(_Section):
         ]
     )
     speed: float = Field(default=1.0, gt=0.25, le=4.0)
+    # Voice direction (S8): a segment with at least dense_numbers numbers per
+    # 100 words is read dense_slowdown slower; a closing recap recap_speedup faster.
+    adapt_pace: bool = True
+    dense_numbers: float = Field(default=4.0, gt=0)
+    dense_slowdown: float = Field(default=0.07, ge=0.0, lt=1.0)
+    recap_speedup: float = Field(default=0.05, ge=0.0, lt=1.0)
     device: str = "auto"
     repo_id: str = "hexgrad/Kokoro-82M"
     sample_rate: int = 24000

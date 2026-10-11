@@ -30,6 +30,7 @@ class Preferences(BaseModel):
     voice: str | None = None
     second_voice: str | None = None
     speed: float | None = Field(default=None, gt=0.25, le=4.0)
+    adapt_pace: bool | None = None  # slower for dense segments, faster for the recap (S8)
     minutes: int | None = Field(default=None, ge=MIN_MINUTES, le=MAX_MINUTES)
     format: ScriptFormat | None = None
     recall_prompts: bool | None = None
@@ -54,6 +55,7 @@ def defaults(settings: Settings) -> dict[str, Any]:
         "voice": settings.tts.voice,
         "second_voice": settings.tts.second_voice,
         "speed": settings.tts.speed,
+        "adapt_pace": settings.tts.adapt_pace,
         **{k: Brief.model_fields[k].default for k in BRIEF_KEYS},
         "quiz_questions": settings.quiz.questions,
         "extract_concepts": settings.concepts.extract_on_session,
@@ -88,6 +90,8 @@ def apply_preferences(settings: Settings, prefs: Preferences) -> Settings:
         out.tts.second_voice = prefs.second_voice
     if prefs.speed is not None:
         out.tts.speed = prefs.speed
+    if prefs.adapt_pace is not None:
+        out.tts.adapt_pace = prefs.adapt_pace
     if prefs.quiz_questions is not None:
         out.quiz.questions = prefs.quiz_questions
     if prefs.extract_concepts is not None:

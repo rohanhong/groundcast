@@ -674,10 +674,10 @@ async function keepLearned(inferred) {
 
 // Preferences
 
-const PREF_KEYS = ["voice", "second_voice", "speed", "minutes", "format", "context", "level",
+const PREF_KEYS = ["voice", "second_voice", "speed", "adapt_pace", "minutes", "format", "context", "level",
   "quiz_questions", "recall_prompts", "extract_concepts", "infer_preferences"];
 const NUMBER_KEYS = new Set(["speed", "minutes", "quiz_questions"]);
-const BOOL_KEYS = new Set(["recall_prompts", "extract_concepts", "infer_preferences"]);
+const BOOL_KEYS = new Set(["adapt_pace", "recall_prompts", "extract_concepts", "infer_preferences"]);
 let savedPrefs = {};
 
 function showPreferences(view) {

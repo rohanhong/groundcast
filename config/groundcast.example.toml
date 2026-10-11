@@ -116,6 +116,12 @@ voice_choices = [
   "bm_lewis",
 ]
 speed = 1.0
+# Voice direction: slower for segments dense with numbers, faster for the
+# closing recap; every change is shown in the session log.
+adapt_pace = true
+dense_numbers = 4.0  # numbers per 100 words that make a segment dense
+dense_slowdown = 0.07  # dense segments at 7% below the speed
+recap_speedup = 0.05  # the closing recap at 5% above it
 device = "auto"  # auto, cpu, or cuda
 repo_id = "hexgrad/Kokoro-82M"
 sample_rate = 24000

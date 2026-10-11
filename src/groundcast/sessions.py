@@ -29,6 +29,7 @@ from groundcast.profile.preferences import apply_preferences, load_preferences
 from groundcast.storage import Store, write_model, write_text_atomic
 from groundcast.transcript import render_transcript
 from groundcast.tts import Synthesizer, make_synthesizer
+from groundcast.voice_direction import direct
 
 log = logging.getLogger(__name__)
 
@@ -98,7 +99,12 @@ def render_audio(
     tts = settings.tts
     voices = {None: tts.voice, "A": tts.voice, "B": tts.second_voice}
     rate = synth.sample_rate
-    stats = RenderStats(speed=tts.speed)
+    directions = direct(script, tts)
+    for seg in script.segments:
+        if directions[seg.id].reason:
+            progress("render", f"Pace for '{seg.heading}': {directions[seg.id].speed:g}x ({directions[seg.id].reason})")
+    # Speech seconds are scaled to speed 1.0 sentence by sentence, since the speed varies by segment.
+    stats = RenderStats(speed=1.0)
     parts = [synth.synthesize(tts.disclaimer, tts.voice, tts.speed), silence(tts.segment_pause_s, rate)]
     position = sum(len(p) for p in parts)
     stats.pause_s += tts.segment_pause_s
@@ -109,14 +115,14 @@ def render_audio(
     for seg in script.segments:
         # The first chapter also holds the spoken disclaimer before it.
         starts.append(0.0 if not starts else position / rate)
+        speed = directions[seg.id].speed
         for s in seg.sentences:
             voice = voices[s.speaker]
-            audio = synth.synthesize(s.text, voice, tts.speed)
+            audio = synth.synthesize(s.text, voice, speed)
             stats.words[voice] = stats.words.get(voice, 0) + len(s.text.split())
-            stats.speech_s[voice] = stats.speech_s.get(voice, 0.0) + len(audio) / rate
-            timings.append(
-                {"sentence_id": s.id, "segment_id": seg.id, "speaker": s.speaker, "start_s": round(position / rate, 3)}
-            )
+            stats.speech_s[voice] = stats.speech_s.get(voice, 0.0) + len(audio) / rate * speed
+            timings.append({"sentence_id": s.id, "segment_id": seg.id, "speaker": s.speaker,
+                            "start_s": round(position / rate, 3), "speed": speed})  # fmt: skip
             recall = s.kind == SentenceKind.RECALL
             pause = tts.recall_pause_s if recall else tts.sentence_pause_s
             parts += [audio, silence(pause, rate)]
