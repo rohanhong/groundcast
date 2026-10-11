@@ -1,0 +1,4 @@
+# Local settings files may hold private paths or settings; only the example
+# and this file are tracked. Keep API keys in environment variables.
+*.toml
+!groundcast.example.toml

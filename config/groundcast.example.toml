@@ -1,0 +1,67 @@
+# groundcast settings: copy to the per-user config file (path printed by
+# `groundcast paths`) or point GROUNDCAST_CONFIG at your copy. Every key
+# is optional; the values below are the defaults. Environment variables win
+# over this file: GROUNDCAST_<SECTION>_<KEY>, for example
+# GROUNDCAST_LLM_WRITER_MODEL=sonnet, or GROUNDCAST_DATA_DIR for top-level keys.
+# Never put API keys here; the API backend reads the variable named by
+# llm.api_key_env.
+
+# Materials, chunks, sessions. Default: the per-user data directory of the OS.
+# data_dir = "D:/groundcast-data"
+# Downloaded model weights. Default: the per-user cache directory of the OS.
+# model_dir = "D:/groundcast-models"
+
+[server]
+host = "127.0.0.1"  # loopback only
+port = 8765
+
+[llm]
+backend = "claude-cli"  # or "anthropic-api" (needs the "api" extra)
+claude_bin = "claude"
+api_key_env = "ANTHROPIC_API_KEY"
+api_max_tokens = 32000
+writer_model = "opus"
+writer_effort = "high"
+verifier_model = "sonnet"  # a different tier from the Writer
+verifier_effort = "medium"
+editor_model = "opus"
+editor_effort = "medium"
+timeout_s = 900
+max_attempts = 3
+retry_backoff_s = 10.0  # wait before retry n is n times this
+
+[llm.api_models]
+opus = "claude-opus-5-5"
+sonnet = "claude-sonnet-5-5"
+haiku = "claude-haiku-5-5"
+
+[ingest]
+pdftotext_bin = "pdftotext"
+chunk_max_words = 180
+
+[pipeline]
+words_per_minute = 125  # of finished audio at tts.speed 1.0; see the session log
+bm25_top_k = 4
+verify_batch_size = 20
+max_revise_rounds = 2
+writer_max_source_words = 60000
+unresolved = "drop"  # or "mark": keep and label as not verified
+
+[tts]
+engine = "kokoro"  # or "silent" for dry runs without a model
+voice = "af_heart"
+lang_code = "a"  # a: American English, b: British English
+speed = 1.0
+device = "auto"  # auto, cpu, or cuda
+repo_id = "hexgrad/Kokoro-82M"
+sample_rate = 24000
+sentence_pause_s = 0.35
+segment_pause_s = 1.2
+# Path to the espeak-ng program, for words Kokoro's lexicon lacks. It runs as
+# a separate process. Empty: such words are skipped.
+espeak_bin = ""
+disclaimer = "This is an AI-generated audio session, written from your own study materials."
+
+[audio]
+ffmpeg_bin = "ffmpeg"
+mp3_bitrate = "96k"
