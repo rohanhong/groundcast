@@ -1,0 +1,8 @@
+name: groundcast_env_py312
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - ffmpeg
+  - poppler
+  # add project packages here; pip-only deps go under a "- pip:" block

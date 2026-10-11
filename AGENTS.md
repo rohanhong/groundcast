@@ -5,9 +5,15 @@ file is the single source of instructions; edit it, never an adapter file.
 
 ## Project
 
-<Project name and one-line description.>
+groundcast: a local web app (browser UI plus a local Python service) that
+turns the owner's own study materials into podcast-style audio sessions, in
+which every statement is grounded in those materials.
 
 ## Commands
+
+- Create the environment: `conda env create -f environment.yml`
+- Activate it: `conda activate groundcast_env_py312`
+- Apply edits to `environment.yml`: `conda env update -f environment.yml`
 
 <Build / test / run commands, once established.>
 
