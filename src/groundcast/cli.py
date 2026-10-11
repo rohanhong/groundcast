@@ -272,9 +272,24 @@ def cmd_eval(args: argparse.Namespace) -> int:
     return 1 if failures else 0
 
 
-def _default_eval_set() -> Path:
-    """evals/seeded/items.json under the working directory or the source checkout."""
-    relative = Path("evals") / "seeded" / "items.json"
+def cmd_eval_quality(args: argparse.Namespace) -> int:
+    from groundcast.evaluation.quality import format_quality, run_quality, save_quality
+    from groundcast.llm import make_backend
+
+    settings = _settings(args)
+    set_path = Path(args.set) if args.set else _default_eval_set("quality", "briefs.json")
+    stamp = f"{datetime.now():%Y%m%d-%H%M%S}"
+    out = Path(args.out) if args.out else settings.data_dir / "evals" / f"quality-{stamp}.json"
+    report = run_quality(set_path, settings, make_backend(settings.llm), args.judge_runs, out.with_suffix(""))
+    save_quality(report, out)
+    print(format_quality(report))
+    print(f"Report: {out} (scripts in {out.with_suffix('')})")
+    return 0
+
+
+def _default_eval_set(*parts: str) -> Path:
+    """An evaluation set under evals/ in the working directory or the source checkout."""
+    relative = Path("evals").joinpath(*(parts or ("seeded", "items.json")))
     checkout = Path(__file__).resolve().parents[2]
     for base in (Path.cwd(), checkout):
         if (base / relative).is_file():
@@ -343,6 +358,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--runs", type=int, default=3, help="repeat runs to average out noise")
     p.add_argument("--out", help="report path (default: <data dir>/evals/)")
     p.set_defaults(func=cmd_eval)
+
+    p = sub.add_parser("eval-quality", help="write scripts for fixed briefs and score them with the LLM judge")
+    p.add_argument("--set", help="brief set file (default: evals/quality/briefs.json in the repository)")
+    p.add_argument("--judge-runs", type=int, default=3, help="judging runs per script, averaged")
+    p.add_argument("--out", help="report path (default: <data dir>/evals/); scripts go next to it")
+    p.set_defaults(func=cmd_eval_quality)
     return parser
 
 

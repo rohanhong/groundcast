@@ -128,6 +128,7 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 | 环境定义 | [`environment.yml`](../../environment.yml)、[`pyproject.toml`](../../pyproject.toml) |
 | 配置项参考 | [`config/groundcast.example.toml`](../../config/groundcast.example.toml) |
 | Verifier 评估集（`groundcast eval`） | [`evals/seeded/`](../../evals/seeded/) |
+| 脚本质量评估用的简报（`groundcast eval-quality`） | [`evals/quality/`](../../evals/quality/) |
 | 提示词提炼所用来源的登记表（原件只留在本地） | [`references/`](../../references/README.md) |
 | 提炼出的规则及其来源 | [`docs/distillation/`](../distillation/README.md) |
 

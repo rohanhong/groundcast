@@ -1,0 +1,41 @@
+{
+  "description": "Briefs for the script-quality evaluation (groundcast eval-quality), on the self-written seeded materials. Each covers a different format, level, and context.",
+  "briefs": [
+    {
+      "id": "lake-narrator",
+      "materials": ["../seeded/materials/lake-orrin-report.md"],
+      "focus": "What changed in Lake Orrin over the three monitoring seasons, and what the report concludes from it",
+      "minutes": 3,
+      "context": "commute",
+      "level": "intermediate"
+    },
+    {
+      "id": "water-hosts",
+      "materials": ["../seeded/materials/water-cycle.txt"],
+      "focus": "How water moves through the water cycle, step by step",
+      "minutes": 3,
+      "context": "exercise",
+      "level": "introductory",
+      "format": "two_hosts"
+    },
+    {
+      "id": "bike-recall",
+      "materials": ["../seeded/materials/bike-share-pilot.md"],
+      "focus": "How the two districts compared in the bike-share pilot and what the council decided",
+      "minutes": 3,
+      "context": "revision",
+      "level": "intermediate",
+      "recall_prompts": true
+    },
+    {
+      "id": "water-advanced",
+      "materials": ["../seeded/materials/water-cycle.txt"],
+      "focus": "The processes that move water from the oceans to the land and back, and what drives each",
+      "minutes": 3,
+      "context": "desk",
+      "level": "advanced",
+      "format": "two_hosts",
+      "recall_prompts": true
+    }
+  ]
+}

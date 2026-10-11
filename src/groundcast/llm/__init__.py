@@ -34,4 +34,5 @@ def roles(settings: LLMSettings) -> dict[str, Role]:
         "tutor": Role("tutor", settings.tutor_model, settings.tutor_effort),
         "quiz": Role("quiz", settings.quiz_model, settings.quiz_effort),
         "concepts": Role("concepts", settings.concepts_model, settings.concepts_effort),
+        "judge": Role("judge", settings.judge_model, settings.judge_effort),
     }

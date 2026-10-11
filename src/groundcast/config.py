@@ -69,6 +69,9 @@ class LLMSettings(_Section):
     # Writes multiple-choice quizzes on a finished session.
     quiz_model: str = "sonnet"
     quiz_effort: str = "medium"
+    # Scores scripts in `groundcast eval-quality`; a different tier from the Writer.
+    judge_model: str = "sonnet"
+    judge_effort: str = "high"
     timeout_s: int = 900
     max_attempts: int = 3
     # Wait before retry n is n times this; errors that cannot be fixed by

@@ -186,6 +186,7 @@ own licence; weights are downloaded, never committed.
 | Environment definition | [`environment.yml`](environment.yml), [`pyproject.toml`](pyproject.toml) |
 | Settings reference | [`config/groundcast.example.toml`](config/groundcast.example.toml) |
 | Verifier evaluation set (`groundcast eval`) | [`evals/seeded/`](evals/seeded/) |
+| Script-quality briefs (`groundcast eval-quality`) | [`evals/quality/`](evals/quality/) |
 | Source register for prompt distillation (files stay local) | [`references/`](references/README.md) |
 | Distilled rules and their sources | [`docs/distillation/`](docs/distillation/README.md) |
 

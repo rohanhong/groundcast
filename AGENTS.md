@@ -31,6 +31,10 @@ which every statement is grounded in those materials.
   `evals/seeded/`, overall and per item tag, such as `hard` or one error
   type, with a table of the labels given; exits non-zero when they miss the
   pass thresholds in the `[evaluation]` settings).
+- Script quality: `groundcast eval-quality` (writes scripts for the briefs in
+  `evals/quality/` and scores them with the LLM judge against the fixed
+  criteria in `prompts/judge.md`; run it before and after a prompt change
+  and keep the change only if the scores improve).
 
 ## Code layout
 

@@ -25,8 +25,9 @@ their local copies are registered in [`references/`](../../references/README.md)
 3. Move rubric sections into the role prompts in `src/groundcast/prompts/`
    (`rubric.md` is shared by the Writer, reviser, and Editor prompts).
 4. Change one prompt at a time and keep the change only if the evaluation
-   improves (`groundcast eval` for the Verifier; script-quality scoring
-   arrives later).
+   improves (`groundcast eval` for the Verifier, `groundcast eval-quality`
+   for script quality, judged against the fixed criteria in
+   `src/groundcast/prompts/judge.md`).
 5. Update the traceability table below in the same change.
 
 ## Note template
