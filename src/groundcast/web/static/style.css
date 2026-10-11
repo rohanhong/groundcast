@@ -56,6 +56,7 @@ input[type=text], input[type=number], textarea, select {
   border-radius: 6px;
 }
 .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+label.check { display: flex; gap: .5rem; align-items: center; }
 .row label { flex: 1 1 10rem; }
 button {
   font: inherit;

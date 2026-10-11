@@ -106,6 +106,7 @@ $("brief-form").addEventListener("submit", (event) => {
     context: $("context").value,
     level: $("level").value,
     format: $("format").value,
+    recall_prompts: $("recall").checked,
     notes: $("notes").value.trim(),
     material_ids: materialIds,
   };
@@ -118,6 +119,7 @@ $("brief-form").addEventListener("submit", (event) => {
     ["Context", $("context").selectedOptions[0].textContent],
     ["Level", $("level").selectedOptions[0].textContent],
     ["Format", $("format").selectedOptions[0].textContent],
+    ["Recall questions", pendingBrief.recall_prompts ? "Yes, at the end" : "No"],
     ["Notes", pendingBrief.notes || "(none)"],
     ["Materials", names.join(", ")],
   ];
