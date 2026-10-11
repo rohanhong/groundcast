@@ -49,6 +49,8 @@ chunk_max_words = 180
 
 [pipeline]
 words_per_minute = 125  # of finished audio at tts.speed 1.0; see the session log
+pace_min_words = 150  # a voice's measured pace replaces words_per_minute after this many words
+pace_decay = 0.7  # weight each new session keeps for the earlier ones
 bm25_top_k = 4
 verify_batch_size = 20
 max_revise_rounds = 2

@@ -24,6 +24,7 @@ from groundcast.pipeline.run import Pipeline
 from groundcast.profile.concepts import is_extracted
 from groundcast.profile.db import ProfileDB
 from groundcast.profile.extract import extract_concepts
+from groundcast.profile.pace import RenderStats, pacing_for, record_pace
 from groundcast.profile.preferences import apply_preferences, load_preferences
 from groundcast.storage import Store, write_model, write_text_atomic
 from groundcast.transcript import render_transcript
@@ -87,13 +88,15 @@ def new_session(store: Store, brief: Brief) -> SessionRecord:
 
 def render_audio(
     script: Script, synth: Synthesizer, settings: Settings, progress: Progress
-) -> tuple[np.ndarray, list[dict[str, object]], list[Chapter]]:
-    """Return samples, the start time of every sentence, and one chapter per segment."""
+) -> tuple[np.ndarray, list[dict[str, object]], list[Chapter], RenderStats]:
+    """Return samples, the start time of every sentence, one chapter per segment, and pace data."""
     tts = settings.tts
     voices = {None: tts.voice, "A": tts.voice, "B": tts.second_voice}
     rate = synth.sample_rate
+    stats = RenderStats(speed=tts.speed)
     parts = [synth.synthesize(tts.disclaimer, tts.voice, tts.speed), silence(tts.segment_pause_s, rate)]
     position = sum(len(p) for p in parts)
+    stats.pause_s += tts.segment_pause_s
     timings: list[dict[str, object]] = []
     starts: list[float] = []
     total = len(script.sentences())
@@ -102,21 +105,28 @@ def render_audio(
         # The first chapter also holds the spoken disclaimer before it.
         starts.append(0.0 if not starts else position / rate)
         for s in seg.sentences:
-            audio = synth.synthesize(s.text, voices[s.speaker], tts.speed)
+            voice = voices[s.speaker]
+            audio = synth.synthesize(s.text, voice, tts.speed)
+            stats.words[voice] = stats.words.get(voice, 0) + len(s.text.split())
+            stats.speech_s[voice] = stats.speech_s.get(voice, 0.0) + len(audio) / rate
             timings.append(
                 {"sentence_id": s.id, "segment_id": seg.id, "speaker": s.speaker, "start_s": round(position / rate, 3)}
             )
-            pause = tts.recall_pause_s if s.kind == SentenceKind.RECALL else tts.sentence_pause_s
+            recall = s.kind == SentenceKind.RECALL
+            pause = tts.recall_pause_s if recall else tts.sentence_pause_s
             parts += [audio, silence(pause, rate)]
+            if not recall:  # recall pauses are planned separately
+                stats.pause_s += pause
             position += len(audio) + len(parts[-1])
             done += 1
             if done % 10 == 0:
                 progress("render", f"Rendered {done} of {total} sentences")
         parts.append(silence(tts.segment_pause_s, rate))
         position += len(parts[-1])
+        stats.pause_s += tts.segment_pause_s
     ends = starts[1:] + [position / rate]
     chapters = [Chapter(seg.heading, a, b) for seg, a, b in zip(script.segments, starts, ends)]
-    return np.concatenate(parts), timings, chapters
+    return np.concatenate(parts), timings, chapters, stats
 
 
 def extract_new_concepts(
@@ -177,7 +187,12 @@ def run_session(
         backend = backend or make_backend(settings.llm)
         if settings.concepts.extract_on_session:
             extract_new_concepts(backend, settings, store, list(materials.values()), progress)
-        result = Pipeline(settings, backend, roles(settings.llm)).run(brief, chunks, progress)
+        profile = ProfileDB(settings.data_dir)
+        voices = [settings.tts.voice] + ([settings.tts.second_voice] if brief.format == "two_hosts" else [])
+        pacing = pacing_for(profile, settings, voices)
+        pipeline = Pipeline(settings, backend, roles(settings.llm), pacing)
+        progress("write", f"Length target from the {pipeline.pacing.source}")
+        result = pipeline.run(brief, chunks, progress)
         write_model(session_dir / SCRIPT_FILE, result.script)
         write_model(session_dir / REPORT_FILE, result.report)
 
@@ -187,11 +202,12 @@ def run_session(
                            f"at {tts.speed}x)")  # fmt: skip
         synth = synth_factory(settings)
         try:
-            samples, timings, chapters = render_audio(result.script, synth, settings, progress)
+            samples, timings, chapters, stats = render_audio(result.script, synth, settings, progress)
             rate = synth.sample_rate
         finally:
             synth.close()
         write_text_atomic(session_dir / TIMINGS_FILE, json.dumps(timings, indent=1))
+        record_pace(profile, settings.tts.engine, stats, settings.pipeline.pace_decay)
         wav_path = session_dir / "session.wav"
         write_wav(wav_path, samples, rate)
         try:

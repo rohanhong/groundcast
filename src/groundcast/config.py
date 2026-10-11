@@ -87,6 +87,11 @@ class PipelineSettings(_Section):
     # Kokoro voice af_heart: 504 words gave 241 s. Each session's log reports
     # its own pace, so this can be re-calibrated for another voice.
     words_per_minute: int = 125
+    # Once a voice has spoken pace_min_words in rendered sessions, its measured
+    # pace replaces words_per_minute. Each new session keeps this share of the
+    # weight of the earlier ones.
+    pace_min_words: int = Field(default=150, ge=1)
+    pace_decay: float = Field(default=0.7, ge=0.0, le=1.0)
     bm25_top_k: int = 4
     verify_batch_size: int = 20
     max_revise_rounds: int = 2

@@ -52,6 +52,14 @@ CREATE TABLE IF NOT EXISTS preferences (
     value TEXT NOT NULL,           -- JSON
     updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS voice_pace (
+    key TEXT PRIMARY KEY,          -- <speech engine>:<voice>
+    words REAL NOT NULL,           -- these four are sums in which older sessions count less
+    speech_s REAL NOT NULL,        -- seconds of speech, scaled to speed 1.0
+    pause_s REAL NOT NULL,         -- the voice's share of the silence between sentences and segments
+    sessions REAL NOT NULL,
+    updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     at TEXT NOT NULL,
