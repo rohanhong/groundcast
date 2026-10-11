@@ -72,6 +72,7 @@ def cmd_session(args: argparse.Namespace) -> int:
         minutes=args.minutes,
         context=args.context,
         level=args.level,
+        format=args.format,
         notes=args.notes,
     )
     record = new_session(store, brief)
@@ -131,6 +132,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--minutes", type=int, default=10)
     p.add_argument("--context", default="commute", choices=["desk", "commute", "exercise", "revision"])
     p.add_argument("--level", default="introductory", choices=["introductory", "intermediate", "advanced"])
+    p.add_argument("--format", default="narrator", choices=["narrator", "two_hosts"])
     p.add_argument("--notes", default="")
     p.set_defaults(func=cmd_session)
 

@@ -35,10 +35,11 @@ materials, and only then polishes the style; local text-to-speech renders the
 result as an MP3 you can play in any phone player.
 
 > [!NOTE]
-> Early development: milestone M1 is in progress. The first slice runs end to
-> end (text-layer PDF, Markdown, or text in; a verified single-narrator MP3 and
-> a linked transcript out). Features from later milestones, such as chapters,
-> two hosts, quizzes, and the profile, are described below but not built yet.
+> Early development: milestone M1 is done and M2 is in progress. A session
+> runs end to end: text-layer PDF, Markdown, or text in; a verified MP3, read
+> by one narrator or two hosts, with chapter marks, and a linked transcript
+> out. Later features, such as text Q&A, quizzes, and the profile, are
+> described below but not built yet.
 
 ## ✨ Highlights
 
@@ -93,8 +94,9 @@ result as an MP3 you can play in any phone player.
    ```
 
 The same pipeline runs from the command line: `groundcast ingest <files>`,
-then `groundcast session -m <material id> --focus "<what to cover>"`. Run
-`groundcast --help` for every command.
+then `groundcast session -m <material id> --focus "<what to cover>"` (add
+`--format two_hosts` for two hosts). Run `groundcast --help` for every
+command.
 
 ## 🗺️ Roadmap
 

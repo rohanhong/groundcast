@@ -88,6 +88,8 @@ class PipelineSettings(_Section):
 class TTSSettings(_Section):
     engine: Literal["kokoro", "silent"] = "kokoro"
     voice: str = "af_heart"
+    # Host B's voice in two-host sessions; Host A and the narrator use voice.
+    second_voice: str = "am_michael"
     lang_code: str = "a"
     speed: float = Field(default=1.0, gt=0.25, le=4.0)
     device: str = "auto"

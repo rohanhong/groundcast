@@ -18,6 +18,7 @@ from groundcast.sessions import (
     run_session,
 )
 from groundcast.storage import Store, write_text_atomic
+from groundcast.tts.base import SilentSynthesizer
 
 from .conftest import scripted_backend
 
@@ -36,6 +37,10 @@ def test_session_produces_mp3_and_transcript(settings: Settings, store: Store, t
     html = (d / TRANSCRIPT_FILE).read_text(encoding="utf-8")
     assert f"../../materials/{material.stored_name}" in html
     assert settings.tts.disclaimer in html
+    # One ID3 chapter per segment, titled with its heading.
+    head = (d / AUDIO_FILE).read_bytes()[:4096]
+    assert b"CTOC" in head and head.count(b"CHAP") == 2
+    assert b"What causes tides" in head and b"Spring tides" in head
 
 
 def test_session_failure_is_recorded(settings: Settings, store: Store, tides: Tides) -> None:
@@ -92,3 +97,32 @@ def test_atomic_write_waits_for_a_reader(tmp_path: Path) -> None:
     threading.Thread(target=lambda: (time.sleep(0.2), reader.close()), daemon=True).start()
     write_text_atomic(target, "new")
     assert target.read_text(encoding="utf-8") == "new"
+
+
+class VoiceRecorder(SilentSynthesizer):
+    def __init__(self, settings: Settings) -> None:
+        super().__init__(settings.tts.sample_rate, settings.pipeline.words_per_minute)
+        self.voices: list[tuple[str, str]] = []
+
+    def synthesize(self, text: str, voice: str, speed: float):  # type: ignore[no-untyped-def]
+        self.voices.append((text, voice))
+        return super().synthesize(text, voice, speed)
+
+
+def test_two_host_session_uses_two_voices(settings: Settings, store: Store, tides: Tides) -> None:
+    material, _ = tides
+    synths: list[VoiceRecorder] = []
+
+    def factory(s: Settings) -> VoiceRecorder:
+        synths.append(VoiceRecorder(s))
+        return synths[-1]
+
+    brief = Brief(focus="tides", material_ids=[material.id], minutes=2, format="two_hosts")
+    record = run_session(new_session(store, brief), store, settings, scripted_backend(), synth_factory=factory)
+    assert record.status == SessionStatus.DONE, record.error
+    voices = dict(synths[0].voices)
+    assert voices[settings.tts.disclaimer] == settings.tts.voice
+    assert voices["It's the Moon that causes tides."] == settings.tts.voice  # Host A
+    assert voices["The Moon is the main cause."] == settings.tts.second_voice  # Host B
+    html = (store.session_dir(record.id) / TRANSCRIPT_FILE).read_text(encoding="utf-8")
+    assert '<span class="speaker">Host B</span>' in html

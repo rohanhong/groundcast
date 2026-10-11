@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from html import escape
 
-from groundcast.models import Chunk, Material, Script
+from groundcast.models import Chunk, Material, Script, speaker_label
 
 _STYLE = """
 :root { --fg: #1d1f23; --muted: #5d6470; --bg: #ffffff; --accent: #3b5bdb; --warn: #b54708; }
@@ -27,6 +27,8 @@ h2 { font-size: 1.15rem; margin-top: 2rem; }
 .unverified { color: var(--warn); }
 .unverified::after { content: " [not verified against your materials]"; font-size: .8rem; }
 .framing { font-style: italic; }
+.speaker { font-weight: 600; color: var(--muted); margin-right: .4rem; }
+p.line { margin: .35rem 0; }
 ol.sources { font-size: .85rem; color: var(--muted); }
 """
 
@@ -55,8 +57,12 @@ def render_transcript(
         f'<p class="meta">{escape(created_at.strftime("%Y-%m-%d %H:%M UTC"))}</p>',
         f'<p class="notice">{escape(notice)}</p>',
     ]
+    two_hosts = script.format == "two_hosts"
     for seg in script.segments:
-        parts.append(f"<h2>{escape(seg.heading)}</h2><p>")
+        parts.append(f"<h2>{escape(seg.heading)}</h2>")
+        if not two_hosts:
+            parts.append("<p>")
+        previous_speaker = None
         for s in seg.sentences:
             classes = [s.kind.value]
             if s.unverified:
@@ -70,7 +76,18 @@ def render_transcript(
                 n = numbers.setdefault(cid, len(numbers) + 1)
                 links.append(f'<a href="{escape(source_href(chunk, material))}" title="{escape(cid)}">{n}</a>')
             src = f'<span class="src">{"".join(links)}</span>' if links else ""
-            parts.append(f'<span class="{" ".join(classes)}">{escape(s.text)}</span>{src} ')
+            line = f'<span class="{" ".join(classes)}">{escape(s.text)}</span>{src} '
+            if two_hosts:
+                # One paragraph per turn; consecutive sentences of a host stay together.
+                if s.speaker != previous_speaker:
+                    if previous_speaker is not None:
+                        parts.append("</p>")
+                    label = speaker_label(s.speaker) if s.speaker else ""
+                    parts.append(f'<p class="line"><span class="speaker">{escape(label)}</span>')
+                    previous_speaker = s.speaker
+                parts.append(line)
+            else:
+                parts.append(line)
         parts.append("</p>")
     if numbers:
         parts.append("<h2>Sources</h2><ol class=\"sources\">")

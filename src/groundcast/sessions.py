@@ -15,7 +15,7 @@ from datetime import datetime
 
 import numpy as np
 
-from groundcast.audio import encode_mp3, silence, write_wav
+from groundcast.audio import Chapter, encode_mp3, silence, write_wav
 from groundcast.config import Settings
 from groundcast.llm import LLMBackend, make_backend, roles
 from groundcast.models import Brief, Chunk, Script, SessionRecord, SessionStatus, utc_now
@@ -83,19 +83,25 @@ def new_session(store: Store, brief: Brief) -> SessionRecord:
 
 def render_audio(
     script: Script, synth: Synthesizer, settings: Settings, progress: Progress
-) -> tuple[np.ndarray, list[dict[str, object]]]:
-    """Return samples and the start time of every sentence."""
+) -> tuple[np.ndarray, list[dict[str, object]], list[Chapter]]:
+    """Return samples, the start time of every sentence, and one chapter per segment."""
     tts = settings.tts
+    voices = {None: tts.voice, "A": tts.voice, "B": tts.second_voice}
     rate = synth.sample_rate
     parts = [synth.synthesize(tts.disclaimer, tts.voice, tts.speed), silence(tts.segment_pause_s, rate)]
     position = sum(len(p) for p in parts)
     timings: list[dict[str, object]] = []
+    starts: list[float] = []
     total = len(script.sentences())
     done = 0
     for seg in script.segments:
+        # The first chapter also holds the spoken disclaimer before it.
+        starts.append(0.0 if not starts else position / rate)
         for s in seg.sentences:
-            audio = synth.synthesize(s.text, tts.voice, tts.speed)
-            timings.append({"sentence_id": s.id, "segment_id": seg.id, "start_s": round(position / rate, 3)})
+            audio = synth.synthesize(s.text, voices[s.speaker], tts.speed)
+            timings.append(
+                {"sentence_id": s.id, "segment_id": seg.id, "speaker": s.speaker, "start_s": round(position / rate, 3)}
+            )
             parts += [audio, silence(tts.sentence_pause_s, rate)]
             position += len(audio) + len(parts[-1])
             done += 1
@@ -103,7 +109,9 @@ def render_audio(
                 progress("render", f"Rendered {done} of {total} sentences")
         parts.append(silence(tts.segment_pause_s, rate))
         position += len(parts[-1])
-    return np.concatenate(parts), timings
+    ends = starts[1:] + [position / rate]
+    chapters = [Chapter(seg.heading, a, b) for seg, a, b in zip(script.segments, starts, ends)]
+    return np.concatenate(parts), timings, chapters
 
 
 def run_session(
@@ -149,7 +157,7 @@ def run_session(
         progress("render", f"Rendering {result.script.word_count()} words to speech ({settings.tts.engine})")
         synth = synth_factory(settings)
         try:
-            samples, timings = render_audio(result.script, synth, settings, progress)
+            samples, timings, chapters = render_audio(result.script, synth, settings, progress)
             rate = synth.sample_rate
         finally:
             synth.close()
@@ -163,6 +171,7 @@ def run_session(
                 settings.audio.ffmpeg_bin,
                 settings.audio.mp3_bitrate,
                 {"title": result.script.title, "artist": "groundcast", "comment": settings.tts.disclaimer},
+                chapters,
             )
         finally:
             wav_path.unlink(missing_ok=True)
