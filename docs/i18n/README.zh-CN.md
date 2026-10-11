@@ -30,7 +30,7 @@
 groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学习资料（PDF、幻灯片、笔记、网页、视频）变成播客式的学习音频，适合通勤、运动或考前复习时收听。一条固定的 LLM 角色流水线先撰写脚本，再逐条核对每个事实陈述是否有资料依据，最后才润色文风；本地语音合成把结果渲染成 MP3，可在任意手机播放器中收听。
 
 > [!NOTE]
-> 早期开发阶段：里程碑 M1 已完成，M2 正在开发中。一次会话已能端到端运行：输入带文字层的 PDF、Markdown 或纯文本，输出经过核对、带章节标记的 MP3（单人旁白或双主持人）与带链接的文稿；会话完成后，可以打字提问，回答来自你的资料。测验、个人档案等后续功能在下文中有所描述，但尚未实现。
+> 早期开发阶段：里程碑 M1 已完成，M2 正在开发中。一次会话已能端到端运行：输入带文字层的 PDF、Markdown 或纯文本，输出经过核对、带章节标记的 MP3（单人旁白或双主持人）与带链接的文稿；会话完成后，打字提问的回答和选择题测验都来自你的资料。回忆提问、个人档案等后续功能在下文中有所描述，但尚未实现。
 
 ## ✨ 亮点
 
@@ -69,7 +69,7 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    groundcast serve
    ```
 
-同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`，再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问。运行 `groundcast --help` 查看全部命令。
+同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`，再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验。运行 `groundcast --help` 查看全部命令。
 
 ## 🗺️ 路线图
 

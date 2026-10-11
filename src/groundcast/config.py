@@ -60,6 +60,9 @@ class LLMSettings(_Section):
     # Answers the learner's typed questions (S10 text Q&A).
     tutor_model: str = "sonnet"
     tutor_effort: str = "medium"
+    # Writes multiple-choice quizzes on a finished session.
+    quiz_model: str = "sonnet"
+    quiz_effort: str = "medium"
     timeout_s: int = 900
     max_attempts: int = 3
     # Wait before retry n is n times this; errors that cannot be fixed by
@@ -122,6 +125,12 @@ class QASettings(_Section):
     max_question_chars: int = Field(default=1000, ge=1)
 
 
+class QuizSettings(_Section):
+    # Questions asked for; the Verifier may drop some.
+    questions: int = Field(default=5, ge=1, le=20)
+    options: int = Field(default=4, ge=2, le=6)
+
+
 class EvaluationSettings(_Section):
     # Pass thresholds for `groundcast eval`, on the means over all runs (spec
     # section 13). Set on 2026-10-11 from the M1 baseline on evals/seeded/.
@@ -142,6 +151,7 @@ class Settings(_Section):
     tts: TTSSettings = Field(default_factory=TTSSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)
     qa: QASettings = Field(default_factory=QASettings)
+    quiz: QuizSettings = Field(default_factory=QuizSettings)
     evaluation: EvaluationSettings = Field(default_factory=EvaluationSettings)
 
 

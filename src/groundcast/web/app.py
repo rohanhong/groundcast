@@ -20,9 +20,11 @@ from pydantic import BaseModel
 from groundcast.config import Settings
 from groundcast.ingest import ExtractionError, ingest_file
 from groundcast.llm import LLMBackend, make_backend, roles
-from groundcast.models import Brief, Chunk, Material, SessionRecord, SessionStatus
+from groundcast.models import Brief, Chunk, Material, Script, SessionRecord, SessionStatus
 from groundcast.qa import QAExchange, answer_question, load_history, save_history
-from groundcast.sessions import REPORT_FILE, SessionRunner, fail_interrupted, new_session
+from groundcast.quiz import AttemptResult, QuizView, grade, load_quizzes, make_quiz, save_quizzes, view
+from groundcast.sessions import REPORT_FILE, SCRIPT_FILE, SessionRunner, fail_interrupted, new_session
+from groundcast.storage import read_model
 from groundcast.storage import Store
 
 
@@ -65,11 +67,16 @@ class Question(BaseModel):
     question: str
 
 
+class Answers(BaseModel):
+    answers: list[int | None]
+
+
 def create_app(
     settings: Settings, runner: SessionRunner | None = None, backend: LLMBackend | None = None
 ) -> FastAPI:
     store = Store(settings.data_dir)
-    qa_lock = threading.Lock()  # one question at a time keeps each session's qa.json consistent
+    # One question or quiz at a time keeps each session's qa.json and quiz.json consistent.
+    files_lock = threading.Lock()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
@@ -169,6 +176,23 @@ def create_app(
         except (FileNotFoundError, ValueError) as exc:
             raise _not_found(exc) from exc
 
+    def _done_session(session_id: str, what: str) -> SessionRecord:
+        try:
+            record = store.get_session(session_id)
+        except (FileNotFoundError, ValueError) as exc:
+            raise _not_found(exc) from exc
+        if record.status != SessionStatus.DONE:
+            raise HTTPException(status_code=409, detail=f"{what} open once the session is done.")
+        return record
+
+    def _session_sources(record: SessionRecord) -> tuple[dict[str, Material], list[Chunk]]:
+        try:
+            materials = {m: store.get_material(m) for m in record.brief.material_ids}
+            chunks = [c for m in record.brief.material_ids for c in store.get_chunks(m)]
+        except (FileNotFoundError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=f"A material of this session is gone: {exc}") from exc
+        return materials, chunks
+
     @app.get("/api/sessions/{session_id}/questions")
     def list_questions(session_id: str) -> list[QAExchange]:
         try:
@@ -184,18 +208,9 @@ def create_app(
             raise HTTPException(
                 status_code=422, detail=f"Ask a question of 1 to {settings.qa.max_question_chars} characters."
             )
-        try:
-            record = store.get_session(session_id)
-        except (FileNotFoundError, ValueError) as exc:
-            raise _not_found(exc) from exc
-        if record.status != SessionStatus.DONE:
-            raise HTTPException(status_code=409, detail="Questions open once the session is done.")
-        with qa_lock:
-            try:
-                materials = {m: store.get_material(m) for m in record.brief.material_ids}
-                chunks = [c for m in record.brief.material_ids for c in store.get_chunks(m)]
-            except (FileNotFoundError, ValueError) as exc:
-                raise HTTPException(status_code=409, detail=f"A material of this session is gone: {exc}") from exc
+        record = _done_session(session_id, "Questions")
+        with files_lock:
+            materials, chunks = _session_sources(record)
             history = load_history(store, session_id)
             exchange = answer_question(
                 backend or make_backend(settings.llm),
@@ -209,6 +224,46 @@ def create_app(
             history.exchanges.append(exchange)
             save_history(store, session_id, history)
         return exchange
+
+    @app.get("/api/sessions/{session_id}/quizzes")
+    def list_quizzes(session_id: str) -> list[QuizView]:
+        try:
+            store.get_session(session_id)
+            data = load_quizzes(store, session_id)
+        except (FileNotFoundError, ValueError) as exc:
+            raise _not_found(exc) from exc
+        return [view(q, data.attempts) for q in data.quizzes]
+
+    @app.post("/api/sessions/{session_id}/quizzes")
+    def new_quiz(session_id: str) -> QuizView:
+        record = _done_session(session_id, "Quizzes")
+        with files_lock:
+            materials, chunks = _session_sources(record)
+            script = read_model(store.session_dir(session_id) / SCRIPT_FILE, Script)
+            quiz = make_quiz(backend or make_backend(settings.llm), roles(settings.llm), settings, script, chunks,
+                             materials)  # fmt: skip
+            if not quiz.questions:
+                raise HTTPException(status_code=502, detail="No question passed the check; try again.")
+            data = load_quizzes(store, session_id)
+            data.quizzes.append(quiz)
+            save_quizzes(store, session_id, data)
+        return view(quiz, [])
+
+    @app.post("/api/sessions/{session_id}/quizzes/{quiz_id}/attempts")
+    def answer_quiz(session_id: str, quiz_id: str, body: Answers) -> AttemptResult:
+        _done_session(session_id, "Quizzes")
+        with files_lock:
+            data = load_quizzes(store, session_id)
+            quiz = next((q for q in data.quizzes if q.id == quiz_id), None)
+            if quiz is None:
+                raise HTTPException(status_code=404, detail=f"no quiz {quiz_id!r} in session {session_id}")
+            try:
+                result = grade(quiz, body.answers)
+            except ValueError as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+            data.attempts.append(result.attempt)
+            save_quizzes(store, session_id, data)
+        return result
 
     # Session files (MP3, transcript) and the materials they link to.
     app.mount("/data/materials", StaticFiles(directory=store.materials_dir), name="materials")

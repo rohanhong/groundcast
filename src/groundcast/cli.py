@@ -113,6 +113,34 @@ def cmd_ask(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_quiz(args: argparse.Namespace) -> int:
+    from groundcast.llm import make_backend, roles
+    from groundcast.models import Script, SessionStatus
+    from groundcast.quiz import load_quizzes, make_quiz, save_quizzes
+    from groundcast.sessions import SCRIPT_FILE
+    from groundcast.storage import Store, read_model
+
+    settings = _settings(args)
+    store = Store(settings.data_dir)
+    record = store.get_session(args.session)
+    if record.status != SessionStatus.DONE:
+        raise SystemExit(f"session {record.id} is {record.status.value}; quizzes open once it is done")
+    materials = {m: store.get_material(m) for m in record.brief.material_ids}
+    chunks = [c for m in record.brief.material_ids for c in store.get_chunks(m)]
+    script = read_model(store.session_dir(record.id) / SCRIPT_FILE, Script)
+    quiz = make_quiz(make_backend(settings.llm), roles(settings.llm), settings, script, chunks, materials)
+    data = load_quizzes(store, record.id)
+    data.quizzes.append(quiz)
+    save_quizzes(store, record.id, data)
+    print(f"Quiz {quiz.id}: {len(quiz.questions)} question(s), {quiz.dropped} dropped by the check")
+    for n, q in enumerate(quiz.questions, start=1):
+        print(f"\n{n}. {q.question}  ({q.topic})")
+        for m, option in enumerate(q.options):
+            print(f"   {'*' if m == q.correct else ' '} {chr(65 + m)}. {option}")
+        print(f"   {q.explanation} [{'; '.join(s.label for s in q.sources)}]")
+    return 0
+
+
 def cmd_eval(args: argparse.Namespace) -> int:
     from groundcast.evaluation.seeded import format_report, run_seeded, save_report, threshold_failures
     from groundcast.llm import make_backend
@@ -171,6 +199,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("session", help="session ID")
     p.add_argument("question")
     p.set_defaults(func=cmd_ask)
+
+    p = sub.add_parser("quiz", help="write a quiz on a finished session and print it with its answers")
+    p.add_argument("session", help="session ID")
+    p.set_defaults(func=cmd_quiz)
 
     p = sub.add_parser("eval", help="run the seeded-error test of the Verifier")
     p.add_argument("--set", help="evaluation set file (default: evals/seeded/items.json in the repository)")
