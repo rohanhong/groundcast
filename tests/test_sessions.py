@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 import threading
@@ -12,6 +13,7 @@ from groundcast.sessions import (
     AUDIO_FILE,
     REPORT_FILE,
     SCRIPT_FILE,
+    TIMINGS_FILE,
     TRANSCRIPT_FILE,
     fail_interrupted,
     new_session,
@@ -20,7 +22,7 @@ from groundcast.sessions import (
 from groundcast.storage import Store, write_text_atomic
 from groundcast.tts.base import SilentSynthesizer
 
-from .conftest import scripted_backend
+from .conftest import recall_backend, scripted_backend
 
 Tides = tuple[Material, list[Chunk]]
 
@@ -126,3 +128,16 @@ def test_two_host_session_uses_two_voices(settings: Settings, store: Store, tide
     assert voices["The Moon is the main cause."] == settings.tts.second_voice  # Host B
     html = (store.session_dir(record.id) / TRANSCRIPT_FILE).read_text(encoding="utf-8")
     assert '<span class="speaker">Host B</span>' in html
+
+
+def test_recall_question_is_followed_by_a_pause(settings: Settings, store: Store, tides: Tides) -> None:
+    material, chunks = tides
+    brief = Brief(focus="tides", material_ids=[material.id], minutes=2, recall_prompts=True)
+    record = run_session(new_session(store, brief), store, settings, recall_backend(chunks[0].id))
+    assert record.status == SessionStatus.DONE, record.error
+    d = store.session_dir(record.id)
+    starts = {t["sentence_id"]: t["start_s"] for t in json.loads((d / TIMINGS_FILE).read_text(encoding="utf-8"))}
+    question_words = len("What causes tides?".split())
+    spoken = question_words * 60 / settings.pipeline.words_per_minute
+    assert starts["s1.3"] - starts["s1.2"] >= spoken + settings.tts.recall_pause_s - 0.01
+    assert 'class="recall"' in (d / TRANSCRIPT_FILE).read_text(encoding="utf-8")

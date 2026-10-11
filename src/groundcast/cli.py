@@ -73,6 +73,7 @@ def cmd_session(args: argparse.Namespace) -> int:
         context=args.context,
         level=args.level,
         format=args.format,
+        recall_prompts=args.recall,
         notes=args.notes,
     )
     record = new_session(store, brief)
@@ -192,6 +193,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--context", default="commute", choices=["desk", "commute", "exercise", "revision"])
     p.add_argument("--level", default="introductory", choices=["introductory", "intermediate", "advanced"])
     p.add_argument("--format", default="narrator", choices=["narrator", "two_hosts"])
+    p.add_argument("--recall", action="store_true", help="end with recall questions, each followed by a pause")
     p.add_argument("--notes", default="")
     p.set_defaults(func=cmd_session)
 

@@ -29,6 +29,8 @@ h2 { font-size: 1.15rem; margin-top: 2rem; }
 .unverified { color: var(--warn); }
 .unverified::after { content: " [not verified against your materials]"; font-size: .8rem; }
 .framing { font-style: italic; }
+.recall { font-weight: 600; }
+.recall::after { content: " (pause)"; font-weight: normal; color: var(--muted); font-size: .85rem; }
 .speaker { font-weight: 600; color: var(--muted); margin-right: .4rem; }
 p.line { margin: .35rem 0; }
 ol.sources { font-size: .85rem; color: var(--muted); }

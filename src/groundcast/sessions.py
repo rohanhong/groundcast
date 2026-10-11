@@ -18,7 +18,7 @@ import numpy as np
 from groundcast.audio import Chapter, encode_mp3, silence, write_wav
 from groundcast.config import Settings
 from groundcast.llm import LLMBackend, make_backend, roles
-from groundcast.models import Brief, Chunk, Script, SessionRecord, SessionStatus, utc_now
+from groundcast.models import Brief, Chunk, Script, SentenceKind, SessionRecord, SessionStatus, utc_now
 from groundcast.pipeline.common import Progress
 from groundcast.pipeline.run import Pipeline
 from groundcast.storage import Store, write_model, write_text_atomic
@@ -102,7 +102,8 @@ def render_audio(
             timings.append(
                 {"sentence_id": s.id, "segment_id": seg.id, "speaker": s.speaker, "start_s": round(position / rate, 3)}
             )
-            parts += [audio, silence(tts.sentence_pause_s, rate)]
+            pause = tts.recall_pause_s if s.kind == SentenceKind.RECALL else tts.sentence_pause_s
+            parts += [audio, silence(pause, rate)]
             position += len(audio) + len(parts[-1])
             done += 1
             if done % 10 == 0:

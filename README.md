@@ -39,8 +39,9 @@ result as an MP3 you can play in any phone player.
 > runs end to end: text-layer PDF, Markdown, or text in; a verified MP3, read
 > by one narrator or two hosts, with chapter marks, and a linked transcript
 > out; typed questions and multiple-choice quizzes about a finished session
-> come from your materials. Later features, such as recall prompts and the
-> profile, are described below but not built yet.
+> come from your materials, and a session can end with recall questions,
+> each followed by a pause. Later features, such as the profile, are
+> described below but not built yet.
 
 ## ✨ Highlights
 
@@ -96,7 +97,8 @@ result as an MP3 you can play in any phone player.
 
 The same pipeline runs from the command line: `groundcast ingest <files>`,
 then `groundcast session -m <material id> --focus "<what to cover>"` (add
-`--format two_hosts` for two hosts). Ask about a finished session with
+`--format two_hosts` for two hosts, `--recall` for recall questions at the
+end). Ask about a finished session with
 `groundcast ask <session id> "<question>"`, or print a checked quiz with
 `groundcast quiz <session id>`. Run `groundcast --help` for every command.
 
