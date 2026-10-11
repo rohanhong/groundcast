@@ -427,11 +427,75 @@ async function loadSessions() {
   if (active) pollTimer = setTimeout(loadSessions, POLL_MS);
 }
 
+// Concepts and the change log
+
+let concepts = [];
+
+async function conceptAction(path, body) {
+  try {
+    concepts = await api(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    renderConcepts();
+    if ($("events").open) loadEvents();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function renderConcepts() {
+  const list = $("concepts");
+  list.replaceChildren();
+  if (!concepts.length) {
+    list.append(el("li", { class: "muted" }, "No concepts yet. They are found when a session first uses a material."));
+  }
+  for (const c of concepts) {
+    const quiz = c.asked ? `quiz ${c.right} of ${c.asked} right` : "not quizzed yet";
+    const target = el("select", {}, el("option", { value: "" }, "Merge into..."),
+      ...concepts.filter((o) => o.id !== c.id).map((o) => el("option", { value: o.id }, o.name)));
+    target.addEventListener("change", () => {
+      const into = concepts.find((o) => o.id === target.value);
+      if (into && confirm(`Merge "${c.name}" into "${into.name}"? Its passages and quiz results move there.`)) {
+        conceptAction(`/api/concepts/${c.id}/merge`, { into: into.id });
+      } else {
+        target.value = "";
+      }
+    });
+    list.append(el("li", { class: "concept" },
+      el("div", {}, el("strong", {}, c.name), el("span", { class: "muted" }, ` ${c.id} | ${quiz}`)),
+      el("div", { class: "muted" }, c.description),
+      el("div", { class: "concept-actions" },
+        el("button", { class: "link", type: "button", onclick: () => {
+          const name = prompt("New name", c.name);
+          if (name && name.trim() !== c.name) conceptAction(`/api/concepts/${c.id}/rename`, { name });
+        } }, "Rename"),
+        target)));
+  }
+}
+
+async function loadConcepts() {
+  concepts = await api("/api/concepts");
+  renderConcepts();
+}
+
+async function loadEvents() {
+  const events = await api("/api/events");
+  $("event-list").replaceChildren(...events.map((e) => {
+    const change = [e.before, e.after].filter((v) => v !== null).map((v) => JSON.stringify(v)).join(" -> ");
+    return el("li", {}, el("code", {}, e.at.slice(0, 19).replace("T", " ")), ` ${e.kind} ${e.subject} `,
+      el("span", { class: "muted" }, `${change} (${e.source})${e.reason ? `: ${e.reason}` : ""}`));
+  }));
+}
+
+$("events").addEventListener("toggle", () => { if ($("events").open) loadEvents().catch(() => {}); });
+
 async function init() {
   const s = await api("/api/settings");
   $("settings-line").textContent =
     `LLM: ${s.llm_backend} | voice: ${s.voice} at ${s.speed}x (${s.tts_engine})`;
-  await Promise.all([loadMaterials(), loadSessions()]);
+  await Promise.all([loadMaterials(), loadSessions(), loadConcepts()]);
 }
 
 init().catch((error) => {
