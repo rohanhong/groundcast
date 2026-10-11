@@ -30,7 +30,11 @@ never in a public issue.
    ```
 3. After editing `environment.yml`, apply it with
    `conda env update -f environment.yml`.
-4. Run the tests: `<test command, once established>`.
+4. Run the tests: `python -m pytest`. They use a fake LLM backend and a
+   silent speech engine, so they need neither Claude nor the Kokoro model.
+5. When a change touches the Verifier or its prompt, also run the seeded-error
+   test, `groundcast eval`, which calls the configured LLM backend, and compare
+   its detection and false-flag rates with the previous run.
 
 ## Workflow
 
@@ -65,7 +69,7 @@ never in a public issue.
 
 ## Before You Open a Pull Request
 
-- [ ] Tests pass: `<test command, once established>`.
+- [ ] Tests pass: `python -m pytest`.
 - [ ] No user data, model weights, or secrets in the diff.
 - [ ] No non-ASCII text outside the README and CONTRIBUTING files:
       `LC_ALL=C git grep -nI --untracked '[^[:print:][:space:]]' -- . ':!README.md' ':!CONTRIBUTING.md' ':!docs/i18n'`

@@ -21,7 +21,8 @@
    conda activate groundcast_env_py312
    ```
 3. 修改 `environment.yml` 后，用 `conda env update -f environment.yml` 同步到环境。
-4. 运行测试：`<test command, once established>`。
+4. 运行测试：`python -m pytest`。测试使用模拟的 LLM 后端和静音的语音引擎，因此既不需要 Claude，也不需要 Kokoro 模型。
+5. 如果改动涉及 Verifier 或其提示词，还要运行预埋错误测试 `groundcast eval`（会调用已配置的 LLM 后端），并把检出率与误报率同上一次的结果比较。
 
 ## 工作流程
 
@@ -42,7 +43,7 @@
 
 ## 发起拉取请求前
 
-- [ ] 测试通过：`<test command, once established>`。
+- [ ] 测试通过：`python -m pytest`。
 - [ ] 改动中没有用户数据、模型权重或密钥。
 - [ ] README 与 CONTRIBUTING 文件之外没有非 ASCII 文本：`LC_ALL=C git grep -nI --untracked '[^[:print:][:space:]]' -- . ':!README.md' ':!CONTRIBUTING.md' ':!docs/i18n'` 没有输出。
 - [ ] README、CONTRIBUTING 与各自译文内容一致。

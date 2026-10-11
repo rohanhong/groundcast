@@ -35,8 +35,10 @@ materials, and only then polishes the style; local text-to-speech renders the
 result as an MP3 you can play in any phone player.
 
 > [!NOTE]
-> Early development: the design is settled, and milestone M1 is in progress.
-> Nothing is runnable yet; the sections below describe the planned app.
+> Early development: milestone M1 is in progress. The first slice runs end to
+> end (text-layer PDF, Markdown, or text in; a verified single-narrator MP3 and
+> a linked transcript out). Features from later milestones, such as chapters,
+> two hosts, quizzes, and the profile, are described below but not built yet.
 
 ## ✨ Highlights
 
@@ -65,13 +67,34 @@ result as an MP3 you can play in any phone player.
    git clone https://github.com/rohanhong/groundcast.git
    cd groundcast
    ```
-2. Create and activate the environment (Python 3.12, ffmpeg, poppler):
+2. Create and activate the environment (Python 3.12, ffmpeg, poppler, and
+   groundcast itself in editable mode):
    ```bash
    conda env create -f environment.yml
    conda activate groundcast_env_py312
    ```
-3. Start the app: `<run command, once M1 lands>`. It serves a browser UI on
-   `127.0.0.1` only.
+3. Add speech synthesis (Kokoro-82M with a CPU build of PyTorch; the model
+   weights, about 330 MB, download on first use):
+   ```bash
+   pip install -e ".[tts]"
+   ```
+   On an NVIDIA GPU, replace PyTorch with a CUDA build. Pick the build from
+   the [PyTorch compatibility matrix](https://github.com/pytorch/pytorch/blob/main/RELEASE.md)
+   that your driver supports (`nvidia-smi` shows the highest CUDA version);
+   for example, the CUDA 13.0 build of PyTorch 2.14.1:
+   ```bash
+   pip install "torch==2.14.1+cu130" --index-url https://download.pytorch.org/whl/cu130
+   ```
+   With `tts.device = "auto"` (the default), groundcast then uses the GPU.
+4. Start the app, then open <http://127.0.0.1:8765/>. It serves the browser UI
+   on `127.0.0.1` only.
+   ```bash
+   groundcast serve
+   ```
+
+The same pipeline runs from the command line: `groundcast ingest <files>`,
+then `groundcast session -m <material id> --focus "<what to cover>"`. Run
+`groundcast --help` for every command.
 
 ## 🗺️ Roadmap
 
@@ -90,12 +113,15 @@ its own.
 
 - **Data directory**: materials, chunks, the profile, and sessions live
   outside the repository, in the per-user data directory of the OS, overridable
-  by an environment variable (planned name: `GROUNDCAST_DATA_DIR`).
-- **Model weights**: downloaded at setup into a cache directory set by an
-  environment variable (`<variable name>`), never into the repository.
-- **Settings**: environment variables plus an optional local, git-ignored TOML
-  file (`<file name>`); environment variables win. API keys come only from
-  these, never from committed files.
+  by `GROUNDCAST_DATA_DIR`.
+- **Model weights**: downloaded on first use into the per-user cache directory
+  of the OS, overridable by `GROUNDCAST_MODEL_DIR`; never into the repository.
+- **Settings**: an optional TOML file outside the repository (the per-user
+  config file, or the file named by `GROUNDCAST_CONFIG`), plus environment
+  variables of the form `GROUNDCAST_<SECTION>_<KEY>`, which win.
+  [`config/groundcast.example.toml`](config/groundcast.example.toml) lists every
+  key and its default; `groundcast paths` shows the paths in use. API keys come
+  only from environment variables, never from files.
 
 ## 🧩 Models and Licences
 
@@ -104,9 +130,10 @@ own licence; weights are downloaded, never committed.
 
 | Component | Used for | Code / weights licence | How groundcast runs it |
 |---|---|---|---|
-| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | Speech synthesis (M1) | Apache-2.0 / Apache-2.0 | Python package |
+| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | Speech synthesis (M1) | Apache-2.0 / Apache-2.0 | Python package; its in-process espeak-ng loader is blocked |
+| [spaCy `en_core_web_sm`](https://github.com/explosion/spacy-models) | English text analysis for Kokoro's pronunciation | MIT / MIT | Python package |
 | [Piper](https://github.com/OHF-Voice/piper1-gpl) | Fallback speech synthesis | GPL-3.0 / per voice | Separate process only |
-| espeak-ng | Pronunciation fallback for Kokoro | GPL | Separate program only |
+| espeak-ng | Optional pronunciation fallback for words Kokoro does not know | GPL | Separate program only (`tts.espeak_bin`) |
 | ffmpeg, poppler | Audio encoding, PDF text | LGPL build, GPL | Separate programs (conda-forge) |
 | Speech recognition, OCR, claim checker | M3, M5, M4 | `<recorded when adopted>` | `<recorded when adopted>` |
 
@@ -129,7 +156,11 @@ own licence; weights are downloaded, never committed.
 |---|---|
 | Agent instructions, commands, layout | [`AGENTS.md`](AGENTS.md) |
 | Commit format, workflow, branch naming | [`.gitmessage`](.gitmessage) |
-| Environment definition | [`environment.yml`](environment.yml) |
+| Environment definition | [`environment.yml`](environment.yml), [`pyproject.toml`](pyproject.toml) |
+| Settings reference | [`config/groundcast.example.toml`](config/groundcast.example.toml) |
+| Verifier evaluation set (`groundcast eval`) | [`evals/seeded/`](evals/seeded/) |
+| Source register for prompt distillation (files stay local) | [`references/`](references/README.md) |
+| Distilled rules and their sources | [`docs/distillation/`](docs/distillation/README.md) |
 
 ## 🤝 Contributing
 

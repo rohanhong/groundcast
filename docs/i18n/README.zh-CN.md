@@ -30,7 +30,7 @@
 groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学习资料（PDF、幻灯片、笔记、网页、视频）变成播客式的学习音频，适合通勤、运动或考前复习时收听。一条固定的 LLM 角色流水线先撰写脚本，再逐条核对每个事实陈述是否有资料依据，最后才润色文风；本地语音合成把结果渲染成 MP3，可在任意手机播放器中收听。
 
 > [!NOTE]
-> 早期开发阶段：设计已确定，里程碑 M1 正在开发中。目前尚无可运行的版本；以下各节描述的是计划中的应用。
+> 早期开发阶段：里程碑 M1 正在开发中。第一个版本已能端到端运行（输入带文字层的 PDF、Markdown 或纯文本，输出经过核对的单人旁白 MP3 与带链接的文稿）。章节、双主持人、测验、个人档案等后续里程碑的功能在下文中有所描述，但尚未实现。
 
 ## ✨ 亮点
 
@@ -50,12 +50,26 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    git clone https://github.com/rohanhong/groundcast.git
    cd groundcast
    ```
-2. 创建并激活环境（Python 3.12、ffmpeg、poppler）：
+2. 创建并激活环境（Python 3.12、ffmpeg、poppler，并以可编辑模式安装 groundcast 本身）：
    ```bash
    conda env create -f environment.yml
    conda activate groundcast_env_py312
    ```
-3. 启动应用：`<run command, once M1 lands>`。浏览器界面只在 `127.0.0.1` 上提供服务。
+3. 安装语音合成（Kokoro-82M 与 CPU 版 PyTorch；约 330 MB 的模型权重在首次使用时下载）：
+   ```bash
+   pip install -e ".[tts]"
+   ```
+   如有 NVIDIA 显卡，把 PyTorch 换成 CUDA 版。请按 [PyTorch 兼容性矩阵](https://github.com/pytorch/pytorch/blob/main/RELEASE.md) 选择你的驱动所支持的版本（`nvidia-smi` 会显示驱动支持的最高 CUDA 版本）；例如 PyTorch 2.14.1 的 CUDA 13.0 版：
+   ```bash
+   pip install "torch==2.14.1+cu130" --index-url https://download.pytorch.org/whl/cu130
+   ```
+   在默认设置 `tts.device = "auto"` 下，groundcast 随后会自动使用 GPU。
+4. 启动应用，然后打开 <http://127.0.0.1:8765/>。浏览器界面只在 `127.0.0.1` 上提供服务。
+   ```bash
+   groundcast serve
+   ```
+
+同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`，再 `groundcast session -m <material id> --focus "<要讲的内容>"`。运行 `groundcast --help` 查看全部命令。
 
 ## 🗺️ 路线图
 
@@ -71,9 +85,9 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
 
 ## ⚙️ 配置
 
-- **数据目录**：资料、文本片段、个人档案与会话都存放在仓库之外，默认位于操作系统的用户数据目录，可用环境变量覆盖（计划名称：`GROUNDCAST_DATA_DIR`）。
-- **模型权重**：在安装时下载到由环境变量（`<variable name>`）指定的缓存目录，从不放进仓库。
-- **设置**：环境变量加一个可选的本地 TOML 文件（`<file name>`，已被 git 忽略）；两者冲突时以环境变量为准。API key 只从这两处读取，从不来自已提交的文件。
+- **数据目录**：资料、文本片段、个人档案与会话都存放在仓库之外，默认位于操作系统的用户数据目录，可用 `GROUNDCAST_DATA_DIR` 覆盖。
+- **模型权重**：首次使用时下载到操作系统的用户缓存目录，可用 `GROUNDCAST_MODEL_DIR` 覆盖；从不放进仓库。
+- **设置**：一个可选的、位于仓库之外的 TOML 文件（用户配置文件，或 `GROUNDCAST_CONFIG` 指定的文件），加上形如 `GROUNDCAST_<SECTION>_<KEY>` 的环境变量，两者冲突时以环境变量为准。[`config/groundcast.example.toml`](../../config/groundcast.example.toml) 列出了全部配置项及其默认值；`groundcast paths` 显示当前使用的路径。API key 只从环境变量读取，从不来自文件。
 
 ## 🧩 模型与许可证
 
@@ -81,9 +95,10 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 
 | 组件 | 用途 | 代码 / 权重许可证 | groundcast 的运行方式 |
 |---|---|---|---|
-| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | 语音合成（M1） | Apache-2.0 / Apache-2.0 | Python 包 |
+| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | 语音合成（M1） | Apache-2.0 / Apache-2.0 | Python 包；其进程内加载 espeak-ng 的部分已被屏蔽 |
+| [spaCy `en_core_web_sm`](https://github.com/explosion/spacy-models) | 为 Kokoro 的发音做英语文本分析 | MIT / MIT | Python 包 |
 | [Piper](https://github.com/OHF-Voice/piper1-gpl) | 备用语音合成 | GPL-3.0 / 按音色而定 | 仅作为独立进程 |
-| espeak-ng | Kokoro 的发音回退 | GPL | 仅作为独立程序 |
+| espeak-ng | 可选的发音回退，用于 Kokoro 不认识的词 | GPL | 仅作为独立程序（`tts.espeak_bin`） |
 | ffmpeg、poppler | 音频编码、PDF 文本提取 | LGPL 构建、GPL | 独立程序（conda-forge） |
 | 语音识别、OCR、声明核查器 | M3、M5、M4 | `<recorded when adopted>` | `<recorded when adopted>` |
 
@@ -100,7 +115,11 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 |---|---|
 | 智能体指令、命令、目录布局 | [`AGENTS.md`](../../AGENTS.md) |
 | 提交格式、工作流、分支命名 | [`.gitmessage`](../../.gitmessage) |
-| 环境定义 | [`environment.yml`](../../environment.yml) |
+| 环境定义 | [`environment.yml`](../../environment.yml)、[`pyproject.toml`](../../pyproject.toml) |
+| 配置项参考 | [`config/groundcast.example.toml`](../../config/groundcast.example.toml) |
+| Verifier 评估集（`groundcast eval`） | [`evals/seeded/`](../../evals/seeded/) |
+| 提示词提炼所用来源的登记表（原件只留在本地） | [`references/`](../../references/README.md) |
+| 提炼出的规则及其来源 | [`docs/distillation/`](../distillation/README.md) |
 
 ## 🤝 参与贡献
 
