@@ -47,6 +47,11 @@ CREATE TABLE IF NOT EXISTS quiz_results (
     right INTEGER NOT NULL,
     at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS preferences (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,           -- JSON
+    updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     at TEXT NOT NULL,
@@ -117,16 +122,26 @@ def log_event(
     )
 
 
+def _event(row: sqlite3.Row) -> Event:
+    return Event(
+        **{
+            **dict(row),
+            "before": json.loads(row["before"]) if row["before"] else None,
+            "after": json.loads(row["after"]) if row["after"] else None,
+        }
+    )
+
+
 def list_events(db: ProfileDB, limit: int) -> list[Event]:
+    """The newest events first."""
     with db.connect() as con:
         rows = con.execute("SELECT * FROM events ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
-    return [
-        Event(
-            **{
-                **dict(row),
-                "before": json.loads(row["before"]) if row["before"] else None,
-                "after": json.loads(row["after"]) if row["after"] else None,
-            }
-        )
-        for row in rows
-    ]
+    return [_event(r) for r in rows]
+
+
+def get_event(db: ProfileDB, event_id: int) -> Event:
+    with db.connect() as con:
+        row = con.execute("SELECT * FROM events WHERE id = ?", (event_id,)).fetchone()
+    if row is None:
+        raise KeyError(event_id)
+    return _event(row)

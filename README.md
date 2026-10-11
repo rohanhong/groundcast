@@ -43,8 +43,9 @@ result as an MP3 you can play in any phone player.
 > session come from your materials, and a session can end with recall
 > questions, each followed by a pause. The concepts in your materials go into
 > one table, with your quiz results on each, which you can rename and merge.
-> Later features, such as preferences and suggestions, are described below but
-> not built yet.
+> Preferences set your default voice, speed, and brief, and every change to
+> the profile is logged and can be exported. Later features, such as ranked
+> suggestions, are described below but not built yet.
 
 ## ✨ Highlights
 
@@ -101,9 +102,11 @@ result as an MP3 you can play in any phone player.
 The same pipeline runs from the command line: `groundcast ingest <files>`,
 then `groundcast session -m <material id> --focus "<what to cover>"` (add
 `--format two_hosts` for two hosts, `--recall` for recall questions at the
-end). Ask about a finished session with
-`groundcast ask <session id> "<question>"`, or print a checked quiz with
-`groundcast quiz <session id>`; list the concept table with `groundcast concepts`. Run `groundcast --help` for every command.
+end). Ask about a finished session with `groundcast ask <session id>
+"<question>"`, or print a checked quiz with `groundcast quiz <session id>`;
+list the concept table with `groundcast concepts`; set preferences with
+`groundcast prefs --set speed=1.1`. Run `groundcast --help` for every
+command.
 
 ## 🗺️ Roadmap
 

@@ -107,7 +107,9 @@ def elicit(
     messages: list[ChatTurn],
     selected: list[str],
     last_brief: Brief | None,
+    preferred: dict[str, object] | None = None,
 ) -> ElicitResult:
+    """preferred: the learner's defaults for the brief fields, from their preferences."""
     cfg = settings.elicit
     asked = sum(t.role == "assistant" for t in messages)
     must_propose = asked >= cfg.max_questions
@@ -115,6 +117,8 @@ def elicit(
     parts = [
         f"# Materials\n\n{_materials_text(materials, outlines, selected)}",
         f"# Last session's brief\n\n{_brief_line(last_brief) if last_brief else '(no earlier session)'}",
+        "# The learner's preferred defaults\n\n"
+        + (", ".join(f"{k}={v}" for k, v in preferred.items()) if preferred else "(none set)"),
         f"# Limits\n\nminutes: {MIN_MINUTES} to {MAX_MINUTES}. "
         f"You have asked {asked} of at most {cfg.max_questions} questions.",
         f"# Conversation\n\n{conversation}",

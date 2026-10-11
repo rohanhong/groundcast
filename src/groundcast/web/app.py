@@ -24,6 +24,18 @@ from groundcast.llm import LLMBackend, make_backend, roles
 from groundcast.models import Brief, Chunk, Material, Script, SessionRecord, SessionStatus
 from groundcast.profile.concepts import Concept, forget_material, list_concepts, merge, record_quiz, rename
 from groundcast.profile.db import Event, ProfileDB, list_events
+from groundcast.profile.preferences import (
+    BRIEF_KEYS,
+    PreferenceView,
+    apply_preferences,
+    delete_profile,
+    effective,
+    export_profile,
+    load_preferences,
+    set_preferences,
+    undo,
+    voice_choices,
+)
 from groundcast.profile.extract import extract_concepts
 from groundcast.qa import QAExchange, answer_question, load_history, save_history
 from groundcast.quiz import AttemptResult, QuizView, grade, load_quizzes, make_quiz, save_quizzes, view
@@ -75,6 +87,10 @@ class Answers(BaseModel):
     answers: list[int | None]
 
 
+class PreferenceChanges(BaseModel):
+    changes: dict[str, object]  # preference name -> new value; null clears it
+
+
 class Rename(BaseModel):
     name: str
 
@@ -124,12 +140,14 @@ def create_app(
 
     @app.get("/api/settings")
     def get_settings() -> dict[str, object]:
+        current = apply_preferences(settings, load_preferences(profile))  # what the next session uses
         return {
-            "llm_backend": settings.llm.backend,
-            "tts_engine": settings.tts.engine,
-            "voice": settings.tts.voice,
-            "speed": settings.tts.speed,
-            "words_per_minute": settings.pipeline.words_per_minute,
+            "llm_backend": current.llm.backend,
+            "tts_engine": current.tts.engine,
+            "voice": current.tts.voice,
+            "second_voice": current.tts.second_voice,
+            "speed": current.tts.speed,
+            "words_per_minute": current.pipeline.words_per_minute,
         }
 
     @app.get("/api/materials")
@@ -177,6 +195,8 @@ def create_app(
         materials = store.list_materials()
         outlines = {m.id: outline(store.get_chunks(m.id), settings.elicit.outline_words) for m in materials}
         last = next((r.brief for r in store.list_sessions() if r.status == SessionStatus.DONE), None)
+        prefs = load_preferences(profile)
+        preferred = {k: v for k, v in prefs.model_dump().items() if k in BRIEF_KEYS and v is not None}
         return elicit(
             backend or make_backend(settings.llm),
             roles(settings.llm)["elicitor"],
@@ -186,6 +206,7 @@ def create_app(
             body.messages,
             body.material_ids,
             last,
+            preferred,
         )
 
     @app.post("/api/sessions")
@@ -281,7 +302,8 @@ def create_app(
             materials, chunks = _session_sources(record)
             script = read_model(store.session_dir(session_id) / SCRIPT_FILE, Script)
             concepts = list_concepts(profile, record.brief.material_ids)
-            quiz = make_quiz(backend or make_backend(settings.llm), roles(settings.llm), settings, script, chunks,
+            current = apply_preferences(settings, load_preferences(profile))
+            quiz = make_quiz(backend or make_backend(settings.llm), roles(settings.llm), current, script, chunks,
                              materials, concepts)  # fmt: skip
             if not quiz.questions:
                 raise HTTPException(status_code=502, detail="No question passed the check; try again.")
@@ -352,6 +374,42 @@ def create_app(
     @app.get("/api/events")
     def get_events() -> list[Event]:
         return list_events(profile, settings.concepts.events_shown)
+
+    def _preference_view() -> PreferenceView:
+        prefs = load_preferences(profile)
+        return PreferenceView(preferences=prefs, effective=effective(settings, prefs),
+                              voice_choices=voice_choices(settings))  # fmt: skip
+
+    @app.get("/api/preferences")
+    def get_preferences() -> PreferenceView:
+        return _preference_view()
+
+    @app.put("/api/preferences")
+    def put_preferences(body: PreferenceChanges) -> PreferenceView:
+        try:
+            set_preferences(profile, settings, body.changes)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return _preference_view()
+
+    @app.post("/api/events/{event_id}/undo")
+    def undo_event(event_id: int) -> PreferenceView:
+        try:
+            undo(profile, settings, event_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=f"no event {event_id}") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return _preference_view()
+
+    @app.get("/api/profile/export")
+    def get_profile_export() -> dict[str, list[dict[str, object]]]:
+        return export_profile(profile)
+
+    @app.delete("/api/profile")
+    def remove_profile() -> dict[str, str]:
+        delete_profile(profile)
+        return {"deleted": "profile"}
 
     # Session files (MP3, transcript) and the materials they link to.
     app.mount("/data/materials", StaticFiles(directory=store.materials_dir), name="materials")

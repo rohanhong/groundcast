@@ -24,6 +24,7 @@ from groundcast.pipeline.run import Pipeline
 from groundcast.profile.concepts import is_extracted
 from groundcast.profile.db import ProfileDB
 from groundcast.profile.extract import extract_concepts
+from groundcast.profile.preferences import apply_preferences, load_preferences
 from groundcast.storage import Store, write_model, write_text_atomic
 from groundcast.transcript import render_transcript
 from groundcast.tts import Synthesizer, make_synthesizer
@@ -144,6 +145,8 @@ def run_session(
     synth_factory: Callable[[Settings], Synthesizer] = make_synthesizer,
     on_update: Callable[[SessionRecord], None] | None = None,
 ) -> SessionRecord:
+    # The learner's preferences (voice, speed, concept extraction) apply from here on.
+    settings = apply_preferences(settings, load_preferences(ProfileDB(settings.data_dir)))
     session_dir = store.session_dir(record.id)
 
     def save() -> None:
@@ -178,7 +181,10 @@ def run_session(
         write_model(session_dir / SCRIPT_FILE, result.script)
         write_model(session_dir / REPORT_FILE, result.report)
 
-        progress("render", f"Rendering {result.script.word_count()} words to speech ({settings.tts.engine})")
+        tts = settings.tts
+        voices = tts.voice if brief.format == "narrator" else f"{tts.voice} and {tts.second_voice}"
+        progress("render", f"Rendering {result.script.word_count()} words to speech ({tts.engine}, {voices} "
+                           f"at {tts.speed}x)")  # fmt: skip
         synth = synth_factory(settings)
         try:
             samples, timings, chapters = render_audio(result.script, synth, settings, progress)

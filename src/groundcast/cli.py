@@ -168,6 +168,53 @@ def cmd_concepts(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_prefs(args: argparse.Namespace) -> int:
+    import json
+
+    from groundcast.profile.db import ProfileDB
+    from groundcast.profile.preferences import effective, load_preferences, set_preferences
+
+    settings = _settings(args)
+    db = ProfileDB(settings.data_dir)
+    changes: dict[str, object] = {key: None for key in args.clear}
+    for item in args.set:
+        key, sep, value = item.partition("=")
+        if not sep:
+            raise SystemExit(f"--set needs KEY=VALUE, got {item!r}")
+        try:
+            changes[key] = json.loads(value)
+        except json.JSONDecodeError:
+            changes[key] = value  # a plain string, such as a voice name
+    if changes:
+        try:
+            set_preferences(db, settings, changes)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+    prefs = load_preferences(db)
+    for key, value in effective(settings, prefs).items():
+        source = "set" if getattr(prefs, key) is not None else "default"
+        print(f"{key} = {json.dumps(value)}  ({source})")
+    return 0
+
+
+def cmd_profile(args: argparse.Namespace) -> int:
+    import json
+
+    from groundcast.profile.db import ProfileDB
+    from groundcast.profile.preferences import delete_profile, export_profile
+
+    db = ProfileDB(_settings(args).data_dir)
+    if args.export:
+        Path(args.export).write_text(json.dumps(export_profile(db), indent=1), encoding="utf-8")
+        print(f"Exported the profile to {args.export}")
+    if args.delete:
+        if input("Delete the whole profile (preferences, concepts, quiz results, log)? Type yes: ") != "yes":
+            raise SystemExit("Not deleted.")
+        delete_profile(db)
+        print("Profile deleted.")
+    return 0
+
+
 def cmd_eval(args: argparse.Namespace) -> int:
     from groundcast.evaluation.seeded import format_report, run_seeded, save_report, threshold_failures
     from groundcast.llm import make_backend
@@ -235,6 +282,16 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("concepts", help="list the concept table; --extract finds a material's concepts first")
     p.add_argument("--extract", metavar="MATERIAL_ID", help="extract this material's concepts now")
     p.set_defaults(func=cmd_concepts)
+
+    p = sub.add_parser("prefs", help="show preferences; --set and --clear change them")
+    p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="for example speed=1.1")
+    p.add_argument("--clear", action="append", default=[], metavar="KEY", help="go back to the configured default")
+    p.set_defaults(func=cmd_prefs)
+
+    p = sub.add_parser("profile", help="export or delete the whole profile")
+    p.add_argument("--export", metavar="FILE", help="write every profile table to a JSON file")
+    p.add_argument("--delete", action="store_true", help="delete the whole profile, after a confirmation")
+    p.set_defaults(func=cmd_profile)
 
     p = sub.add_parser("eval", help="run the seeded-error test of the Verifier")
     p.add_argument("--set", help="evaluation set file (default: evals/seeded/items.json in the repository)")
