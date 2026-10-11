@@ -3,23 +3,23 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset=".github/assets/banner-light.svg">
-  <img alt="tmpl.general-repo" src=".github/assets/banner-light.svg" width="455">
+  <img alt="groundcast" src=".github/assets/banner-light.svg" width="380">
 </picture>
 
-<h1>🧰 General Repository Template</h1>
+<h1>🎧 groundcast</h1>
 
-<p><b>Git hygiene, agent instructions, and gated agent skills, ready for any new repository.</b></p>
+<p><b>Turn your own study materials into podcast-style audio sessions, with every statement grounded in those materials.</b></p>
 
 <p>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/rohanhong/tmpl.general-repo"></a>
-  <a href="https://github.com/rohanhong/tmpl.general-repo/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/rohanhong/tmpl.general-repo"></a>
-  <a href="https://github.com/rohanhong/tmpl.general-repo/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/rohanhong/tmpl.general-repo?style=flat"></a>
-  <a href="https://github.com/rohanhong/tmpl.general-repo/generate"><img alt="Use this template" src="https://img.shields.io/badge/use%20this-template-2ea44f?logo=github"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/rohanhong/groundcast"></a>
+  <a href="https://www.python.org"><img alt="Python" src="https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white"></a>
+  <a href="https://github.com/rohanhong/groundcast/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/rohanhong/groundcast"></a>
+  <a href="https://github.com/rohanhong/groundcast/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/rohanhong/groundcast?style=flat"></a>
   <a href="https://agents.md"><img alt="AGENTS.md" src="https://img.shields.io/badge/AGENTS.md-ready-24292f"></a>
   <a href="https://agentskills.io"><img alt="Agent Skills" src="https://img.shields.io/badge/Agent%20Skills-open%20format-8250df"></a>
   <!-- Reserved badges: uncomment when the service exists.
-  <a href="https://github.com/rohanhong/tmpl.general-repo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/rohanhong/tmpl.general-repo/ci.yml?branch=main"></a>
-  <a href="https://github.com/rohanhong/tmpl.general-repo/releases"><img alt="Release" src="https://img.shields.io/github/v/release/rohanhong/tmpl.general-repo"></a>
+  <a href="https://github.com/rohanhong/groundcast/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/rohanhong/groundcast/ci.yml?branch=main"></a>
+  <a href="https://github.com/rohanhong/groundcast/releases"><img alt="Release" src="https://img.shields.io/github/v/release/rohanhong/groundcast"></a>
   -->
 </p>
 
@@ -27,146 +27,123 @@
 
 </div>
 
-A starting point for new repositories. It ships portable git configuration
-and one tool-neutral set of agent instructions (`AGENTS.md`) and skills
-(`.agents/skills`) that any AI coding agent can use. The skills run the git
-workflow, project bootstrap, project documents, Python environments, and Hugging
-Face Hub hosting, and they stop for your confirmation before anything that is
-hard to undo.
+groundcast is a personal, local web app that turns the study materials you
+already have (PDFs, slides, notes, web pages, videos) into a podcast-style
+session for a commute, a workout, or revision before an exam. A fixed pipeline
+of LLM roles writes the script, checks every factual claim against your
+materials, and only then polishes the style; local text-to-speech renders the
+result as an MP3 you can play in any phone player.
+
+> [!NOTE]
+> Early development: the design is settled, and milestone M1 is in progress.
+> Nothing is runnable yet; the sections below describe the planned app.
 
 ## ✨ Highlights
 
-- 🔧 **Git hygiene out of the box**: line endings, diff drivers, ignore rules,
-  and a commit convention with three workflow variants.
-- 🤖 **One source for every agent tool**: instructions and skills live in open
-  locations; other tools get thin adapters, never copies.
-- 🛡️ **Safe by default**: skills gate irreversible actions, never rewrite
-  history, and add no AI co-authors.
-- 🌱 **Grows with the project**: `repo-init` bootstraps a fresh copy, and
-  `repo-docs` writes a README and community files like these.
+- 🔎 **Grounded by design**: every claim in a script cites the source chunks
+  it rests on, and a separate Verifier checks it; anything not from your
+  materials is marked as such.
+- 🧭 **Write, verify, then edit**: a code-driven pipeline passes typed JSON
+  between roles; style edits may add no new claims and are verified again.
+- 🏠 **Local first**: parsing, OCR, speech recognition, and speech synthesis
+  run on your machine; only LLM calls leave it, to the provider you choose.
+- 🎧 **Listen anywhere**: MP3 export with chapter marks, plus an HTML
+  transcript whose links lead back to the source page, slide, or timestamp.
+- 🧠 **A profile you can see**: preferences and quiz results live in a local
+  SQLite profile with an event log you can view, edit, export, or delete.
 
 ## 🚀 Quick Start
 
 > [!NOTE]
-> The skills need git 2.22 or later and a POSIX shell (Git Bash on Windows).
+> Needs git, conda (for example [Miniforge](https://conda-forge.org/download/)),
+> and, for the default LLM backend, an installed and signed-in Claude Code CLI
+> (an API key works too). Developed on Windows 11 with an 8 GB NVIDIA GPU; the
+> default TTS model also runs on CPU.
 
-1. Create your repository with **Use this template**, or copy or clone this
-   one. A clone keeps the template's history; `repo-init` offers to detach it.
-2. In an agent session, run the `repo-init` skill (for example `/repo-init`).
-   It wires up git, records your workflow choices, offers optional
-   scaffolding, and offers to have `repo-docs` rewrite the template's README,
-   community files, and license for your project.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/rohanhong/groundcast.git
+   cd groundcast
+   ```
+2. Create and activate the environment (Python 3.12, ffmpeg, poppler):
+   ```bash
+   conda env create -f environment.yml
+   conda activate groundcast_env_py312
+   ```
+3. Start the app: `<run command, once M1 lands>`. It serves a browser UI on
+   `127.0.0.1` only.
 
-<details>
-<summary>Manual setup without an agent</summary>
+## 🗺️ Roadmap
 
-```bash
-# cloned copies first: rm -rf .git   (drops the template's history and
-# remote; or keep them and run `git remote rename origin template`)
-git init -b main   # git 2.28+; older git: git init && git symbolic-ref HEAD refs/heads/main
-git config commit.template .gitmessage
-# then edit .gitmessage: set the `Workflow:` line and the `Adopted:` line
-# optional: enable the archive excludes in .gitattributes
-sed -E 's/^# ([^ ]+ +export-ignore)$/\1/' .gitattributes > .gitattributes.tmp &&
-  mv .gitattributes.tmp .gitattributes
-# skills adapters that arrived as plain files: register them as links
-# (runs under sh, so zsh's error on a glob that matches nothing does
-# not apply)
-sh <<'EOF'
-for f in .[!.]*/skills; do
-  [ -f "$f" ] && [ ! -L "$f" ] && [ "$(grep -c '' "$f")" -eq 1 ] || continue
-  case "$(tr -d '\r\n' < "$f")" in *.agents/skills) ;; *) continue;; esac
-  tr -d '\r\n' < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
-  git update-index --add --cacheinfo \
-    "120000,$(tr -d '\r\n' < "$f" | git hash-object -w --stdin),$f"
-done
-EOF
-```
+v1 is complete when all five milestones are done; each stage stays usable on
+its own.
 
-</details>
-
-## 📦 What's Inside
-
-| Path | Purpose |
+| Stage | Adds |
 |---|---|
-| `.gitattributes` | LF normalization, diff drivers, binary markers, archive excludes (off until `repo-init` enables them) |
-| `.gitignore` | OS, editor, language, and infrastructure rules; add yours under `# Project-local` |
-| `.gitmessage` | Commit format, workflow variants, branch naming, tags |
-| `AGENTS.md` | Agent instructions, the canonical layout, and the adapter rule |
-| `.agents/skills/` | The skills below |
-| `CLAUDE.md`, `.claude/skills` | Claude Code adapters: an `@AGENTS.md` import and a link to `.agents/skills` |
-| `.github/assets/` | README images |
-| `.github/settings.yml` | Record of the GitHub About panel (description, website, topics); GitHub does not read it, so apply changes by hand |
-| `docs/i18n/` | Translations of the README and the Contributing guide |
-| `LICENSE` `CONTRIBUTING.md` `CODE_OF_CONDUCT.md` `SECURITY.md` | Legal and community files; `repo-docs` rewrites them, and the settings record, for your project |
+| M1 | Text-layer PDF, Markdown, text; brief form; Writer, Verifier, Editor through Claude; Kokoro single narrator; MP3 plus HTML transcript |
+| M2 | Dialogue set-up; two hosts; chapters; text Q&A; quizzes; offline recall prompts; preferences and event log |
+| M3 | PPTX, DOCX, web pages; video through local speech recognition |
+| M4 | Ranked suggestions from learned preferences; rubric-driven prompt tuning; local claim-checker evaluation |
+| M5 | Scans and handwriting through local OCR, confirmed by you before use |
 
-| Group | Skills | What they do |
-|---|---|---|
-| 🌿 Git | `git-branch-create` `git-commit` `git-fetch` `git-pull` `git-merge` `git-push` `git-tag` `git-branch-delete` | Branch, commit, sync, merge, publish, and tag per `.gitmessage` |
-| 🏗️ Setup | `repo-init` `repo-docs` `py-env-setup` | Bootstrap a copy, write the README and community files, create a conda env |
-| 🤗 HF Hub | `hf-setup` `hf-upload` `hf-download` | Host large artifacts with pinned, verified revisions |
+## ⚙️ Configuration
 
-## 🔀 Workflow Variants
+- **Data directory**: materials, chunks, the profile, and sessions live
+  outside the repository, in the per-user data directory of the OS, overridable
+  by an environment variable (planned name: `GROUNDCAST_DATA_DIR`).
+- **Model weights**: downloaded at setup into a cache directory set by an
+  environment variable (`<variable name>`), never into the repository.
+- **Settings**: environment variables plus an optional local, git-ignored TOML
+  file (`<file name>`); environment variables win. API keys come only from
+  these, never from committed files.
 
-`.gitmessage` is the normative source; each repository records one variant on
-its `Workflow:` line.
+## 🧩 Models and Licences
 
-| Variant | Trunks | Protected | Intended for |
+MIT covers only this repository's code. Each model and program below keeps its
+own licence; weights are downloaded, never committed.
+
+| Component | Used for | Code / weights licence | How groundcast runs it |
 |---|---|---|---|
-| `git-flow` | `main` + `develop` | `main`, `develop`, `support/*` | Team repos with release cycles |
-| `github-flow` | `main` | `main`, `support/*` | Team repos, PR-based |
-| `trunk-solo` | `main` | none (rewrite still forbidden) | Single-maintainer repos |
+| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | Speech synthesis (M1) | Apache-2.0 / Apache-2.0 | Python package |
+| [Piper](https://github.com/OHF-Voice/piper1-gpl) | Fallback speech synthesis | GPL-3.0 / per voice | Separate process only |
+| espeak-ng | Pronunciation fallback for Kokoro | GPL | Separate program only |
+| ffmpeg, poppler | Audio encoding, PDF text | LGPL build, GPL | Separate programs (conda-forge) |
+| Speech recognition, OCR, claim checker | M3, M5, M4 | `<recorded when adopted>` | `<recorded when adopted>` |
 
-The template ships the line unrecorded, so skills assume `git-flow`, the
-strictest, until you record a choice with `repo-init`. This template itself
-is maintained `trunk-solo` but keeps the line unrecorded; when working on it,
-answer **template itself** at the `repo-init` provenance question, then
-`trunk-solo`, and skip recording.
+## ⚠️ Responsible Use
 
-## 🔄 Updating
-
-- **Kept the template history** (`repo-init` answer **keep history**, with
-  the template remote renamed to `template`): `git fetch template`, then run
-  `git-merge` with source `template/main`.
-- **Fresh start**: replace `.agents/skills/` with the newer template's copy,
-  then review `git status` and `git diff` before committing, since local
-  skill edits are lost. Also compare `AGENTS.md`, `.gitattributes`, and
-  `.gitmessage` with the newer template.
-- **README and community files**: run `repo-docs` again to bring them up
-  to the current layout.
-
-## 🪟 Windows
-
-> [!IMPORTANT]
-> Skills adapters are symbolic links. Enable Developer Mode (or use
-> administrator rights) and run `git config --global core.symlinks true`
-> before cloning; otherwise Claude Code and other tools that read only
-> `.claude/skills` find no skills. `repo-init` reports broken links and gives
-> the fix; AGENTS.md (Layout) has the details.
-
-Agents whose default shell is PowerShell run each skill snippet through Git
-Bash, as AGENTS.md (Skill authoring) describes.
+- **Subscription mode** only launches your own installed CLI. You are
+  responsible for your provider's terms; sharing one subscription across users
+  is not supported.
+- **Your data stays yours**: materials, extracted text, the profile, scripts,
+  and audio stay in the data directory. Do not redistribute audio built from
+  course materials.
+- **Synthetic voices**: every audio file states that it is AI-generated, and
+  groundcast never clones real people's voices.
+- **Limits**: LLM verification reduces errors but cannot remove them, and it
+  cannot catch errors already in your materials.
 
 ## 📚 Documentation
 
 | Topic | Where |
 |---|---|
-| Agent instructions, layout, adapters, skill authoring | [`AGENTS.md`](AGENTS.md) |
-| Commit format, workflow variants, branch naming, tags | [`.gitmessage`](.gitmessage) |
-| Each skill's procedure and rules | [`.agents/skills/<name>/SKILL.md`](.agents/skills) |
-| Commit message reading used by the skills | [`message-spec.md`](.agents/skills/git-commit/references/message-spec.md) |
+| Agent instructions, commands, layout | [`AGENTS.md`](AGENTS.md) |
+| Commit format, workflow, branch naming | [`.gitmessage`](.gitmessage) |
+| Environment definition | [`environment.yml`](environment.yml) |
 
 ## 🤝 Contributing
 
-Issues and pull requests are welcome. Read the [Contributing guide](CONTRIBUTING.md)
-for the workflow and change rules.
+Issues and pull requests are welcome. groundcast is a personal project, so its
+scope follows the owner's design; read the [Contributing guide](CONTRIBUTING.md)
+first.
 
 ## 🔗 Resources
 
-- [AGENTS.md](https://agents.md): the open format for agent instructions.
-- [Agent Skills](https://agentskills.io): the open format for skills.
-- [Conventional Commits](https://www.conventionalcommits.org): the basis of the commit format.
-- [Choose a License](https://choosealicense.com) and [Contributor Covenant](https://www.contributor-covenant.org): sources for the legal and community files.
+- [Claude Code](https://github.com/anthropics/claude-code): the default LLM backend, driven in headless mode.
+- [FastAPI](https://fastapi.tiangolo.com): the local service framework.
+- [FActScore](https://doi.org/10.18653/v1/2023.emnlp-main.741): splitting long text into atomic claims.
+- [MiniCheck](https://doi.org/10.18653/v1/2024.emnlp-main.499): low-cost claim checking against source documents.
+- [Dunlosky et al. 2013](https://doi.org/10.1177/1529100612453266): evidence for practice testing and spacing, behind the quiz and recap design.
 
 ## ⚖️ Legal
 
@@ -177,10 +154,10 @@ for the workflow and change rules.
 
 ## ⭐ Star History
 
-<a href="https://www.star-history.com/#rohanhong/tmpl.general-repo&Date">
+<a href="https://www.star-history.com/#rohanhong/groundcast&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=rohanhong/tmpl.general-repo&type=Date&theme=dark">
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=rohanhong/tmpl.general-repo&type=Date">
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=rohanhong/tmpl.general-repo&type=Date" width="600">
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=rohanhong/groundcast&type=Date&theme=dark">
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=rohanhong/groundcast&type=Date">
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=rohanhong/groundcast&type=Date" width="600">
   </picture>
 </a>

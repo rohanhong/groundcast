@@ -3,23 +3,23 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../.github/assets/banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="../../.github/assets/banner-light.svg">
-  <img alt="tmpl.general-repo" src="../../.github/assets/banner-light.svg" width="455">
+  <img alt="groundcast" src="../../.github/assets/banner-light.svg" width="380">
 </picture>
 
-<h1>🧰 通用仓库模板</h1>
+<h1>🎧 groundcast</h1>
 
-<p><b>Git 规范、智能体指令与带确认关卡的智能体技能，开箱即用于任何新仓库。</b></p>
+<p><b>把你自己的学习资料变成播客式音频，每一句陈述都有资料依据。</b></p>
 
 <p>
-  <a href="../../LICENSE"><img alt="License" src="https://img.shields.io/github/license/rohanhong/tmpl.general-repo"></a>
-  <a href="https://github.com/rohanhong/tmpl.general-repo/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/rohanhong/tmpl.general-repo"></a>
-  <a href="https://github.com/rohanhong/tmpl.general-repo/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/rohanhong/tmpl.general-repo?style=flat"></a>
-  <a href="https://github.com/rohanhong/tmpl.general-repo/generate"><img alt="Use this template" src="https://img.shields.io/badge/use%20this-template-2ea44f?logo=github"></a>
+  <a href="../../LICENSE"><img alt="License" src="https://img.shields.io/github/license/rohanhong/groundcast"></a>
+  <a href="https://www.python.org"><img alt="Python" src="https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white"></a>
+  <a href="https://github.com/rohanhong/groundcast/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/rohanhong/groundcast"></a>
+  <a href="https://github.com/rohanhong/groundcast/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/rohanhong/groundcast?style=flat"></a>
   <a href="https://agents.md"><img alt="AGENTS.md" src="https://img.shields.io/badge/AGENTS.md-ready-24292f"></a>
   <a href="https://agentskills.io"><img alt="Agent Skills" src="https://img.shields.io/badge/Agent%20Skills-open%20format-8250df"></a>
   <!-- Reserved badges: uncomment when the service exists.
-  <a href="https://github.com/rohanhong/tmpl.general-repo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/rohanhong/tmpl.general-repo/ci.yml?branch=main"></a>
-  <a href="https://github.com/rohanhong/tmpl.general-repo/releases"><img alt="Release" src="https://img.shields.io/github/v/release/rohanhong/tmpl.general-repo"></a>
+  <a href="https://github.com/rohanhong/groundcast/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/rohanhong/groundcast/ci.yml?branch=main"></a>
+  <a href="https://github.com/rohanhong/groundcast/releases"><img alt="Release" src="https://img.shields.io/github/v/release/rohanhong/groundcast"></a>
   -->
 </p>
 
@@ -27,116 +27,92 @@
 
 </div>
 
-新仓库的起点。它提供可移植的 git 配置，以及一套与具体工具无关的智能体指令（`AGENTS.md`）和技能（`.agents/skills`），任何 AI 编程智能体都能使用。这些技能负责 git 工作流、项目初始化、项目文档、Python 环境和 Hugging Face Hub 托管，在执行任何难以撤销的操作前都会等待你确认。
+groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学习资料（PDF、幻灯片、笔记、网页、视频）变成播客式的学习音频，适合通勤、运动或考前复习时收听。一条固定的 LLM 角色流水线先撰写脚本，再逐条核对每个事实陈述是否有资料依据，最后才润色文风；本地语音合成把结果渲染成 MP3，可在任意手机播放器中收听。
+
+> [!NOTE]
+> 早期开发阶段：设计已确定，里程碑 M1 正在开发中。目前尚无可运行的版本；以下各节描述的是计划中的应用。
 
 ## ✨ 亮点
 
-- 🔧 **开箱即用的 git 规范**：换行符、diff 驱动、忽略规则，以及支持三种工作流变体的提交约定。
-- 🤖 **所有智能体工具共用一份来源**：指令与技能放在开放约定的位置；其他工具只加轻量适配器，从不复制内容。
-- 🛡️ **默认安全**：技能为不可逆操作设置确认关卡，从不改写历史，也不添加 AI 合著者。
-- 🌱 **随项目成长**：`repo-init` 初始化新副本，`repo-docs` 生成与本仓库同样规范的 README 和社区文件。
+- 🔎 **以资料为依据**：脚本中的每条陈述都标注其所依据的资料片段，并由独立的 Verifier 核对；不来自你资料的内容会明确标出。
+- 🧭 **先写、再核、后润色**：由代码驱动的流水线在各角色之间传递有类型的 JSON；文风润色不得引入新的事实陈述，改动部分会再次核对。
+- 🏠 **本地优先**：解析、OCR、语音识别与语音合成都在本机运行；只有 LLM 调用会离开本机，发往你选择的提供方。
+- 🎧 **随处收听**：导出带章节标记的 MP3，以及一份 HTML 文稿，其中的链接可回溯到资料的页码、幻灯片或时间点。
+- 🧠 **看得见的个人档案**：偏好与测验结果保存在本地 SQLite 档案中，附带变更日志，你可以查看、编辑、导出或删除。
 
 ## 🚀 快速开始
 
 > [!NOTE]
-> 技能需要 git 2.22 或更高版本，以及 POSIX shell（Windows 上为 Git Bash）。
+> 需要 git、conda（例如 [Miniforge](https://conda-forge.org/download/)），以及默认 LLM 后端所需的、已安装并登录的 Claude Code CLI（也可使用 API key）。开发环境为 Windows 11 与 8 GB NVIDIA GPU；默认的语音合成模型也可在 CPU 上运行。
 
-1. 通过 **Use this template** 创建仓库，或复制、克隆本仓库。克隆会保留模板的历史，`repo-init` 会提示是否与之分离。
-2. 在智能体会话中运行 `repo-init` 技能（例如 `/repo-init`）。它会配置 git、记录你的工作流选择、提供可选的脚手架，并提议由 `repo-docs` 为你的项目重写模板自带的 README、社区文件和许可证。
+1. 克隆仓库：
+   ```bash
+   git clone https://github.com/rohanhong/groundcast.git
+   cd groundcast
+   ```
+2. 创建并激活环境（Python 3.12、ffmpeg、poppler）：
+   ```bash
+   conda env create -f environment.yml
+   conda activate groundcast_env_py312
+   ```
+3. 启动应用：`<run command, once M1 lands>`。浏览器界面只在 `127.0.0.1` 上提供服务。
 
-<details>
-<summary>不借助智能体的手动配置</summary>
+## 🗺️ 路线图
 
-```bash
-# cloned copies first: rm -rf .git   (drops the template's history and
-# remote; or keep them and run `git remote rename origin template`)
-git init -b main   # git 2.28+; older git: git init && git symbolic-ref HEAD refs/heads/main
-git config commit.template .gitmessage
-# then edit .gitmessage: set the `Workflow:` line and the `Adopted:` line
-# optional: enable the archive excludes in .gitattributes
-sed -E 's/^# ([^ ]+ +export-ignore)$/\1/' .gitattributes > .gitattributes.tmp &&
-  mv .gitattributes.tmp .gitattributes
-# skills adapters that arrived as plain files: register them as links
-# (runs under sh, so zsh's error on a glob that matches nothing does
-# not apply)
-sh <<'EOF'
-for f in .[!.]*/skills; do
-  [ -f "$f" ] && [ ! -L "$f" ] && [ "$(grep -c '' "$f")" -eq 1 ] || continue
-  case "$(tr -d '\r\n' < "$f")" in *.agents/skills) ;; *) continue;; esac
-  tr -d '\r\n' < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
-  git update-index --add --cacheinfo \
-    "120000,$(tr -d '\r\n' < "$f" | git hash-object -w --stdin),$f"
-done
-EOF
-```
+五个里程碑全部完成即为 v1；每个阶段完成后都可单独使用。
 
-</details>
-
-## 📦 包含内容
-
-| 路径 | 用途 |
+| 阶段 | 新增内容 |
 |---|---|
-| `.gitattributes` | LF 规范化、diff 驱动、二进制标记、归档排除（在 `repo-init` 启用前保持关闭） |
-| `.gitignore` | 操作系统、编辑器、语言与基础设施规则；项目规则写在 `# Project-local` 下 |
-| `.gitmessage` | 提交格式、工作流变体、分支命名、标签 |
-| `AGENTS.md` | 智能体指令、规范目录布局与适配器规则 |
-| `.agents/skills/` | 下列技能 |
-| `CLAUDE.md`、`.claude/skills` | Claude Code 适配器：一行 `@AGENTS.md` 导入，以及指向 `.agents/skills` 的链接 |
-| `.github/assets/` | README 图片 |
-| `.github/settings.yml` | GitHub About 栏（简介、网站、topics）的记录；GitHub 不读取它，改动需手动同步 |
-| `docs/i18n/` | README 与贡献指南的译文 |
-| `LICENSE` `CONTRIBUTING.md` `CODE_OF_CONDUCT.md` `SECURITY.md` | 法律与社区文件；`repo-docs` 会为你的项目重写它们以及设置记录 |
+| M1 | 带文字层的 PDF、Markdown、纯文本；简要设置表单；经由 Claude 的 Writer、Verifier、Editor；Kokoro 单人旁白；MP3 与 HTML 文稿 |
+| M2 | 对话式设置；双主持人；章节；文字问答；测验；离线回忆提问；偏好与变更日志 |
+| M3 | PPTX、DOCX、网页；通过本地语音识别处理视频 |
+| M4 | 基于已学习偏好的排序建议；按评分细则迭代提示词；本地声明核查器评估 |
+| M5 | 通过本地 OCR 处理扫描件与手写稿，使用前须经你确认 |
 
-| 分组 | 技能 | 作用 |
-|---|---|---|
-| 🌿 Git | `git-branch-create` `git-commit` `git-fetch` `git-pull` `git-merge` `git-push` `git-tag` `git-branch-delete` | 按 `.gitmessage` 完成建分支、提交、同步、合并、推送与打标签 |
-| 🏗️ 初始化 | `repo-init` `repo-docs` `py-env-setup` | 初始化副本、生成 README 与社区文件、创建 conda 环境 |
-| 🤗 HF Hub | `hf-setup` `hf-upload` `hf-download` | 以固定且经校验的版本托管大文件 |
+## ⚙️ 配置
 
-## 🔀 工作流变体
+- **数据目录**：资料、文本片段、个人档案与会话都存放在仓库之外，默认位于操作系统的用户数据目录，可用环境变量覆盖（计划名称：`GROUNDCAST_DATA_DIR`）。
+- **模型权重**：在安装时下载到由环境变量（`<variable name>`）指定的缓存目录，从不放进仓库。
+- **设置**：环境变量加一个可选的本地 TOML 文件（`<file name>`，已被 git 忽略）；两者冲突时以环境变量为准。API key 只从这两处读取，从不来自已提交的文件。
 
-`.gitmessage` 是规范来源；每个仓库在其 `Workflow:` 行记录一种变体。
+## 🧩 模型与许可证
 
-| 变体 | 主干 | 受保护分支 | 适用场景 |
+MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可证；权重在安装时下载，从不提交。
+
+| 组件 | 用途 | 代码 / 权重许可证 | groundcast 的运行方式 |
 |---|---|---|---|
-| `git-flow` | `main` + `develop` | `main`、`develop`、`support/*` | 有发布周期的团队仓库 |
-| `github-flow` | `main` | `main`、`support/*` | 基于 PR 的团队仓库 |
-| `trunk-solo` | `main` | 无（仍禁止改写历史） | 单人维护的仓库 |
+| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | 语音合成（M1） | Apache-2.0 / Apache-2.0 | Python 包 |
+| [Piper](https://github.com/OHF-Voice/piper1-gpl) | 备用语音合成 | GPL-3.0 / 按音色而定 | 仅作为独立进程 |
+| espeak-ng | Kokoro 的发音回退 | GPL | 仅作为独立程序 |
+| ffmpeg、poppler | 音频编码、PDF 文本提取 | LGPL 构建、GPL | 独立程序（conda-forge） |
+| 语音识别、OCR、声明核查器 | M3、M5、M4 | `<recorded when adopted>` | `<recorded when adopted>` |
 
-模板中该行未记录，因此在你用 `repo-init` 记录选择之前，技能按最严格的 `git-flow` 处理。本模板自身按 `trunk-solo` 维护，但该行有意保持未记录；维护模板时，在 `repo-init` 的来源问题中选择 **template itself**，再选 `trunk-solo`，并跳过记录。
+## ⚠️ 负责任地使用
 
-## 🔄 更新
-
-- **保留了模板历史**（`repo-init` 中选择 **keep history**，并已将模板远程重命名为 `template`）：运行 `git fetch template`，然后以 `template/main` 为源运行 `git-merge`。
-- **全新开始**：用新版模板中的 `.agents/skills/` 整体替换现有目录，提交前检查 `git status` 与 `git diff`，因为本地对技能的修改会丢失。同时对照新版模板检查 `AGENTS.md`、`.gitattributes` 和 `.gitmessage`。
-- **README 与社区文件**：再次运行 `repo-docs`，把它们升级到当前布局。
-
-## 🪟 Windows
-
-> [!IMPORTANT]
-> 技能适配器是符号链接。克隆前请开启开发者模式（或使用管理员权限），并运行 `git config --global core.symlinks true`，否则 Claude Code 等只读取 `.claude/skills` 的工具会找不到技能。`repo-init` 会报告损坏的链接并给出修复方法；详见 AGENTS.md（Layout）。
-
-默认 shell 为 PowerShell 的智能体会通过 Git Bash 运行每段技能命令，做法见 AGENTS.md（Skill authoring）。
+- **订阅模式**只会启动你自己安装的 CLI。遵守所用提供方的条款是你自己的责任；不支持多人共用一个订阅。
+- **数据归你所有**：资料、提取的文本、个人档案、脚本与音频都留在数据目录中。请勿传播由课程资料生成的音频。
+- **合成语音**：每个音频文件都会声明其为 AI 生成，groundcast 从不克隆真实人物的声音。
+- **局限**：LLM 核对能减少错误但无法完全消除，也无法发现资料本身就存在的错误。
 
 ## 📚 文档
 
 | 主题 | 位置 |
 |---|---|
-| 智能体指令、目录布局、适配器、技能编写规范 | [`AGENTS.md`](../../AGENTS.md) |
-| 提交格式、工作流变体、分支命名、标签 | [`.gitmessage`](../../.gitmessage) |
-| 各技能的流程与规则 | [`.agents/skills/<name>/SKILL.md`](../../.agents/skills) |
-| 技能对提交信息规范的解读 | [`message-spec.md`](../../.agents/skills/git-commit/references/message-spec.md) |
+| 智能体指令、命令、目录布局 | [`AGENTS.md`](../../AGENTS.md) |
+| 提交格式、工作流、分支命名 | [`.gitmessage`](../../.gitmessage) |
+| 环境定义 | [`environment.yml`](../../environment.yml) |
 
 ## 🤝 参与贡献
 
-欢迎提交 issue 和拉取请求。流程与改动规则见[贡献指南](CONTRIBUTING.zh-CN.md)。
+欢迎提交 issue 和拉取请求。groundcast 是个人项目，范围以维护者的设计为准；动手前请先阅读[贡献指南](CONTRIBUTING.zh-CN.md)。
 
 ## 🔗 相关资源
 
-- [AGENTS.md](https://agents.md)：智能体指令的开放格式。
-- [Agent Skills](https://agentskills.io)：技能的开放格式。
-- [Conventional Commits](https://www.conventionalcommits.org)：提交格式的基础。
-- [Choose a License](https://choosealicense.com) 与 [Contributor Covenant](https://www.contributor-covenant.org)：法律与社区文件的来源。
+- [Claude Code](https://github.com/anthropics/claude-code)：默认的 LLM 后端，以无界面模式调用。
+- [FastAPI](https://fastapi.tiangolo.com)：本地服务框架。
+- [FActScore](https://doi.org/10.18653/v1/2023.emnlp-main.741)：把长文本拆分为原子陈述。
+- [MiniCheck](https://doi.org/10.18653/v1/2024.emnlp-main.499)：低成本地依据源文档核查陈述。
+- [Dunlosky et al. 2013](https://doi.org/10.1177/1529100612453266)：练习测试与间隔学习的证据，是测验与回顾设计的依据。
 
 ## ⚖️ 法律信息
 
@@ -147,10 +123,10 @@ EOF
 
 ## ⭐ Star History
 
-<a href="https://www.star-history.com/#rohanhong/tmpl.general-repo&Date">
+<a href="https://www.star-history.com/#rohanhong/groundcast&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=rohanhong/tmpl.general-repo&type=Date&theme=dark">
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=rohanhong/tmpl.general-repo&type=Date">
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=rohanhong/tmpl.general-repo&type=Date" width="600">
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=rohanhong/groundcast&type=Date&theme=dark">
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=rohanhong/groundcast&type=Date">
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=rohanhong/groundcast&type=Date" width="600">
   </picture>
 </a>

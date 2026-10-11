@@ -2,12 +2,12 @@
 
 ## Supported Versions
 
-This template has no versioned releases yet. Fixes land on `main` only.
+groundcast has no releases yet. Fixes land on `main` only.
 
 | Version | Supported |
 |---|---|
 | `main` (latest commit) | Yes |
-| Older commits and copies made from them | No; pull the fix from the newer template |
+| Older commits | No |
 
 ## Reporting a Vulnerability
 
@@ -15,13 +15,13 @@ Please do not report security problems in public issues, discussions, or pull
 requests.
 
 Report them privately through GitHub:
-[Report a vulnerability](https://github.com/rohanhong/tmpl.general-repo/security/advisories/new)
+[Report a vulnerability](https://github.com/rohanhong/groundcast/security/advisories/new)
 (the **Security** tab, then **Report a vulnerability**).
 
 Include what you can of:
 
-- the affected file or skill, and the commit you tested;
-- steps to reproduce, and the agent tool and shell used;
+- the affected component and the commit you tested;
+- steps to reproduce, and your OS and LLM backend;
 - the impact, and a suggested fix if you have one.
 
 ## What to Expect
@@ -34,10 +34,11 @@ Include what you can of:
 
 ## Scope
 
-In scope: anything in this repository that could make an agent or user run an
-unintended destructive command, skip a confirmation gate, rewrite history,
-publish to the wrong remote, or commit secrets despite the sensitive-content
-scan.
+In scope: anything in this repository that could expose the local service
+beyond `127.0.0.1`, leak user materials, the profile, API keys, or tokens, make
+the CLI backend run an unintended command, or write outside the data
+directory.
 
-Out of scope: vulnerabilities in third-party software the skills call (git,
-agent tools, conda, the Hugging Face Hub, shields.io); report those upstream.
+Out of scope: vulnerabilities in third-party software groundcast calls (the
+Claude Code CLI, LLM provider APIs, speech, OCR, and claim-checking models,
+ffmpeg, poppler); report those upstream.
