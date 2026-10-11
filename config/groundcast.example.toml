@@ -65,6 +65,22 @@ paragraph_gap_s = 2.0  # a pause this long starts a new passage
 max_passage_s = 90.0
 review_below = 0.8  # passages with a lower mean word probability are highlighted for review
 
+[ocr]
+# Text recognition for scans, photos, and handwriting (Tesseract, a separate
+# program installed by environment.yml). Recognised text waits for your review.
+engine = "tesseract"  # or "none"
+tesseract_bin = "tesseract"
+pdftoppm_bin = "pdftoppm"  # renders PDF pages for recognition
+pdfimages_bin = "pdfimages"  # finds the scanned pages of a PDF
+language = "eng"
+tessdata_dir = ""  # another language data folder, for example tessdata_best
+psm = 3  # page segmentation mode; 3 finds the layout
+dpi = 300
+min_page_chars = 10  # a PDF page with less text than this
+min_image_pixels = 250000  # and an image at least this large is a scan, and is recognised
+timeout_s = 300.0  # per page
+review_below = 0.8  # paragraphs with a lower mean word confidence are highlighted for review
+
 [pipeline]
 words_per_minute = 125  # of finished audio at tts.speed 1.0; see the session log
 pace_min_words = 150  # a voice's measured pace replaces words_per_minute after this many words

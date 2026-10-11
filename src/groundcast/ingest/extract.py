@@ -39,9 +39,17 @@ KIND_BY_SUFFIX = {
     ".ogg": "audio",
     ".opus": "audio",
     ".flac": "audio",
+    ".png": "image",
+    ".jpg": "image",
+    ".jpeg": "image",
+    ".tif": "image",
+    ".tiff": "image",
+    ".bmp": "image",
+    ".webp": "image",
 }
 # Kinds whose text comes from recognition and waits for the user's review.
-RECOGNISED_KINDS = frozenset({"video", "audio"})
+RECOGNISED_KINDS = frozenset({"video", "audio", "image"})
+MEDIA_KINDS = frozenset({"video", "audio"})
 
 _BLANK_LINES = re.compile(r"\n\s*\n")
 _MD_IMAGE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
@@ -125,7 +133,7 @@ def extract_units(path: Path, kind: str, settings: Settings) -> list[Unit]:
     if kind == "html":
         return html_units(decode_html(path.read_bytes()))
     if kind in RECOGNISED_KINDS:
-        raise ExtractionError(f"{kind} needs speech recognition (groundcast.ingest.recognise_material)")
+        raise ExtractionError(f"{kind} needs recognition (groundcast.ingest.recognise_material)")
     text = decode_text(path.read_bytes())
     if kind == "markdown":
         text = markdown_to_text(text)

@@ -86,10 +86,15 @@ def cmd_review(args: argparse.Namespace) -> int:
     store = Store(settings.data_dir)
     material = store.get_material(args.material)
     if not args.confirm:
+        media = material.kind in ("video", "audio")
+        threshold = settings.asr.review_below if media else settings.ocr.review_below
         for c in store.get_chunks(material.id):
-            low = c.confidence is not None and c.confidence < settings.asr.review_below
+            if c.confidence is None:
+                continue  # not recognised: a PDF page with a text layer
+            low = c.confidence < threshold
             flag = f"  <- low confidence {c.confidence:.2f}" if low else ""
-            print(f"[{c.id}] {place(c.locator, material)}{flag}\n{c.text}\n")
+            check = f"  check: {', '.join(c.uncertain)}" if c.uncertain else ""
+            print(f"[{c.id}] {place(c.locator, material)}{flag}{check}\n{c.text}\n")
         print(f"{material.filename} is {material.status}. Correct passages in the web app, or confirm with --confirm.")
         return 0
     material = review_material(store, material.id, {})
@@ -339,7 +344,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("materials", help="list materials").set_defaults(func=cmd_materials)
 
-    p = sub.add_parser("review", help="show recognised text of a video or audio material; --confirm accepts it")
+    p = sub.add_parser("review", help="show the recognised text of a material (speech or OCR); --confirm accepts it")
     p.add_argument("material", help="material ID")
     p.add_argument("--confirm", action="store_true", help="mark the text as checked, so sessions may use it")
     p.set_defaults(func=cmd_review)

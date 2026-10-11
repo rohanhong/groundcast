@@ -5,6 +5,7 @@ dependencies:
   - python=3.12
   - ffmpeg
   - poppler
+  - tesseract  # text recognition for scans and handwriting (M5)
   - pip
   # Python packages are declared in pyproject.toml; this installs the
   # project in editable mode with its test tools.

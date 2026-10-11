@@ -193,6 +193,7 @@ def create_app(
             "speed": current.tts.speed,
             "words_per_minute": current.pipeline.words_per_minute,
             "review_below": current.asr.review_below,
+            "ocr_review_below": current.ocr.review_below,
         }
 
     @app.get("/api/materials")

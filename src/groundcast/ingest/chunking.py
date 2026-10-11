@@ -25,17 +25,30 @@ def _is_heading(block: str) -> bool:
     return len(block.split()) <= _HEADING_MAX_WORDS and not block.rstrip().endswith((".", "!", "?", ":", ";", ","))
 
 
-def _fold_headings(blocks: list[str]) -> list[str]:
-    out: list[str] = []
-    pending = ""
-    for block in blocks:
+Folded = tuple[str, float | None, list[str]]
+
+
+def _fold_headings(
+    blocks: list[str], confidence: list[float] | None = None, uncertain: list[list[str]] | None = None
+) -> list[Folded]:
+    """Blocks with headings folded in; a folded block keeps the lower confidence of its parts."""
+    confs: list[float | None] = list(confidence) if confidence else [None] * len(blocks)
+    words = uncertain or [[] for _ in blocks]
+    out: list[Folded] = []
+    pending, pending_conf, pending_words = "", None, []
+
+    def lower(a: float | None, b: float | None) -> float | None:
+        return b if a is None else a if b is None else min(a, b)
+
+    for block, conf, low in zip(blocks, confs, words):
         if _is_heading(block):
             pending = f"{pending}. {block}" if pending else block
+            pending_conf, pending_words = lower(pending_conf, conf), pending_words + low
             continue
-        out.append(f"{pending}. {block}" if pending else block)
-        pending = ""
+        out.append((f"{pending}. {block}" if pending else block, lower(pending_conf, conf), pending_words + low))
+        pending, pending_conf, pending_words = "", None, []
     if pending:
-        out.append(pending)
+        out.append((pending, pending_conf, pending_words))
     return out
 
 
@@ -67,7 +80,7 @@ def chunk_units(material_id: str, units: list[Unit], max_words: int) -> list[Chu
     chunks: list[Chunk] = []
     for unit in units:
         index = 0
-        for block in _fold_headings(unit.blocks):
+        for block, block_conf, low in _fold_headings(unit.blocks, unit.block_confidence, unit.block_uncertain):
             for piece in split_long(block, max_words):
                 index += 1
                 chunks.append(
@@ -77,7 +90,8 @@ def chunk_units(material_id: str, units: list[Unit], max_words: int) -> list[Chu
                         locator=unit.locator,
                         index=index,
                         text=piece,
-                        confidence=unit.confidence,
+                        confidence=block_conf if unit.block_confidence else unit.confidence,
+                        uncertain=[w for w in dict.fromkeys(low) if w in piece.split()],
                     )
                 )
     return chunks

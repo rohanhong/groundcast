@@ -35,7 +35,7 @@ async function api(path, options = {}) {
 
 const UNIT_NAMES = { pptx: "slide", video: "passage", audio: "passage" };
 const STATUS_TEXT = {
-  processing: "recognising speech...",
+  processing: "recognising...",
   review: "waiting for your check",
   failed: "failed",
 };
@@ -101,21 +101,31 @@ function clockText(seconds) {
   return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
+function sourceLink(material, locator) {
+  // Speech opens at its moment, a PDF page at its page; an image opens whole.
+  const n = Number(locator.slice(1));
+  const file = `/data/materials/${material.stored_name}`;
+  if (locator.startsWith("t")) return el("a", { href: `${file}#t=${n}`, target: "_blank" }, `Play from ${clockText(n)}`);
+  if (material.kind === "pdf") return el("a", { href: `${file}#page=${n}`, target: "_blank" }, `Open page ${n}`);
+  return el("a", { href: file, target: "_blank" }, material.pages > 1 ? `Open the image (page ${n})` : "Open the image");
+}
+
 async function showReview(material) {
-  const [chunks, settings] = await Promise.all([
+  const [all, settings] = await Promise.all([
     api(`/api/materials/${material.id}/chunks`), api("/api/settings")]);
+  // Only recognised passages need checking; a PDF's text layer is as the file has it.
+  const chunks = all.filter((c) => c.confidence !== null);
+  const threshold = ["video", "audio"].includes(material.kind) ? settings.review_below : settings.ocr_review_below;
   reviewing = { material, chunks };
   $("review-title").textContent = `Check the recognised text: ${material.filename}`;
   $("review-list").replaceChildren(...chunks.map((c) => {
-    const seconds = Number(c.locator.slice(1));
-    const at = c.locator.startsWith("t") ? clockText(seconds) : c.locator;
-    const media = c.locator.startsWith("t") ? `#t=${seconds}` : "";
-    const low = c.confidence !== null && c.confidence < settings.review_below;
+    const low = c.confidence < threshold;
     const text = el("textarea", { rows: "3", "data-id": c.id });
     text.value = c.text;
-    return el("li", { class: low ? "low-confidence" : "" },
-      el("a", { href: `/data/materials/${material.stored_name}${media}`, target: "_blank" }, `Play from ${at}`),
+    return el("li", { class: low || c.uncertain.length ? "low-confidence" : "" },
+      sourceLink(material, c.locator),
       low ? el("span", { class: "low" }, ` low confidence (${c.confidence.toFixed(2)})`) : "",
+      c.uncertain.length ? el("span", { class: "low" }, ` check: ${c.uncertain.join(", ")}`) : "",
       text);
   }));
   $("review-status").textContent = "";

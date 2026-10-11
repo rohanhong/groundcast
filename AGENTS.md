@@ -38,16 +38,17 @@ which every statement is grounded in those materials.
 
 ## Code layout
 
-- `src/groundcast/`: `ingest/` (S0: PDF, Office, web pages, and speech
-  recognition for video and audio, whose text waits for the user's review),
-  `material_view.py` (source labels, links, and the per-material text view),
-  `pipeline/` (S3 to S7: writer, verifier, editor, run), `llm/` (the
-  `LLMBackend` interface and its CLI and API backends), `elicit.py` (S1,
-  brief by dialogue), `voice_direction.py` (S8, pace per segment), `tts/`,
-  `sessions.py` (S9 export), `qa.py` and `quiz.py` (S10 text Q&A and
-  quizzes), `profile/` (the SQLite profile: preferences, inferred
-  preferences and ranked suggestions, concept table, quiz results, event
-  log), `web/` (FastAPI app and static UI), `evaluation/`.
+- `src/groundcast/`: `ingest/` (S0: PDF, Office, web pages; speech
+  recognition for video and audio and OCR for scans and images, whose text
+  waits for the user's review), `material_view.py` (source labels, links,
+  and the per-material text view), `pipeline/` (S3 to S7: writer, verifier,
+  editor, run), `llm/` (the `LLMBackend` interface and its CLI and API
+  backends), `elicit.py` (S1, brief by dialogue), `voice_direction.py` (S8,
+  pace per segment), `tts/`, `sessions.py` (S9 export), `qa.py` and
+  `quiz.py` (S10 text Q&A and quizzes), `profile/` (the SQLite profile:
+  preferences, inferred preferences and ranked suggestions, concept table,
+  quiz results, event log), `web/` (FastAPI app and static UI),
+  `evaluation/`.
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
   the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are
   added to the Writer prompt for two-host sessions and recall prompts.

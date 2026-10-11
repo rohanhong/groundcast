@@ -106,6 +106,26 @@ class ASRSettings(_Section):
     review_below: float = Field(default=0.8, ge=0.0, le=1.0)
 
 
+class OCRSettings(_Section):
+    """Text recognition for images and PDF pages without a text layer (Tesseract)."""
+
+    engine: Literal["tesseract", "none"] = "tesseract"
+    tesseract_bin: str = "tesseract"
+    pdftoppm_bin: str = "pdftoppm"  # renders PDF pages for recognition (poppler)
+    pdfimages_bin: str = "pdfimages"  # finds the scanned pages of a PDF (poppler)
+    language: str = "eng"  # Tesseract language data
+    tessdata_dir: str = ""  # another language data folder, for example the slower, better tessdata_best
+    psm: int = Field(default=3, ge=0, le=13)  # Tesseract page segmentation mode; 3 finds the layout
+    dpi: int = Field(default=300, ge=72)
+    # A PDF page is a scan when its text layer has fewer characters than
+    # min_page_chars and it holds an image of at least min_image_pixels.
+    min_page_chars: int = Field(default=10, ge=0)
+    min_image_pixels: int = Field(default=250_000, ge=1)
+    timeout_s: float = Field(default=300.0, gt=0)  # per page
+    # Paragraphs whose mean word confidence is lower are highlighted for review.
+    review_below: float = Field(default=0.8, ge=0.0, le=1.0)
+
+
 class PipelineSettings(_Section):
     # Spoken words per minute of finished audio at tts.speed 1.0, pauses
     # included; sets the Writer's length target. Measured on 2026-10-11 with
@@ -242,6 +262,7 @@ class Settings(_Section):
     llm: LLMSettings = Field(default_factory=LLMSettings)
     ingest: IngestSettings = Field(default_factory=IngestSettings)
     asr: ASRSettings = Field(default_factory=ASRSettings)
+    ocr: OCRSettings = Field(default_factory=OCRSettings)
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
     tts: TTSSettings = Field(default_factory=TTSSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)

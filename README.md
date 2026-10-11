@@ -77,8 +77,8 @@ result as an MP3 you can play in any phone player.
    git clone https://github.com/rohanhong/groundcast.git
    cd groundcast
    ```
-2. Create and activate the environment (Python 3.12, ffmpeg, poppler, and
-   groundcast itself in editable mode):
+2. Create and activate the environment (Python 3.12, ffmpeg, poppler,
+   Tesseract for scans, and groundcast itself in editable mode):
    ```bash
    conda env create -f environment.yml
    conda activate groundcast_env_py312
@@ -114,8 +114,8 @@ result as an MP3 you can play in any phone player.
    ```
 
 The same pipeline runs from the command line: `groundcast ingest <files>`
-(or `--url <address>` for a web page; check recognised speech with
-`groundcast review <material id>`), then `groundcast session -m <material id> --focus "<what to cover>"` (add
+(or `--url <address>` for a web page; check recognised speech or scanned
+text with `groundcast review <material id>`), then `groundcast session -m <material id> --focus "<what to cover>"` (add
 `--format two_hosts` for two hosts, `--recall` for recall questions at the
 end). Ask about a finished session with `groundcast ask <session id>
 "<question>"`, or print a checked quiz with `groundcast quiz <session id>`;
@@ -164,7 +164,7 @@ own licence; weights are downloaded, never committed.
 | espeak-ng | Optional pronunciation fallback for words Kokoro does not know | GPL | Separate program only (`tts.espeak_bin`) |
 | ffmpeg, poppler | Audio encoding, PDF text | LGPL build, GPL | Separate programs (conda-forge) |
 | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) with [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | Speech recognition for video and audio (M3) | MIT / MIT | Python package (the `asr` extra) |
-| OCR, claim checker | M5, M4 | `<recorded when adopted>` | `<recorded when adopted>` |
+| [Tesseract](https://github.com/tesseract-ocr/tesseract) with its English data | Text recognition for scans and handwriting (M5) | Apache-2.0 / Apache-2.0 | Separate program (conda-forge) |
 
 ## ⚠️ Responsible Use
 

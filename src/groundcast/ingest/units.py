@@ -20,6 +20,10 @@ class Unit:
     locator: str  # p<page>, s<slide>, or t<start second>
     blocks: list[str] = field(default_factory=list)  # paragraphs or text boxes, in reading order
     confidence: float | None = None  # recognised text only
+    # Recognised text only: a confidence per block, when blocks differ (OCR
+    # paragraphs), and the low-confidence words of each block.
+    block_confidence: list[float] | None = None
+    block_uncertain: list[list[str]] | None = None
 
 
 def table_text(rows: list[list[str]]) -> str:

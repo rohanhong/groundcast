@@ -50,7 +50,7 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    git clone https://github.com/rohanhong/groundcast.git
    cd groundcast
    ```
-2. 创建并激活环境（Python 3.12、ffmpeg、poppler，并以可编辑模式安装 groundcast 本身）：
+2. 创建并激活环境（Python 3.12、ffmpeg、poppler、用于扫描件的 Tesseract，并以可编辑模式安装 groundcast 本身）：
    ```bash
    conda env create -f environment.yml
    conda activate groundcast_env_py312
@@ -78,7 +78,7 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    groundcast serve
    ```
 
-同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`（网页用 `--url <网址>`；用 `groundcast review <material id>` 核对识别出的语音文本），再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好；用 `groundcast suggest` 查看排序的建议。运行 `groundcast --help` 查看全部命令。
+同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`（网页用 `--url <网址>`；用 `groundcast review <material id>` 核对识别出的语音或扫描文字），再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好；用 `groundcast suggest` 查看排序的建议。运行 `groundcast --help` 查看全部命令。
 
 ## 🗺️ 路线图
 
@@ -110,7 +110,7 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 | espeak-ng | 可选的发音回退，用于 Kokoro 不认识的词 | GPL | 仅作为独立程序（`tts.espeak_bin`） |
 | ffmpeg、poppler | 音频编码、PDF 文本提取 | LGPL 构建、GPL | 独立程序（conda-forge） |
 | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 与 [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | 视频与音频的语音识别（M3） | MIT / MIT | Python 包（`asr` 附加依赖） |
-| OCR、声明核查器 | M5、M4 | `<recorded when adopted>` | `<recorded when adopted>` |
+| [Tesseract](https://github.com/tesseract-ocr/tesseract) 及其英语数据 | 扫描件与手写稿的文字识别（M5） | Apache-2.0 / Apache-2.0 | 独立程序（conda-forge） |
 
 ## ⚠️ 负责任地使用
 

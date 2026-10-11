@@ -16,7 +16,7 @@ import os
 import subprocess
 import sys
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from statistics import fmean
 from typing import Protocol
@@ -40,6 +40,7 @@ class Spoken:
     end: float
     text: str
     confidence: float  # mean word probability, 0 to 1
+    uncertain: list[str] = field(default_factory=list)  # words below the review threshold
 
 
 class Transcriber(Protocol):
@@ -135,7 +136,8 @@ class WhisperTranscriber:
                     words = seg.words or []
                     confidence = fmean(w.probability for w in words) if words else 0.0
                     if seg.text.strip():
-                        spoken.append(Spoken(seg.start, seg.end, seg.text.strip(), confidence))
+                        low = [w.word.strip() for w in words if w.probability < self.cfg.review_below]
+                        spoken.append(Spoken(seg.start, seg.end, seg.text.strip(), confidence, low))
                     progress(f"Recognised {seg.end:.0f} of {duration:.0f} s")
                 return spoken, duration
             except RuntimeError as exc:
@@ -169,10 +171,12 @@ def passages(spoken: list[Spoken], max_words: int, gap_s: float, max_s: float) -
         # Weigh each stretch by its length in words.
         confidence = sum(s.confidence * len(s.text.split()) for s in group) / max(words, 1)
         locator = f"t{int(group[0].start)}"
+        low = [w for s in group for w in s.uncertain]
         if units and units[-1].locator == locator:
             units[-1].blocks.append(text)
+            units[-1].block_uncertain = (units[-1].block_uncertain or []) + [low]
         else:
-            units.append(Unit(locator, [text], round(confidence, 3)))
+            units.append(Unit(locator, [text], round(confidence, 3), block_uncertain=[low]))
         group.clear()
 
     for s in spoken:

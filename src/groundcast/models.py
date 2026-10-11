@@ -13,7 +13,7 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-MaterialKind = Literal["pdf", "markdown", "text", "pptx", "docx", "html", "video", "audio"]
+MaterialKind = Literal["pdf", "markdown", "text", "pptx", "docx", "html", "video", "audio", "image"]
 # processing: text is being extracted in the background (speech recognition);
 # review: the extracted text waits for the user to check and confirm it (spec S0);
 # ready: usable in sessions; failed: extraction stopped with an error.
@@ -33,6 +33,8 @@ class Material(BaseModel):
     source_url: str = ""
     fetched_at: datetime | None = None
     duration_s: float | None = None  # video and audio
+    # PDF pages whose text was recognised from the page image (no usable text layer).
+    ocr_pages: list[int] = Field(default_factory=list)
     status: MaterialStatus = "ready"
     error: str = ""
     reviewed_at: datetime | None = None
@@ -46,8 +48,10 @@ class Chunk(BaseModel):
     locator: str  # p<page>, s<slide>, or t<start second>
     index: int
     text: str
-    # Recognised text only (speech): mean word probability, 0 to 1.
+    # Recognised text only (speech or OCR): mean word confidence, 0 to 1, and
+    # the words recognised with low confidence, for the review step.
     confidence: float | None = None
+    uncertain: list[str] = Field(default_factory=list)
     edited: bool = False  # corrected by the user during review
 
 

@@ -81,7 +81,7 @@ def original_path(locator: str, material: Material) -> str:
 
 def material_path(chunk: Chunk, material: Material) -> str:
     """Where a source link for this chunk points, relative to the data directory."""
-    if material.kind == "pdf" or material.kind in MEDIA_KINDS:
+    if material.kind == "pdf" or material.kind in MEDIA_KINDS or (material.kind == "image" and material.pages == 1):
         return original_path(chunk.locator, material)
     return f"materials/{view_name(material)}#{anchor(chunk)}"
 
@@ -94,9 +94,14 @@ def render_view(material: Material, chunks: Iterable[Chunk], review_below: float
         fetched = material.fetched_at.strftime("%Y-%m-%d") if material.fetched_at else "unknown date"
         meta.append(f'from <a href="{escape(material.source_url)}">{escape(material.source_url)}</a>, '
                     f"fetched {fetched}")  # fmt: skip
+    reviewed = f", checked by you on {material.reviewed_at:%Y-%m-%d}" if material.reviewed_at else ", not checked yet"
     if material.kind in MEDIA_KINDS:
-        reviewed = f", checked by you on {material.reviewed_at:%Y-%m-%d}" if material.reviewed_at else ", not checked yet"
         meta.append(f"recognised speech{reviewed}")
+    elif material.kind == "image":
+        meta.append(f"recognised text{reviewed}")
+    elif material.ocr_pages:
+        pages = ", ".join(map(str, material.ocr_pages))
+        meta.append(f"text recognised from the page image on page(s) {pages}{reviewed}")
     parts = [
         "<!doctype html>",
         '<html lang="en"><head><meta charset="utf-8">',
@@ -114,6 +119,8 @@ def render_view(material: Material, chunks: Iterable[Chunk], review_below: float
         parts.append(f'<section id="{escape(locator)}"><h2>{heading}</h2>')
         for chunk in group:
             low = ""
+            if chunk.uncertain:
+                low = f' <span class="low">(check: {escape(", ".join(chunk.uncertain))})</span>'
             if review_below is not None and chunk.confidence is not None and chunk.confidence < review_below:
                 low = f' <span class="low">(recognised with low confidence: {chunk.confidence:.2f})</span>'
             parts.append(f'<p id="{escape(anchor(chunk))}"><span class="id">{escape(chunk.id)}</span>'
