@@ -136,15 +136,17 @@ def refresh_inferred(db: ProfileDB, inferred: list[Inferred]) -> None:
                       after={"value": after}, reason="from the briefs of your sessions")  # fmt: skip
 
 
-def _defaults(settings: Settings, prefs: Preferences, inferred: list[Inferred]) -> tuple[dict[str, Any], list[str]]:
-    """Brief settings for a new suggestion: preference > confident inference > configuration."""
+def _defaults(
+    settings: Settings, prefs: Preferences, inferred: list[Inferred]
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Brief settings for a new suggestion (preference > confident inference > configuration), and why."""
     values = {k: defaults(settings)[k] for k in BRIEF_KEYS}
-    why = []
+    why = {}
     for i in inferred:
         if i.applied and getattr(prefs, i.key) is None:
             values[i.key] = i.value
-            why.append(f"{LABELS[i.key].capitalize()} {_show(i.key, i.value)}: you chose it in {i.sessions} of "
-                       f"your last {i.of_sessions} sessions.")  # fmt: skip
+            why[i.key] = (f"{LABELS[i.key].capitalize()} {_show(i.key, i.value)}: you chose it in {i.sessions} "
+                          f"of your last {i.of_sessions} sessions.")  # fmt: skip
     for key in BRIEF_KEYS:
         if getattr(prefs, key) is not None:
             values[key] = getattr(prefs, key)
@@ -168,13 +170,14 @@ def suggest(
     weak = [c for c in sorted(weak, key=mastery) if set(c.material_ids) & set(ready)][: settings.suggest.weak_topics]
     if weak:
         material_ids = sorted({m for c in weak for m in c.material_ids if m in ready})
-        values = {**base, "context": "revision", "recall_prompts": True}
+        revision = {"context": "revision", "recall_prompts": True}
+        values = {**base, **revision}
         why = [f"Quiz results on {c.name}: {c.right} of {c.asked} right." for c in weak]
         why.append("Revision with recall questions, since answering questions helps you remember.")
         out.append(Suggestion(
             id="weak_topics:" + ",".join(c.id for c in weak), kind="weak_topics",
             title="Revise " + ", ".join(c.name for c in weak),
-            why=why + base_why,
+            why=why + [line for key, line in base_why.items() if key not in revision],
             brief=Brief(focus="Revise " + "; ".join(f"{c.name}: {c.description}".rstrip(": ") for c in weak),
                         material_ids=material_ids, **values),
             score=0.9 - 0.5 * mastery(weak[0]),
@@ -188,8 +191,12 @@ def suggest(
         if fb is not None and fb.length in ("too_long", "too_short"):
             factor = settings.suggest.length_step if fb.length == "too_short" else 1 / settings.suggest.length_step
             minutes = min(MAX_MINUTES, max(MIN_MINUTES, round(brief.minutes * factor)))
-            brief = brief.model_copy(update={"minutes": minutes})
-            why.append(f"{minutes} minutes, since you said it was {fb.length.replace('_', ' ')}.")
+            said = fb.length.replace("_", " ")
+            if minutes != brief.minutes:
+                brief = brief.model_copy(update={"minutes": minutes})
+                why.append(f"{minutes} minutes, since you said it was {said}.")
+            else:
+                why.append(f"You said it was {said}, but {minutes} minutes is already the limit.")
         if fb is not None and fb.rating is not None and fb.rating <= settings.suggest.low_rating:
             score = 0.3
             why.append(f"You rated it {fb.rating} of 5, so it comes after the others.")
@@ -204,7 +211,7 @@ def suggest(
     for m in sorted((m for m in ready.values() if m.id not in used), key=lambda m: m.added_at, reverse=True)[:2]:
         out.append(Suggestion(
             id=f"new_material:{m.id}", kind="new_material", title=f"Start {m.filename}",
-            why=["You have not had a session on this material yet."] + base_why,
+            why=["You have not had a session on this material yet.", *base_why.values()],
             brief=Brief(focus=f"An overview of the main ideas in {m.filename}", material_ids=[m.id], **base),
             score=0.5,
         ))  # fmt: skip

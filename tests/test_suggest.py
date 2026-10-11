@@ -50,6 +50,7 @@ def test_suggestions_rank_weak_topics_then_last_then_new(settings: Settings, sto
     assert weak.brief.context == "revision" and weak.brief.recall_prompts and weak.brief.minutes == 20
     assert "Spring tide: 1 of 3 right." in " ".join(weak.why).replace("Quiz results on ", "")
     assert any("you chose it in 3 of your last 3 sessions" in w for w in weak.why)
+    assert not any(w.startswith(("Recall questions", "Context")) for w in weak.why)  # overridden by revision
     # An explicit preference wins over the inferred value, and inference can be switched off.
     set_preferences(db, settings, {"minutes": 12})
     assert suggest(db, settings, store.list_materials(), sessions).suggestions[0].brief.minutes == 12
