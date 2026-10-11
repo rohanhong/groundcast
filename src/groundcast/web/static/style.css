@@ -99,4 +99,10 @@ details.qa summary { cursor: pointer; color: var(--accent); }
 .qa-answer { margin: 0; }
 .qa-sources { font-size: .82rem; margin: .2rem 0 0; padding-left: 1.2rem; }
 .unverified { color: var(--warn); }
+fieldset.quiz-question { border: 1px solid var(--line); border-radius: 8px; margin: .6rem 0; padding: .5rem .8rem; }
+fieldset.quiz-question legend { font-weight: 600; padding: 0 .3rem; }
+label.quiz-option { margin: .25rem 0; }
+label.quiz-option.correct { color: var(--ok); font-weight: 600; }
+label.quiz-option.wrong { color: var(--bad); text-decoration: line-through; }
+.quiz-feedback p { margin: .3rem 0 0; }
 .unverified::after { content: " [not verified against your materials]"; font-size: .8rem; }

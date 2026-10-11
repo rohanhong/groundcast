@@ -213,6 +213,100 @@ function qaPanel(sessionId) {
   return panel;
 }
 
+// Quizzes on a finished session
+
+const quizPanels = new Map(); // session id -> panel, kept across list refreshes
+
+function sourceList(sources) {
+  return el("ol", { class: "qa-sources muted" },
+    ...sources.map((s) => el("li", {}, el("a", { href: `/data/${s.path}`, target: "_blank" }, s.label))));
+}
+
+function renderQuiz(sessionId, quiz) {
+  const form = el("form", { class: "quiz-form" });
+  const blocks = quiz.questions.map((q, n) => {
+    const name = `${quiz.id}-${n}`;
+    const options = q.options.map((text, m) =>
+      el("label", { class: "quiz-option" }, el("input", { type: "radio", name, value: String(m) }), ` ${text}`));
+    const feedback = el("div", { class: "quiz-feedback" });
+    const block = el("fieldset", { class: "quiz-question" },
+      el("legend", {}, `${n + 1}. ${q.question}`), ...options, feedback);
+    form.append(block);
+    return { name, options, feedback };
+  });
+  const status = el("p", { class: "muted", role: "status" });
+  const last = quiz.attempts.at(-1);
+  if (last) {
+    const scores = quiz.attempts.map((a) => a.score).join(", ");
+    status.textContent = `Earlier attempts: ${scores} of ${quiz.questions.length}.`;
+  }
+  const button = el("button", { type: "submit" }, "Check answers");
+  form.append(button, status);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const answers = blocks.map((b) => {
+      const picked = form.querySelector(`input[name="${b.name}"]:checked`);
+      return picked ? Number(picked.value) : null;
+    });
+    button.disabled = true;
+    try {
+      const r = await api(`/api/sessions/${sessionId}/quizzes/${quiz.id}/attempts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers }),
+      });
+      r.results.forEach((res, n) => {
+        const b = blocks[n];
+        b.options.forEach((label, m) => {
+          label.classList.toggle("correct", m === res.correct);
+          label.classList.toggle("wrong", m === res.chosen && !res.right);
+        });
+        b.feedback.replaceChildren(
+          el("p", { class: res.right ? "status-done" : "status-failed" },
+            res.right ? "Right. " : res.chosen === null ? "Skipped. " : "Not quite. ", res.explanation),
+          sourceList(res.sources));
+      });
+      status.textContent =
+        `Score: ${r.attempt.score} of ${quiz.questions.length}. Change answers and check again any time.`;
+    } catch (error) {
+      status.textContent = `Could not check: ${error.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  });
+  return form;
+}
+
+function quizPanel(sessionId) {
+  if (quizPanels.has(sessionId)) return quizPanels.get(sessionId);
+  const body = el("div");
+  const status = el("p", { class: "muted", role: "status" });
+  const button = el("button", { type: "button", class: "secondary" }, "New quiz");
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    status.textContent = "Writing questions and checking them against your materials...";
+    try {
+      const quiz = await api(`/api/sessions/${sessionId}/quizzes`, { method: "POST" });
+      body.replaceChildren(renderQuiz(sessionId, quiz));
+      status.textContent = "";
+    } catch (error) {
+      status.textContent = `Could not write a quiz: ${error.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  });
+  const panel = el("details", { class: "qa" }, el("summary", {}, "Quiz"), body, button, status);
+  panel.addEventListener("toggle", () => {
+    if (!panel.open || panel.dataset.loaded) return;
+    panel.dataset.loaded = "1";
+    api(`/api/sessions/${sessionId}/quizzes`)
+      .then((quizzes) => { if (quizzes.length) body.replaceChildren(renderQuiz(sessionId, quizzes.at(-1))); })
+      .catch((error) => { status.textContent = `Could not load quizzes: ${error.message}`; });
+  });
+  quizPanels.set(sessionId, panel);
+  return panel;
+}
+
 // Sessions
 
 function reportLine(report) {
@@ -253,7 +347,7 @@ async function loadSessions() {
           el("a", { href: `${base}/session.mp3`, download: `${s.id}.mp3` }, "Download MP3")),
       );
       const reportBox = el("div", { class: "muted" });
-      item.append(reportBox, qaPanel(s.id));
+      item.append(reportBox, qaPanel(s.id), quizPanel(s.id));
       api(`/api/sessions/${s.id}/report`).then((r) => { reportBox.textContent = reportLine(r); }).catch(() => {});
     }
     list.append(item);
