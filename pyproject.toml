@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "groundcast"
+version = "0.1.0"
+description = "Turn your own study materials into podcast-style audio sessions, with every statement grounded in those materials."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "pydantic>=2.7",
+    "platformdirs>=4.2",
+    "python-multipart>=0.0.9",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+# Mode A LLM backend (API key).
+api = ["anthropic>=0.40"]
+# Kokoro-82M speech synthesis; pulls in PyTorch (CPU build from PyPI; the
+# README shows how to switch to a CUDA build).
+# misaki (Kokoro's G2P) needs the spaCy English model; installing it here
+# stops misaki from pip-installing it at run time.
+tts = [
+    "kokoro>=0.9.4",
+    "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+]
+dev = ["pytest>=8.0", "httpx>=0.27"]
+
+[project.scripts]
+groundcast = "groundcast.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+groundcast = ["prompts/*.md", "web/static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

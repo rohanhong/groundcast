@@ -5,4 +5,8 @@ dependencies:
   - python=3.12
   - ffmpeg
   - poppler
-  # add project packages here; pip-only deps go under a "- pip:" block
+  - pip
+  # Python packages are declared in pyproject.toml; this installs the
+  # project in editable mode with its test tools.
+  - pip:
+      - -e .[dev]
