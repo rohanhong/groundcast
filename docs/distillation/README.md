@@ -51,22 +51,55 @@ their local copies are registered in [`references/`](../../references/README.md)
 
 ## Traceability of the current rubric
 
-The M1 rubric in `src/groundcast/prompts/rubric.md` was drafted from the
-principles the spec attributes to these sources, before any source note
-existed. Every row is provisional until a note in this directory confirms it.
+Rubric v2 (`src/groundcast/prompts/rubric.md`, 2026-10-12) merges the
+candidate rules of the notes in this directory into the M1 rubric. It was
+kept because it raised every script-quality axis on the briefs in
+`evals/quality/` (judged three times each, Writer opus, judge sonnet), with
+no sentence lost to verification:
 
-| Rubric rule (short form) | Section | Provisional sources | Confirmed by note |
+| Axis | M1 rubric | Rubric v2 |
+|---|---|---|
+| Structure | 3.17 | 3.94 |
+| Fluency | 4.15 | 4.27 |
+| Vividness | 2.47 | 3.39 |
+| Format (dialogue, recall) | 3.42 | 3.67 |
+| First-pass verification | 0.964 | 0.953 |
+
+One script per brief and variant, so a difference of a few tenths on one
+criterion is within noise; the gain on structure and vividness is not.
+
+| Rubric rule (short form) | Section | Sources | Note |
 |---|---|---|---|
-| Cite the passages each claim rests on; say nothing they do not say | Correctness | Spec G2; S20, S23 | |
-| One fact per sentence, so each can be checked | Correctness | S17 | |
-| Mark analogies and examples as framing; the mapping must be true | Correctness | Spec 9.3 | |
-| Open with what the session covers and why it matters | Structure | S1 (signalling), S7 | |
-| Define a term before using it | Structure | Spec 9.3 (logical rigour) | |
-| One segment per idea; recap at segment end and session end | Structure | S1 (segmenting), S5, S3 | |
-| Repeat key points rather than rely on memory of earlier detail | Structure | S5 (transient information) | |
-| Short sentences, one idea each | Writing for the ear | S7 | |
-| Signposts between steps | Writing for the ear | S7, S1 (signalling) | |
-| Conversational register, "you" is fine | Writing for the ear | S1 (personalisation), S7 | |
-| No tables, lists, parentheses, or symbols; numbers as spoken | Writing for the ear | S7; spec 9.3 (fluency) | |
-| Attribution before the statement | Writing for the ear | S7 | |
-| Verifier labels: supported, contradicted, unsupported, framing, no claim | Verifier prompt | S20, S17, S23 | |
+| Cite the passages each claim rests on; say nothing they do not say | Correctness | S20, S23, S24 | S20-fever, S24-facts-grounding |
+| One fact per sentence, so each can be checked | Correctness | S17 | S17-factscore |
+| Give a finding's limits and strength of evidence with it | Correctness | S14 | S14-science-vs |
+| Overall finding before a single case; say how typical it is | Correctness | S26 | S26-dahlstrom-2014 |
+| Framing is marked, short, true in its mapping, and adds no facts | Correctness | S26, spec 9.3 | S26-dahlstrom-2014 |
+| Open with the question or a case from the passages, why it matters, and the plan | Structure | S15, S14, S13, S25 (signalling) | S15-philosophize-this, S14-science-vs, S13-hidden-brain, S25-mayer-2024 |
+| Name each part with one trait before relations; define terms first, paired terms together | Structure | S05, S25 (pretraining), S15 | S05-sweller, S25-mayer-2024, S15-philosophize-this |
+| One segment per idea, headed by the question it answers; processes in time order | Structure | S14, S25 (segmenting), S26 | S14-science-vs, S25-mayer-2024, S26-dahlstrom-2014 |
+| Short recap and a bridge at each segment end; close by answering the opening question | Structure | S13, S14, S03, S05 | S13-hidden-brain, S14-science-vs, S03-dunlosky, S05-sweller |
+| Leave out off-goal material; no restating right after making a point | Structure | S25 (coherence), S05 (redundancy) | S25-mayer-2024, S05-sweller |
+| Fit definitions and recaps to the brief's level | Structure | S05 (expertise reversal) | S05-sweller |
+| Refer back by naming the earlier point again | Structure | S13 | S13-hidden-brain |
+| Short sentences, subject and verb early | Writing for the ear | S07 | S07-npr-training |
+| Signposts between steps | Writing for the ear | S07, S25 (signalling) | S07-npr-training, S25-mayer-2024 |
+| Conversational register; active verbs | Writing for the ear | S25 (personalisation), S07 | S25-mayer-2024, S07-npr-training |
+| No written-only structures; numbers as spoken | Writing for the ear | S07; spec 9.3 | S07-npr-training |
+| Attribution first; name a source before what it says | Writing for the ear | S07, S14 | S07-npr-training, S14-science-vs |
+| Same word for the same thing | Writing for the ear | S07 | S07-npr-training |
+| Raise a question, then answer it; voice an objection the passages answer | Vividness | S07, S15 | S07-npr-training, S15-philosophize-this |
+| Concrete, typical cases from the passages | Vividness | S07, S26, S13 | S07-npr-training, S26-dahlstrom-2014 |
+| Announce analogies, one image at a time, right after the idea | Vividness | S14, S15, S05, S07 | S14-science-vs, S15-philosophize-this, S05-sweller |
+| Verifier labels: supported, contradicted, unsupported, framing, no claim | Verifier prompt | S20, S17, S23 | S20-fever, S17-factscore |
+| Retrieve passages with the line before the sentence | Verifier input | S23 | S23-minicheck |
+
+## Evaluated and not adopted
+
+- Code check of numbers and names (S22): flagged 4 of 53 correct seeded
+  sentences, all numbers derived by arithmetic, and caught no error the LLM
+  Verifier missed.
+- MiniCheck-Flan-T5-Large as a local checker (S23): alone it caught 0.68
+  of the seeded errors with 0.26 false flags; added to the Verifier it caught
+  nothing more and raised false flags to between 0.13 and 0.30. The script
+  and the numbers are in `evals/experiments/minicheck.py`.
