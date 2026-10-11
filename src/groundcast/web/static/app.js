@@ -129,6 +129,71 @@ $("brief-form").addEventListener("submit", (event) => {
   $("brief-status").textContent = "";
 });
 
+// Brief by dialogue (S1): the proposal fills the form, then the usual review step
+
+let chat = [];
+let proposal = null;
+
+function renderChat() {
+  $("chat-log").replaceChildren(...chat.map((t) =>
+    el("p", { class: `chat-${t.role}` }, el("strong", {}, t.role === "user" ? "You: " : "groundcast: "), t.text)));
+}
+
+function applyBrief(brief) {
+  $("focus").value = brief.focus;
+  $("title").value = brief.title;
+  $("minutes").value = brief.minutes;
+  $("context").value = brief.context;
+  $("level").value = brief.level;
+  $("format").value = brief.format;
+  $("recall").checked = brief.recall_prompts;
+  $("notes").value = brief.notes;
+  for (const box of document.querySelectorAll("#materials input[type=checkbox]")) {
+    box.checked = brief.material_ids.includes(box.value);
+  }
+}
+
+$("chat-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const text = $("chat-input").value.trim();
+  if (!text) return;
+  chat.push({ role: "user", text });
+  renderChat();
+  $("chat-input").value = "";
+  $("chat-status").textContent = "Thinking...";
+  try {
+    const r = await api("/api/elicit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: chat, material_ids: selectedMaterials() }),
+    });
+    chat.push({ role: "assistant", text: r.reply });
+    renderChat();
+    proposal = r.brief;
+    $("chat-use").hidden = !(r.ready && proposal);
+    $("chat-status").textContent = r.ready && proposal ? "Review the proposal, or keep talking to change it." : "";
+  } catch (error) {
+    chat.pop();
+    renderChat();
+    $("chat-input").value = text;
+    $("chat-status").textContent = `Could not reply: ${error.message}`;
+  }
+});
+
+$("chat-use").addEventListener("click", () => {
+  if (!proposal) return;
+  applyBrief(proposal);
+  $("brief-form").requestSubmit(); // opens the review step; nothing starts until confirmed
+});
+
+$("chat-reset").addEventListener("click", () => {
+  chat = [];
+  proposal = null;
+  renderChat();
+  $("chat-use").hidden = true;
+  $("chat-status").textContent = "";
+});
+
 $("brief-edit").addEventListener("click", () => {
   $("brief-review").hidden = true;
   $("brief-form").hidden = false;

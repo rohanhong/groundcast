@@ -92,6 +92,9 @@ dt { color: var(--muted); }
 dd { margin: 0; }
 pre.log { font-size: .78rem; white-space: pre-wrap; color: var(--muted); max-height: 10rem; overflow: auto; }
 details.qa { margin-top: .5rem; }
+details#chat summary { cursor: pointer; color: var(--accent); }
+.chat-log p { margin: .4rem 0; }
+.chat-assistant { border-left: 3px solid var(--accent); padding-left: .6rem; }
 details.qa summary { cursor: pointer; color: var(--accent); }
 .qa-form { display: flex; gap: .5rem; margin-top: .5rem; }
 .qa-form input { margin-top: 0; }

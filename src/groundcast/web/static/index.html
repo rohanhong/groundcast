@@ -30,6 +30,18 @@
 
     <section>
       <h2>2. Brief</h2>
+      <details id="chat" open>
+        <summary>Describe it in your own words</summary>
+        <div id="chat-log" class="chat-log"></div>
+        <form id="chat-form" class="qa-form">
+          <input id="chat-input" type="text" placeholder="For example: 15 minutes on the bus about the ice findings, exam on Friday">
+          <button type="submit">Send</button>
+        </form>
+        <p id="chat-status" class="muted" role="status"></p>
+        <button id="chat-use" type="button" class="secondary" hidden>Use this brief</button>
+        <button id="chat-reset" type="button" class="link">Start over</button>
+      </details>
+      <p class="muted">Or fill in the form:</p>
       <form id="brief-form">
         <label>What should the session cover?
           <textarea id="focus" rows="3" required placeholder="For example: the two stages of photosynthesis and why they depend on each other"></textarea>
