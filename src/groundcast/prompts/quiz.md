@@ -28,6 +28,8 @@ asked for:
   passages put it.
 - sources: the IDs of the passages that state the correct answer.
 - topic: the heading of the segment the question is about.
+- concepts: the IDs of the listed concepts the question tests, usually one;
+  empty when none fits.
 
 Say only what the passages say; do not use general knowledge in questions,
 options, or explanations.

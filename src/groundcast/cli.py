@@ -117,6 +117,8 @@ def cmd_ask(args: argparse.Namespace) -> int:
 def cmd_quiz(args: argparse.Namespace) -> int:
     from groundcast.llm import make_backend, roles
     from groundcast.models import Script, SessionStatus
+    from groundcast.profile.concepts import list_concepts
+    from groundcast.profile.db import ProfileDB
     from groundcast.quiz import load_quizzes, make_quiz, save_quizzes
     from groundcast.sessions import SCRIPT_FILE
     from groundcast.storage import Store, read_model
@@ -129,16 +131,40 @@ def cmd_quiz(args: argparse.Namespace) -> int:
     materials = {m: store.get_material(m) for m in record.brief.material_ids}
     chunks = [c for m in record.brief.material_ids for c in store.get_chunks(m)]
     script = read_model(store.session_dir(record.id) / SCRIPT_FILE, Script)
-    quiz = make_quiz(make_backend(settings.llm), roles(settings.llm), settings, script, chunks, materials)
+    concepts = list_concepts(ProfileDB(settings.data_dir), record.brief.material_ids)
+    quiz = make_quiz(make_backend(settings.llm), roles(settings.llm), settings, script, chunks, materials, concepts)
     data = load_quizzes(store, record.id)
     data.quizzes.append(quiz)
     save_quizzes(store, record.id, data)
     print(f"Quiz {quiz.id}: {len(quiz.questions)} question(s), {quiz.dropped} dropped by the check")
     for n, q in enumerate(quiz.questions, start=1):
-        print(f"\n{n}. {q.question}  ({q.topic})")
+        tags = f"; concepts: {', '.join(q.concepts)}" if q.concepts else ""
+        print(f"\n{n}. {q.question}  ({q.topic}{tags})")
         for m, option in enumerate(q.options):
             print(f"   {'*' if m == q.correct else ' '} {chr(65 + m)}. {option}")
         print(f"   {q.explanation} [{'; '.join(s.label for s in q.sources)}]")
+    return 0
+
+
+def cmd_concepts(args: argparse.Namespace) -> int:
+    from groundcast.profile.concepts import list_concepts
+    from groundcast.profile.db import ProfileDB
+    from groundcast.storage import Store
+
+    settings = _settings(args)
+    db = ProfileDB(settings.data_dir)
+    if args.extract:
+        from groundcast.llm import make_backend, roles
+        from groundcast.profile.extract import extract_concepts
+
+        store = Store(settings.data_dir)
+        material = store.get_material(args.extract)
+        n = extract_concepts(make_backend(settings.llm), roles(settings.llm)["concepts"], settings, db, material,
+                             store.get_chunks(material.id))  # fmt: skip
+        print(f"{material.filename}: linked to {n} concepts")
+    for c in list_concepts(db):
+        quiz = f", quiz {c.right}/{c.asked}" if c.asked else ""
+        print(f"{c.id}  {c.name}  ({c.chunks} passage(s) in {len(c.material_ids)} material(s){quiz})")
     return 0
 
 
@@ -205,6 +231,10 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("quiz", help="write a quiz on a finished session and print it with its answers")
     p.add_argument("session", help="session ID")
     p.set_defaults(func=cmd_quiz)
+
+    p = sub.add_parser("concepts", help="list the concept table; --extract finds a material's concepts first")
+    p.add_argument("--extract", metavar="MATERIAL_ID", help="extract this material's concepts now")
+    p.set_defaults(func=cmd_concepts)
 
     p = sub.add_parser("eval", help="run the seeded-error test of the Verifier")
     p.add_argument("--set", help="evaluation set file (default: evals/seeded/items.json in the repository)")

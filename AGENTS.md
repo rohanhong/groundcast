@@ -34,7 +34,8 @@ which every statement is grounded in those materials.
 - `src/groundcast/`: `ingest/` (S0), `pipeline/` (S3 to S7: writer,
   verifier, editor, run), `llm/` (the `LLMBackend` interface and its CLI and
   API backends), `elicit.py` (S1, brief by dialogue), `tts/`, `sessions.py`
-  (S9 export), `qa.py` and `quiz.py` (S10 text Q&A and quizzes), `web/`
+  (S9 export), `qa.py` and `quiz.py` (S10 text Q&A and quizzes), `profile/`
+  (the SQLite profile: concept table, quiz results, event log), `web/`
   (FastAPI app and static UI), `evaluation/`.
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
   the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are

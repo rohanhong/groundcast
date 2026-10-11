@@ -5,6 +5,7 @@
   materials/<id>.json         Material record
   chunks/<id>.json            list of Chunk records
   sessions/<session id>/      brief, script JSON, verification report, MP3, transcript, Q&A, quizzes
+  profile.sqlite3             concept table, quiz results, event log (groundcast.profile)
 """
 
 from __future__ import annotations

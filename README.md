@@ -41,8 +41,10 @@ result as an MP3 you can play in any phone player.
 > MP3, read by one narrator or two hosts, with chapter marks, and a linked
 > transcript out; typed questions and multiple-choice quizzes about a finished
 > session come from your materials, and a session can end with recall
-> questions, each followed by a pause. Later features, such as the profile,
-> are described below but not built yet.
+> questions, each followed by a pause. The concepts in your materials go into
+> one table, with your quiz results on each, which you can rename and merge.
+> Later features, such as preferences and suggestions, are described below but
+> not built yet.
 
 ## ✨ Highlights
 
@@ -101,7 +103,7 @@ then `groundcast session -m <material id> --focus "<what to cover>"` (add
 `--format two_hosts` for two hosts, `--recall` for recall questions at the
 end). Ask about a finished session with
 `groundcast ask <session id> "<question>"`, or print a checked quiz with
-`groundcast quiz <session id>`. Run `groundcast --help` for every command.
+`groundcast quiz <session id>`; list the concept table with `groundcast concepts`. Run `groundcast --help` for every command.
 
 ## 🗺️ Roadmap
 

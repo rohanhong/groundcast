@@ -63,6 +63,9 @@ class LLMSettings(_Section):
     # Answers the learner's typed questions (S10 text Q&A).
     tutor_model: str = "sonnet"
     tutor_effort: str = "medium"
+    # Extracts concepts from materials and matches them to the concept table.
+    concepts_model: str = "sonnet"
+    concepts_effort: str = "medium"
     # Writes multiple-choice quizzes on a finished session.
     quiz_model: str = "sonnet"
     quiz_effort: str = "medium"
@@ -127,6 +130,18 @@ class AudioSettings(_Section):
     mp3_bitrate: str = "96k"
 
 
+class ConceptsSettings(_Section):
+    # Extract a material's concepts when a session first uses it.
+    extract_on_session: bool = True
+    # Material words read per extraction call.
+    batch_words: int = Field(default=4000, ge=100)
+    # Existing concepts shown with each batch, those sharing the most words with it.
+    candidates: int = Field(default=100, ge=0)
+    max_per_material: int = Field(default=20, ge=1)
+    # Event log entries shown in the web app.
+    events_shown: int = Field(default=50, ge=1)
+
+
 class ElicitSettings(_Section):
     # Questions the Elicitor may ask before it must propose a brief.
     max_questions: int = Field(default=3, ge=0)
@@ -170,6 +185,7 @@ class Settings(_Section):
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
     tts: TTSSettings = Field(default_factory=TTSSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)
+    concepts: ConceptsSettings = Field(default_factory=ConceptsSettings)
     elicit: ElicitSettings = Field(default_factory=ElicitSettings)
     qa: QASettings = Field(default_factory=QASettings)
     quiz: QuizSettings = Field(default_factory=QuizSettings)

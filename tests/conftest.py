@@ -133,7 +133,13 @@ def scripted_backend() -> FakeBackend:
             "headings": [{"segment_id": "g1", "heading": "What causes tides"}],
         }
 
-    return FakeBackend({"Draft": draft, "VerifierOutput": verify, "Revisions": revise, "Edits": edit})
+    def concepts(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        first = re.search(r"^\[(\S+)\]", prompt, re.M).group(1)  # type: ignore[union-attr]
+        return {"concepts": [{"name": "Tide", "description": "The rise and fall of the sea.", "chunk_ids": [first]}]}
+
+    return FakeBackend(
+        {"Draft": draft, "VerifierOutput": verify, "Revisions": revise, "Edits": edit, "ConceptsOutput": concepts}
+    )
 
 
 def recall_backend(first: str) -> FakeBackend:

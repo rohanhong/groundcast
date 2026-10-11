@@ -22,6 +22,9 @@ from groundcast.ingest import ExtractionError, ingest_file
 from groundcast.elicit import ChatTurn, ElicitResult, elicit, outline
 from groundcast.llm import LLMBackend, make_backend, roles
 from groundcast.models import Brief, Chunk, Material, Script, SessionRecord, SessionStatus
+from groundcast.profile.concepts import Concept, forget_material, list_concepts, merge, record_quiz, rename
+from groundcast.profile.db import Event, ProfileDB, list_events
+from groundcast.profile.extract import extract_concepts
 from groundcast.qa import QAExchange, answer_question, load_history, save_history
 from groundcast.quiz import AttemptResult, QuizView, grade, load_quizzes, make_quiz, save_quizzes, view
 from groundcast.sessions import REPORT_FILE, SCRIPT_FILE, SessionRunner, fail_interrupted, new_session
@@ -72,6 +75,14 @@ class Answers(BaseModel):
     answers: list[int | None]
 
 
+class Rename(BaseModel):
+    name: str
+
+
+class Merge(BaseModel):
+    into: str
+
+
 class Conversation(BaseModel):
     messages: list[ChatTurn]
     material_ids: list[str] = []  # selected in the form
@@ -81,6 +92,7 @@ def create_app(
     settings: Settings, runner: SessionRunner | None = None, backend: LLMBackend | None = None
 ) -> FastAPI:
     store = Store(settings.data_dir)
+    profile = ProfileDB(settings.data_dir)
     # One question or quiz at a time keeps each session's qa.json and quiz.json consistent.
     files_lock = threading.Lock()
 
@@ -152,6 +164,7 @@ def create_app(
             store.delete_material(material_id)
         except (FileNotFoundError, ValueError) as exc:
             raise _not_found(exc) from exc
+        forget_material(profile, material_id)
         return {"deleted": material_id}
 
     @app.post("/api/elicit")
@@ -267,8 +280,9 @@ def create_app(
         with files_lock:
             materials, chunks = _session_sources(record)
             script = read_model(store.session_dir(session_id) / SCRIPT_FILE, Script)
+            concepts = list_concepts(profile, record.brief.material_ids)
             quiz = make_quiz(backend or make_backend(settings.llm), roles(settings.llm), settings, script, chunks,
-                             materials)  # fmt: skip
+                             materials, concepts)  # fmt: skip
             if not quiz.questions:
                 raise HTTPException(status_code=502, detail="No question passed the check; try again.")
             data = load_quizzes(store, session_id)
@@ -290,7 +304,54 @@ def create_app(
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
             data.attempts.append(result.attempt)
             save_quizzes(store, session_id, data)
+        answered = [
+            (concept, q.id, r.right)
+            for q, r in zip(quiz.questions, result.results)
+            if r.chosen is not None
+            for concept in q.concepts
+        ]
+        record_quiz(profile, session_id, result.attempt.id, answered)
         return result
+
+    @app.get("/api/concepts")
+    def get_concepts() -> list[Concept]:
+        return list_concepts(profile)
+
+    @app.post("/api/concepts/{concept_id}/rename")
+    def rename_concept(concept_id: str, body: Rename) -> list[Concept]:
+        try:
+            rename(profile, concept_id, body.name)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=f"no concept {concept_id!r}") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return list_concepts(profile)
+
+    @app.post("/api/concepts/{concept_id}/merge")
+    def merge_concept(concept_id: str, body: Merge) -> list[Concept]:
+        try:
+            merge(profile, concept_id, body.into)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=f"no concept {exc.args[0]!r}") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return list_concepts(profile)
+
+    @app.post("/api/materials/{material_id}/concepts")
+    def find_concepts(material_id: str) -> list[Concept]:
+        try:
+            material = store.get_material(material_id)
+            chunks = store.get_chunks(material_id)
+        except (FileNotFoundError, ValueError) as exc:
+            raise _not_found(exc) from exc
+        with files_lock:
+            extract_concepts(backend or make_backend(settings.llm), roles(settings.llm)["concepts"], settings,
+                             profile, material, chunks)  # fmt: skip
+        return list_concepts(profile, [material_id])
+
+    @app.get("/api/events")
+    def get_events() -> list[Event]:
+        return list_events(profile, settings.concepts.events_shown)
 
     # Session files (MP3, transcript) and the materials they link to.
     app.mount("/data/materials", StaticFiles(directory=store.materials_dir), name="materials")

@@ -30,6 +30,8 @@ elicitor_model = "sonnet"  # turns a rough request into a brief (S1)
 elicitor_effort = "low"
 tutor_model = "sonnet"  # answers typed questions about a session
 tutor_effort = "medium"
+concepts_model = "sonnet"  # extracts concepts from materials
+concepts_effort = "medium"
 quiz_model = "sonnet"  # writes multiple-choice quizzes
 quiz_effort = "medium"
 timeout_s = 900
@@ -76,6 +78,13 @@ disclaimer = "This is an AI-generated audio session, written from your own study
 [audio]
 ffmpeg_bin = "ffmpeg"
 mp3_bitrate = "96k"
+
+[concepts]
+extract_on_session = true  # when a session first uses a material
+batch_words = 4000  # material words per extraction call
+candidates = 100  # existing concepts shown with each batch
+max_per_material = 20
+events_shown = 50  # event log entries in the web app
 
 [elicit]
 max_questions = 3  # before the Elicitor must propose a brief

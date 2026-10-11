@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 from groundcast.config import Settings
 from groundcast.llm import Role, roles
 from groundcast.models import Brief, Chunk, Material, Script, Segment, Sentence, SentenceKind, SessionRecord
+from groundcast.profile.concepts import add_concept, link_sources, list_concepts
+from groundcast.profile.db import ProfileDB
 from groundcast.quiz import grade, load_quizzes, make_quiz
 from groundcast.sessions import SCRIPT_FILE
 from groundcast.storage import Store, write_model
@@ -113,3 +115,30 @@ def test_quiz_api_hides_answers_until_graded(settings: Settings, store: Store, t
         assert client.post(f"/api/sessions/s-1/quizzes/{quiz['id']}/attempts", json={"answers": [0]}).status_code == 422
         assert client.post("/api/sessions/s-1/quizzes/nope/attempts", json={"answers": []}).status_code == 404
     assert len(load_quizzes(store, "s-1").attempts) == 1
+
+
+def test_answers_count_towards_the_tagged_concepts(settings: Settings, store: Store, tides: Tides) -> None:
+    material, chunks = tides
+    db = ProfileDB(settings.data_dir)
+    with db.connect() as con:
+        tide = add_concept(con, "Tide", "", "inference")
+        link_sources(con, tide, material.id, [chunks[0].id])
+    store.save_session(SessionRecord(id="s-1", brief=Brief(focus="t", material_ids=[material.id]), status="done"))
+    write_model(store.session_dir("s-1") / SCRIPT_FILE, _script(chunks))
+    questions = [{**_question(f"Question {n}?", chunks[0].id), "concepts": [tide, "made-up"]} for n in range(2)]
+    seen: list[str] = []
+
+    def writer(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        seen.append(prompt)
+        return {"questions": questions}
+
+    app = create_app(settings, runner=object(), backend=quiz_backend(writer))  # type: ignore[arg-type]
+    with TestClient(app, base_url="http://127.0.0.1:8765") as client:
+        quiz = client.post("/api/sessions/s-1/quizzes").json()
+        assert f"- {tide}: Tide" in seen[0]
+        stored = load_quizzes(store, "s-1").quizzes[0]
+        assert [q.concepts for q in stored.questions] == [[tide], [tide]]  # unknown IDs removed
+        right = stored.questions[0].correct
+        client.post(f"/api/sessions/s-1/quizzes/{quiz['id']}/attempts", json={"answers": [right, None]})
+    (concept,) = list_concepts(db)
+    assert (concept.asked, concept.right) == (1, 1)  # the skipped question does not count

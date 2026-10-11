@@ -23,6 +23,7 @@ from groundcast.models import Chunk, Label, Material, Script, Sentence, Sentence
 from groundcast.pipeline.common import format_passages, load_prompt
 from groundcast.pipeline.verifier import build_items, verify_items
 from groundcast.pipeline.writer import clean_sources
+from groundcast.profile.concepts import Concept
 from groundcast.retrieval import BM25Index
 from groundcast.storage import Store, read_model, write_model
 from groundcast.transcript import source_links
@@ -44,6 +45,7 @@ class DraftQuestion(BaseModel):
     explanation: str
     sources: list[str] = Field(default_factory=list)
     topic: str = Field(description="The heading of the segment the question is about")
+    concepts: list[str] = Field(default_factory=list, description="IDs of the listed concepts the question tests")
 
 
 class QuizDraft(BaseModel):
@@ -58,6 +60,7 @@ class QuizQuestion(BaseModel):
     explanation: str
     sources: list[SourceLink] = Field(default_factory=list)
     topic: str = ""
+    concepts: list[str] = Field(default_factory=list)  # concept table IDs
 
 
 class Quiz(BaseModel):
@@ -158,15 +161,20 @@ def make_quiz(
     script: Script,
     chunks: list[Chunk],
     materials: dict[str, Material],
+    concepts: list[Concept] | None = None,
 ) -> Quiz:
+    """concepts: the concept table entries of the session's materials, for tagging questions."""
     cfg = settings.quiz
     by_id = {c.id: c for c in chunks}
     cited = list(dict.fromkeys(cid for s in script.sentences() for cid in s.sources if cid in by_id))
+    concept_text = "\n".join(f"- {c.id}: {c.name}" for c in concepts or []) or "(none)"
     prompt = (
         f"# Questions wanted\n\n{cfg.questions} questions with {cfg.options} options each.\n\n"
         f"# Session script (the claims it made, with their passage IDs)\n\n{_script_text(script)}\n"
+        f"# Concepts (tag each question with the ones it tests)\n\n{concept_text}\n\n"
         f"# Passages\n\n{format_passages(by_id[c] for c in cited)}\n\nWrite the quiz now."
     )
+    concept_ids = {c.id for c in concepts or []}
     draft = backend.complete_structured(roles["quiz"], load_prompt("quiz"), prompt, QuizDraft)
     candidates = [q for q in draft.questions if _valid(q, cfg.options)]
     for q in candidates:
@@ -202,6 +210,7 @@ def make_quiz(
                 explanation=q.explanation.strip(),
                 sources=source_links(q.sources, by_id, materials),
                 topic=q.topic.strip(),
+                concepts=[c for c in dict.fromkeys(q.concepts) if c in concept_ids],
             )
         )
     return Quiz(id=quiz_id, questions=questions, dropped=len(draft.questions) - len(questions))

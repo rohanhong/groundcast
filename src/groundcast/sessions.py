@@ -18,9 +18,12 @@ import numpy as np
 from groundcast.audio import Chapter, encode_mp3, silence, write_wav
 from groundcast.config import Settings
 from groundcast.llm import LLMBackend, make_backend, roles
-from groundcast.models import Brief, Chunk, Script, SentenceKind, SessionRecord, SessionStatus, utc_now
+from groundcast.models import Brief, Chunk, Material, Script, SentenceKind, SessionRecord, SessionStatus, utc_now
 from groundcast.pipeline.common import Progress
 from groundcast.pipeline.run import Pipeline
+from groundcast.profile.concepts import is_extracted
+from groundcast.profile.db import ProfileDB
+from groundcast.profile.extract import extract_concepts
 from groundcast.storage import Store, write_model, write_text_atomic
 from groundcast.transcript import render_transcript
 from groundcast.tts import Synthesizer, make_synthesizer
@@ -115,6 +118,24 @@ def render_audio(
     return np.concatenate(parts), timings, chapters
 
 
+def extract_new_concepts(
+    backend: LLMBackend, settings: Settings, store: Store, materials: list[Material], progress: Progress
+) -> None:
+    """Extract the concepts of materials seen for the first time; a failure does not stop the session."""
+    db = ProfileDB(settings.data_dir)
+    for material in materials:
+        if is_extracted(db, material.id):
+            continue
+        progress("concepts", f"Finding the concepts in {material.filename}")
+        try:
+            n = extract_concepts(backend, roles(settings.llm)["concepts"], settings, db, material,
+                                 store.get_chunks(material.id))  # fmt: skip
+            progress("concepts", f"{material.filename}: linked to {n} concepts")
+        except Exception as exc:  # noqa: BLE001 - concepts are optional for a session
+            log.warning("concept extraction for %s failed", material.id, exc_info=True)
+            progress("concepts", f"Skipped concepts for {material.filename}: {exc}")
+
+
 def run_session(
     record: SessionRecord,
     store: Store,
@@ -151,6 +172,8 @@ def run_session(
             materials[material_id] = store.get_material(material_id)
             chunks.extend(store.get_chunks(material_id))
         backend = backend or make_backend(settings.llm)
+        if settings.concepts.extract_on_session:
+            extract_new_concepts(backend, settings, store, list(materials.values()), progress)
         result = Pipeline(settings, backend, roles(settings.llm)).run(brief, chunks, progress)
         write_model(session_dir / SCRIPT_FILE, result.script)
         write_model(session_dir / REPORT_FILE, result.report)
