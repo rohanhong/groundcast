@@ -107,3 +107,19 @@ def test_feedback_changes_the_repeat_suggestion(settings: Settings, store: Store
     assert get_feedback(db, last.id).comment == ""
     events = [e for e in list_events(db, 5) if e.kind == "session.feedback"]
     assert events[0].before["comment"] == "dragged" and events[0].after["rating"] == 5
+
+
+def test_feedback_api(settings: Settings, store: Store, tides: Tides) -> None:
+    material, _ = tides
+    done = _session(material.id, 1)
+    store.save_session(done)
+    queued = _session(material.id, 0, SessionStatus.QUEUED)
+    store.save_session(queued)
+    app = create_app(settings, runner=object())  # type: ignore[arg-type]
+    with TestClient(app, base_url="http://127.0.0.1:8765") as client:
+        assert client.get(f"/api/sessions/{done.id}/feedback").json() is None
+        r = client.put(f"/api/sessions/{done.id}/feedback", json={"rating": 4, "length": "right", "comment": "good"})
+        assert r.status_code == 200 and client.get(f"/api/sessions/{done.id}/feedback").json()["rating"] == 4
+        assert client.put(f"/api/sessions/{done.id}/feedback", json={"rating": 9}).status_code == 422
+        assert client.put(f"/api/sessions/{queued.id}/feedback", json={"rating": 3}).status_code == 409
+        assert client.get("/api/sessions/nope/feedback").status_code == 404
