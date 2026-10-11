@@ -15,8 +15,8 @@ from groundcast.pipeline.writer import (
     draft_to_script,
     revise_sentences,
     select_sources,
+    Pacing,
     shorten_draft,
-    target_words,
     write_script,
 )
 from groundcast.retrieval import BM25Index
@@ -33,6 +33,7 @@ class ReportEntry(BaseModel):
 
 class VerificationReport(BaseModel):
     target_words: int = 0
+    pacing: str = ""  # where the words-per-second estimate came from
     draft_words: list[int] = Field(default_factory=list)  # the first draft, then each shortened one
     writer_sentences: int = 0
     first_pass: dict[str, int] = Field(default_factory=dict)
@@ -102,10 +103,14 @@ def _remove(script: Script, ids: set[str]) -> None:
 
 
 class Pipeline:
-    def __init__(self, settings: Settings, backend: LLMBackend, roles: dict[str, Role]) -> None:
+    def __init__(
+        self, settings: Settings, backend: LLMBackend, roles: dict[str, Role], pacing: Pacing | None = None
+    ) -> None:
         self.settings = settings
         self.backend = backend
         self.roles = roles
+        # Without a measured pace, the configured words per minute stands in.
+        self.pacing = pacing or Pacing.configured(settings.pipeline.words_per_minute, settings.tts.speed)
 
     def run(self, brief: Brief, chunks: list[Chunk], progress: Progress = no_progress) -> PipelineResult:
         cfg = self.settings.pipeline
@@ -123,10 +128,9 @@ class Pipeline:
         # S3 Write
         sources = select_sources(chunks, index, f"{brief.title} {brief.focus}", cfg.writer_max_source_words)
         progress("write", f"Writing a {brief.minutes}-minute script from {len(sources)} passages")
-        # A faster voice fits more words into the same minutes.
-        pace = round(cfg.words_per_minute * self.settings.tts.speed)
-        target = target_words(brief, pace, cfg.recall_questions, self.settings.tts.recall_pause_s)
+        target = self.pacing.target_words(brief, cfg.recall_questions, self.settings.tts.recall_pause_s)
         report.target_words = target
+        report.pacing = self.pacing.source
         draft = write_script(self.backend, self.roles["writer"], brief, sources, target, cfg.recall_questions)
         report.draft_words.append(draft.word_count())
 

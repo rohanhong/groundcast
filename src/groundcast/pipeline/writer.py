@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -124,12 +125,25 @@ def draft_to_script(draft: Draft, valid: set[str], script_format: ScriptFormat =
     return Script(title=draft.title.strip(), segments=segments, format=script_format)
 
 
-def target_words(brief: Brief, words_per_minute: int, recall_questions: int = 0, recall_pause_s: float = 0.0) -> int:
-    seconds = brief.minutes * 60.0
-    if brief.recall_prompts:
-        # The pauses after recall questions take time but no words.
-        seconds -= recall_questions * recall_pause_s
-    return max(1, round(seconds / 60.0 * words_per_minute))
+@dataclass(frozen=True)
+class Pacing:
+    """How script words turn into listening time."""
+
+    seconds_per_word: float  # speech plus the pauses between sentences and segments
+    fixed_s: float = 0.0  # time with no script words, such as the spoken disclaimer
+    source: str = ""
+
+    @classmethod
+    def configured(cls, words_per_minute: int, speed: float) -> Pacing:
+        """The configured pace, pauses and disclaimer included; a faster voice fits more words."""
+        return cls(60.0 / (words_per_minute * speed), 0.0, f"configured {words_per_minute} words per minute")
+
+    def target_words(self, brief: Brief, recall_questions: int = 0, recall_pause_s: float = 0.0) -> int:
+        seconds = brief.minutes * 60.0 - self.fixed_s
+        if brief.recall_prompts:
+            # The pauses after recall questions take time but no words.
+            seconds -= recall_questions * recall_pause_s
+        return max(1, round(seconds / self.seconds_per_word))
 
 
 def write_script(
