@@ -1,0 +1,92 @@
+:root {
+  --fg: #1d1f23;
+  --muted: #5d6470;
+  --bg: #f7f7f9;
+  --card: #ffffff;
+  --line: #dcdfe5;
+  --accent: #3b5bdb;
+  --accent-fg: #ffffff;
+  --ok: #2b8a3e;
+  --warn: #b54708;
+  --bad: #c92a2a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e6e8eb;
+    --muted: #9aa3ae;
+    --bg: #111315;
+    --card: #1a1d21;
+    --line: #2e333a;
+    --accent: #8ea6ff;
+    --accent-fg: #0b0d10;
+    --ok: #69db7c;
+    --warn: #f5a35c;
+    --bad: #ff8787;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 16px/1.5 system-ui, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+header, main { max-width: 52rem; margin: 0 auto; padding: 0 16px; }
+header { padding-top: 1.5rem; }
+h1 { margin: 0; font-size: 1.6rem; }
+h2 { font-size: 1.15rem; margin-top: 0; }
+section {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+}
+.muted { color: var(--muted); font-size: .9rem; }
+label { display: block; margin: .6rem 0; font-size: .92rem; }
+input[type=text], input[type=number], textarea, select {
+  display: block;
+  width: 100%;
+  margin-top: .25rem;
+  padding: .45rem .55rem;
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.row label { flex: 1 1 10rem; }
+button {
+  font: inherit;
+  padding: .45rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  cursor: pointer;
+}
+button.secondary, button.link {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--line);
+}
+button.link { border: 0; padding: 0 .3rem; }
+button:disabled { opacity: .5; cursor: default; }
+.list { list-style: none; padding: 0; margin: .5rem 0 0; }
+.list li {
+  padding: .6rem 0;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.list li:first-child { border-top: 0; }
+.chunks { font-size: .85rem; max-height: 22rem; overflow: auto; }
+.chunks code { color: var(--muted); }
+.status-done { color: var(--ok); }
+.status-failed { color: var(--bad); }
+.status-running, .status-queued { color: var(--warn); }
+audio { width: 100%; margin-top: .4rem; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: .2rem 1rem; }
+dt { color: var(--muted); }
+dd { margin: 0; }
+pre.log { font-size: .78rem; white-space: pre-wrap; color: var(--muted); max-height: 10rem; overflow: auto; }

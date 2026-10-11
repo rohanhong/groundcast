@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>groundcast</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>groundcast</h1>
+    <p class="muted" id="settings-line"></p>
+  </header>
+
+  <main>
+    <section>
+      <h2>1. Materials</h2>
+      <p class="muted">Text-layer PDF, Markdown, or plain text. Files stay in your local data directory.</p>
+      <form id="upload-form">
+        <input type="file" id="upload-input" multiple accept=".pdf,.md,.markdown,.txt">
+        <button type="submit">Add</button>
+      </form>
+      <p id="upload-status" class="muted" role="status"></p>
+      <ul id="materials" class="list"></ul>
+      <details id="chunk-view" hidden>
+        <summary id="chunk-title"></summary>
+        <ol id="chunk-list" class="chunks"></ol>
+      </details>
+    </section>
+
+    <section>
+      <h2>2. Brief</h2>
+      <form id="brief-form">
+        <label>What should the session cover?
+          <textarea id="focus" rows="3" required placeholder="For example: the two stages of photosynthesis and why they depend on each other"></textarea>
+        </label>
+        <label>Title (optional)
+          <input id="title" type="text">
+        </label>
+        <div class="row">
+          <label>Minutes
+            <input id="minutes" type="number" min="2" max="60" value="10" required>
+          </label>
+          <label>Listening context
+            <select id="context">
+              <option value="commute">Commute</option>
+              <option value="exercise">Exercise</option>
+              <option value="revision">Revision before an exam</option>
+              <option value="desk">At my desk</option>
+            </select>
+          </label>
+          <label>Level
+            <select id="level">
+              <option value="introductory">Introductory</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </label>
+        </div>
+        <label>Notes (optional)
+          <input id="notes" type="text" placeholder="For example: I keep mixing up the two stages">
+        </label>
+        <button type="submit">Review brief</button>
+      </form>
+      <div id="brief-review" hidden>
+        <h3>Confirm the brief</h3>
+        <dl id="brief-summary"></dl>
+        <button id="brief-confirm" type="button">Start session</button>
+        <button id="brief-edit" type="button" class="secondary">Edit</button>
+      </div>
+      <p id="brief-status" class="muted" role="status"></p>
+    </section>
+
+    <section>
+      <h2>3. Sessions</h2>
+      <ul id="sessions" class="list"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
