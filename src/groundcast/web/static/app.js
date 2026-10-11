@@ -151,6 +151,68 @@ $("brief-confirm").addEventListener("click", async () => {
   }
 });
 
+// Questions about a finished session (text Q&A)
+
+const qaPanels = new Map(); // session id -> panel, kept across list refreshes
+
+function renderExchange(x) {
+  const numbers = new Map(x.sources.map((s, i) => [s.chunk_id, i + 1]));
+  const answer = el("p", { class: "qa-answer" });
+  if (!x.covered) answer.append(el("span", { class: "muted" }, "Not covered by your materials. "));
+  for (const s of x.sentences) {
+    const span = el("span", s.verified ? {} : { class: "unverified", title: s.rationale }, s.text);
+    answer.append(span);
+    for (const cid of s.sources) {
+      answer.append(el("sup", {}, el("a", { href: `#${x.id}-${numbers.get(cid)}` }, `${numbers.get(cid)}`)));
+    }
+    answer.append(" ");
+  }
+  const sources = el("ol", { class: "qa-sources muted" },
+    ...x.sources.map((s, i) => el("li", { id: `${x.id}-${i + 1}` },
+      el("a", { href: `/data/${s.path}`, target: "_blank" }, s.label))));
+  return el("div", { class: "qa-exchange" }, el("p", { class: "qa-question" }, x.question), answer, sources);
+}
+
+function qaPanel(sessionId) {
+  if (qaPanels.has(sessionId)) return qaPanels.get(sessionId);
+  const log = el("div", { class: "qa-log" });
+  const input = el("input", { type: "text", placeholder: "Ask about this session; answers come from your materials" });
+  const status = el("p", { class: "muted", role: "status" });
+  const button = el("button", { type: "submit" }, "Ask");
+  const form = el("form", { class: "qa-form" }, input, button);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const question = input.value.trim();
+    if (!question) return;
+    button.disabled = true;
+    status.textContent = "Answering and checking against your materials...";
+    try {
+      const x = await api(`/api/sessions/${sessionId}/questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      log.append(renderExchange(x));
+      input.value = "";
+      status.textContent = "";
+    } catch (error) {
+      status.textContent = `Could not answer: ${error.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  });
+  const panel = el("details", { class: "qa" }, el("summary", {}, "Questions"), log, form, status);
+  panel.addEventListener("toggle", () => {
+    if (!panel.open || panel.dataset.loaded) return;
+    panel.dataset.loaded = "1";
+    api(`/api/sessions/${sessionId}/questions`)
+      .then((xs) => log.prepend(...xs.map(renderExchange)))
+      .catch((error) => { status.textContent = `Could not load earlier questions: ${error.message}`; });
+  });
+  qaPanels.set(sessionId, panel);
+  return panel;
+}
+
 // Sessions
 
 function reportLine(report) {
@@ -191,7 +253,7 @@ async function loadSessions() {
           el("a", { href: `${base}/session.mp3`, download: `${s.id}.mp3` }, "Download MP3")),
       );
       const reportBox = el("div", { class: "muted" });
-      item.append(reportBox);
+      item.append(reportBox, qaPanel(s.id));
       api(`/api/sessions/${s.id}/report`).then((r) => { reportBox.textContent = reportLine(r); }).catch(() => {});
     }
     list.append(item);

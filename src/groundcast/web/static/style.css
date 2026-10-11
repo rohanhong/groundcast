@@ -90,3 +90,13 @@ dl { display: grid; grid-template-columns: max-content 1fr; gap: .2rem 1rem; }
 dt { color: var(--muted); }
 dd { margin: 0; }
 pre.log { font-size: .78rem; white-space: pre-wrap; color: var(--muted); max-height: 10rem; overflow: auto; }
+details.qa { margin-top: .5rem; }
+details.qa summary { cursor: pointer; color: var(--accent); }
+.qa-form { display: flex; gap: .5rem; margin-top: .5rem; }
+.qa-form input { margin-top: 0; }
+.qa-exchange { border-left: 3px solid var(--line); padding-left: .7rem; margin: .7rem 0; }
+.qa-question { font-weight: 600; margin: 0 0 .2rem; }
+.qa-answer { margin: 0; }
+.qa-sources { font-size: .82rem; margin: .2rem 0 0; padding-left: 1.2rem; }
+.unverified { color: var(--warn); }
+.unverified::after { content: " [not verified against your materials]"; font-size: .8rem; }
