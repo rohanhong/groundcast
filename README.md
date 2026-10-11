@@ -160,7 +160,7 @@ own licence; weights are downloaded, never committed.
 |---|---|---|---|
 | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | Speech synthesis (M1) | Apache-2.0 / Apache-2.0 | Python package; its in-process espeak-ng loader is blocked |
 | [spaCy `en_core_web_sm`](https://github.com/explosion/spacy-models) | English text analysis for Kokoro's pronunciation | MIT / MIT | Python package |
-| [Piper](https://github.com/OHF-Voice/piper1-gpl) | Fallback speech synthesis | GPL-3.0 / per voice | Separate process only |
+| [Piper](https://github.com/OHF-Voice/piper1-gpl) | Fallback speech synthesis (`tts.engine = "piper"`; see the example config) | GPL-3.0 / per voice | Separate process only (`pip install piper-tts`) |
 | espeak-ng | Optional pronunciation fallback for words Kokoro does not know | GPL | Separate program only (`tts.espeak_bin`) |
 | ffmpeg, poppler | Audio encoding, PDF text | LGPL build, GPL | Separate programs (conda-forge) |
 | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) with [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | Speech recognition for video and audio (M3) | MIT / MIT | Python package (the `asr` extra) |

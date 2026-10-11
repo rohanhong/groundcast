@@ -106,7 +106,7 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 |---|---|---|---|
 | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | 语音合成（M1） | Apache-2.0 / Apache-2.0 | Python 包；其进程内加载 espeak-ng 的部分已被屏蔽 |
 | [spaCy `en_core_web_sm`](https://github.com/explosion/spacy-models) | 为 Kokoro 的发音做英语文本分析 | MIT / MIT | Python 包 |
-| [Piper](https://github.com/OHF-Voice/piper1-gpl) | 备用语音合成 | GPL-3.0 / 按音色而定 | 仅作为独立进程 |
+| [Piper](https://github.com/OHF-Voice/piper1-gpl) | 备用语音合成（`tts.engine = "piper"`；见示例配置） | GPL-3.0 / 按音色而定 | 仅作为独立进程（`pip install piper-tts`） |
 | espeak-ng | 可选的发音回退，用于 Kokoro 不认识的词 | GPL | 仅作为独立程序（`tts.espeak_bin`） |
 | ffmpeg、poppler | 音频编码、PDF 文本提取 | LGPL 构建、GPL | 独立程序（conda-forge） |
 | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 与 [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | 视频与音频的语音识别（M3） | MIT / MIT | Python 包（`asr` 附加依赖） |

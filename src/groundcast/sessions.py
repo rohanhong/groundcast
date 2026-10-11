@@ -111,14 +111,22 @@ def render_audio(
     timings: list[dict[str, object]] = []
     starts: list[float] = []
     total = len(script.sentences())
-    done = 0
+    reported = [0]
+
+    def done(n: int) -> None:
+        if n // 10 > reported[0] // 10 or n == total:
+            progress("render", f"Rendered {n} of {total} sentences")
+        reported[0] = n
+
+    lines = [(s.text, voices[s.speaker], directions[seg.id].speed) for seg in script.segments for s in seg.sentences]
+    rendered = iter(synth.synthesize_many(lines, done))
     for seg in script.segments:
         # The first chapter also holds the spoken disclaimer before it.
         starts.append(0.0 if not starts else position / rate)
         speed = directions[seg.id].speed
         for s in seg.sentences:
             voice = voices[s.speaker]
-            audio = synth.synthesize(s.text, voice, speed)
+            audio = next(rendered)
             stats.words[voice] = stats.words.get(voice, 0) + len(s.text.split())
             stats.speech_s[voice] = stats.speech_s.get(voice, 0.0) + len(audio) / rate * speed
             timings.append({"sentence_id": s.id, "segment_id": seg.id, "speaker": s.speaker,
@@ -129,9 +137,6 @@ def render_audio(
             if not recall:  # recall pauses are planned separately
                 stats.pause_s += pause
             position += len(audio) + len(parts[-1])
-            done += 1
-            if done % 10 == 0:
-                progress("render", f"Rendered {done} of {total} sentences")
         parts.append(silence(tts.segment_pause_s, rate))
         position += len(parts[-1])
         stats.pause_s += tts.segment_pause_s

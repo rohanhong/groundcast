@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 
 import numpy as np
+
+Line = tuple[str, str, float]  # text, voice, speed
 
 
 class TTSError(RuntimeError):
@@ -17,6 +20,15 @@ class Synthesizer(ABC):
     @abstractmethod
     def synthesize(self, text: str, voice: str, speed: float) -> np.ndarray:
         """Return mono float32 samples in [-1, 1] at self.sample_rate."""
+
+    def synthesize_many(self, lines: list[Line], done: Callable[[int], None] | None = None) -> list[np.ndarray]:
+        """Samples for each line, in order; done(n) reports progress. Engines may batch."""
+        out = []
+        for text, voice, speed in lines:
+            out.append(self.synthesize(text, voice, speed))
+            if done:
+                done(len(out))
+        return out
 
     def close(self) -> None:
         """Release model memory (stages share the GPU; spec section 11)."""

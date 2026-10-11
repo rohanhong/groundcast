@@ -157,7 +157,7 @@ class PipelineSettings(_Section):
 
 
 class TTSSettings(_Section):
-    engine: Literal["kokoro", "silent"] = "kokoro"
+    engine: Literal["kokoro", "piper", "silent"] = "kokoro"
     voice: str = "af_heart"
     # Host B's voice in two-host sessions; Host A and the narrator use voice.
     second_voice: str = "am_michael"
@@ -188,6 +188,12 @@ class TTSSettings(_Section):
     # Optional pronunciation fallback for words Kokoro's lexicon lacks. It runs
     # the espeak-ng program as a separate process (GPL; never imported).
     espeak_bin: str = ""
+    # Piper, the fallback engine (GPL, run as a separate program). With
+    # engine = "piper", voice and second_voice name Piper voices in
+    # piper_voices_dir (default: <model_dir>/piper).
+    piper_command: list[str] = Field(default_factory=lambda: ["piper"])
+    piper_voices_dir: str = ""
+    piper_timeout_s: float = Field(default=60.0, gt=0)
     # Spoken at the start of every session and stored in the MP3 tags (10.4).
     disclaimer: str = "This is an AI-generated audio session, written from your own study materials."
 

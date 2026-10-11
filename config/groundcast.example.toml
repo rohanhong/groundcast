@@ -147,6 +147,13 @@ recall_pause_s = 6.0  # silence after a recall question
 # Path to the espeak-ng program, for words Kokoro's lexicon lacks. It runs as
 # a separate process. Empty: such words are skipped.
 espeak_bin = ""
+# Piper, the fallback engine (pip install piper-tts; GPL, run as a separate
+# program). With engine = "piper", voice and second_voice name Piper voices,
+# for example "en_US-lessac-medium", downloaded into piper_voices_dir with
+# python -m piper.download_voices <voice> --data-dir <piper_voices_dir>.
+piper_command = ["piper"]
+piper_voices_dir = ""  # default: <model_dir>/piper
+piper_timeout_s = 60.0  # per sentence
 disclaimer = "This is an AI-generated audio session, written from your own study materials."
 
 [audio]

@@ -10,7 +10,6 @@ can be undone; undoing is itself a logged change.
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
@@ -19,7 +18,6 @@ from groundcast.config import Settings
 from groundcast.models import MAX_MINUTES, MIN_MINUTES, Brief, Context, Level, ScriptFormat, utc_now
 from groundcast.profile.db import EventSource, ProfileDB, get_event, log_event
 
-_VOICE = re.compile(r"[a-z]{2}_[a-z]+")
 # Preferences that set a default in the brief form; a brief's own value wins.
 BRIEF_KEYS = ("minutes", "format", "recall_prompts", "context", "level")
 
@@ -64,7 +62,12 @@ def defaults(settings: Settings) -> dict[str, Any]:
 
 
 def voice_choices(settings: Settings) -> list[str]:
-    """Configured voices that fit the speech engine's language (a: American, b: British)."""
+    """Voices to offer: Piper's downloaded voices, or Kokoro's configured ones for its language."""
+    if settings.tts.engine == "piper":
+        from groundcast.tts import piper_voices_dir
+        from groundcast.tts.piper_engine import piper_voices
+
+        return piper_voices(piper_voices_dir(settings))
     return [v for v in settings.tts.voice_choices if v.startswith(settings.tts.lang_code)]
 
 
@@ -106,8 +109,8 @@ def check(settings: Settings, changes: dict[str, Any]) -> Preferences:
         raise ValueError(f"unknown preference(s): {', '.join(sorted(unknown))}")
     for key in ("voice", "second_voice"):
         value = changes.get(key)
-        if value is not None and (not _VOICE.fullmatch(value) or not value.startswith(settings.tts.lang_code)):
-            raise ValueError(f"{key} must be a voice for language {settings.tts.lang_code!r}, got {value!r}")
+        if value is not None and value not in voice_choices(settings):
+            raise ValueError(f"{key} must be one of the offered voices ({settings.tts.engine}), got {value!r}")
     try:
         return Preferences(**changes)
     except ValidationError as exc:

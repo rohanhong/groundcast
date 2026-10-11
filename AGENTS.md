@@ -17,8 +17,9 @@ which every statement is grounded in those materials.
   (it installs this package in editable mode with the `dev` extra).
 - Add speech synthesis: `pip install -e ".[tts]"`; speech recognition for
   video and audio: `pip install -e ".[asr]"` (for its GPU use, also
-  `pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12>=9,<10"`); the API
-  backend: `pip install -e ".[api]"`.
+  `pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12>=9,<10"`); the Piper
+  fallback voices: `pip install piper-tts` (GPL; groundcast only runs the
+  program); the API backend: `pip install -e ".[api]"`.
 - GPU speech synthesis (the owner's machine: RTX 3070 Laptop, sm_86, driver
   595.97): `pip install "torch==2.14.1+cu130" --index-url
   https://download.pytorch.org/whl/cu130`. Re-run it after anything that
