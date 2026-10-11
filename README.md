@@ -35,10 +35,12 @@ materials, and only then polishes the style; local text-to-speech renders the
 result as an MP3 you can play in any phone player.
 
 > [!NOTE]
-> Early development: milestones M1 to M3 are done. Add PDF, PowerPoint, Word,
-> Markdown, or text files, web pages by address, or video and audio, whose
-> speech is recognised on your machine and checked by you before use. Describe
-> a session in your own words and confirm the brief it proposes; you get a
+> Version 1: all five milestones are built; a few checks still need real use,
+> such as chapters in your phone player and how well your own handwriting is
+> read. Add PDF (with a text layer or scanned), PowerPoint, Word, Markdown, or
+> text files, web pages by address, photos of notes, or video and audio;
+> recognised speech and scanned text are checked by you before use. Describe a
+> session in your own words and confirm the brief it proposes; you get a
 > verified MP3, read by one narrator or two hosts, with chapter marks, and a
 > transcript whose links open each source at its page, slide, or moment. Typed
 > questions and multiple-choice quizzes about a finished session come from
@@ -47,8 +49,8 @@ result as an MP3 you can play in any phone player.
 > results on each, which you can rename and merge. Preferences set your
 > default voice, speed, and brief, and every change to the profile is logged
 > and can be exported. At session start, ranked suggestions say why they fit
-> you; what groundcast infers from your past sessions is shown to you and
-> never used silently.
+> you; what groundcast infers from your past sessions and your feedback is
+> shown to you and never used silently.
 
 ## ✨ Highlights
 
