@@ -103,10 +103,73 @@
       <p class="muted">Concepts found in your materials, with your quiz results on each. Rename or merge
         them; every change goes into the log.</p>
       <ul id="concepts" class="list"></ul>
+    </section>
+
+    <section>
+      <h2>5. Preferences</h2>
+      <p class="muted">Your defaults. A blank field uses the configured default, shown as its placeholder;
+        what you choose in a brief still wins.</p>
+      <form id="prefs-form">
+        <div class="row">
+          <label>Voice <select id="pref-voice"></select></label>
+          <label>Second host's voice <select id="pref-second_voice"></select></label>
+          <label>Speed <input id="pref-speed" type="number" min="0.5" max="2" step="0.05"></label>
+        </div>
+        <div class="row">
+          <label>Minutes <input id="pref-minutes" type="number" min="2" max="60"></label>
+          <label>Format
+            <select id="pref-format">
+              <option value="">(default)</option>
+              <option value="narrator">One narrator</option>
+              <option value="two_hosts">Two hosts</option>
+            </select>
+          </label>
+          <label>Listening context
+            <select id="pref-context">
+              <option value="">(default)</option>
+              <option value="commute">Commute</option>
+              <option value="exercise">Exercise</option>
+              <option value="revision">Revision before an exam</option>
+              <option value="desk">At my desk</option>
+            </select>
+          </label>
+          <label>Level
+            <select id="pref-level">
+              <option value="">(default)</option>
+              <option value="introductory">Introductory</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Quiz questions <input id="pref-quiz_questions" type="number" min="1" max="20"></label>
+          <label>Recall questions
+            <select id="pref-recall_prompts">
+              <option value="">(default)</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+          <label>Find concepts in new materials
+            <select id="pref-extract_concepts">
+              <option value="">(default)</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+        </div>
+        <button type="submit">Save preferences</button>
+      </form>
+      <p id="prefs-status" class="muted" role="status"></p>
       <details id="events">
         <summary>Change log</summary>
         <ol id="event-list" class="chunks"></ol>
       </details>
+      <p class="muted">
+        <a href="/api/profile/export" download="groundcast-profile.json">Export the whole profile</a> |
+        <button id="profile-delete" type="button" class="link">Delete the whole profile</button>
+      </p>
     </section>
   </main>
 

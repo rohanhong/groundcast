@@ -484,18 +484,98 @@ async function loadEvents() {
   const events = await api("/api/events");
   $("event-list").replaceChildren(...events.map((e) => {
     const change = [e.before, e.after].filter((v) => v !== null).map((v) => JSON.stringify(v)).join(" -> ");
-    return el("li", {}, el("code", {}, e.at.slice(0, 19).replace("T", " ")), ` ${e.kind} ${e.subject} `,
+    const item = el("li", {}, el("code", {}, e.at.slice(0, 19).replace("T", " ")), ` ${e.kind} ${e.subject} `,
       el("span", { class: "muted" }, `${change} (${e.source})${e.reason ? `: ${e.reason}` : ""}`));
+    if (e.kind === "preference.set") {
+      item.append(" ", el("button", { class: "link", type: "button", onclick: async () => {
+        try {
+          showPreferences(await api(`/api/events/${e.id}/undo`, { method: "POST" }));
+          await loadEvents();
+        } catch (error) {
+          alert(error.message);
+        }
+      } }, "Undo"));
+    }
+    return item;
   }));
 }
 
+// Preferences
+
+const PREF_KEYS = ["voice", "second_voice", "speed", "minutes", "format", "context", "level",
+  "quiz_questions", "recall_prompts", "extract_concepts"];
+const NUMBER_KEYS = new Set(["speed", "minutes", "quiz_questions"]);
+const BOOL_KEYS = new Set(["recall_prompts", "extract_concepts"]);
+let savedPrefs = {};
+
+function showPreferences(view) {
+  savedPrefs = view.preferences;
+  for (const id of ["pref-voice", "pref-second_voice"]) {
+    const key = id.slice(5);
+    $(id).replaceChildren(el("option", { value: "" }, `(default: ${view.effective[key]})`),
+      ...view.voice_choices.map((v) => el("option", { value: v }, v)));
+  }
+  for (const key of PREF_KEYS) {
+    const input = $(`pref-${key}`);
+    const value = view.preferences[key];
+    input.value = value === null ? "" : String(value);
+    if (input.tagName === "INPUT") input.placeholder = String(view.effective[key]);
+  }
+  // The brief form starts from the effective defaults; a brief can still change them.
+  $("minutes").value = view.effective.minutes;
+  $("format").value = view.effective.format;
+  $("context").value = view.effective.context;
+  $("level").value = view.effective.level;
+  $("recall").checked = view.effective.recall_prompts;
+  showSettingsLine().catch(() => {});
+}
+
+$("prefs-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const changes = {};
+  for (const key of PREF_KEYS) {
+    const raw = $(`pref-${key}`).value.trim();
+    let value = raw === "" ? null : raw;
+    if (value !== null && NUMBER_KEYS.has(key)) value = Number(value);
+    if (value !== null && BOOL_KEYS.has(key)) value = value === "true";
+    if (value !== savedPrefs[key]) changes[key] = value;
+  }
+  if (!Object.keys(changes).length) {
+    $("prefs-status").textContent = "Nothing changed.";
+    return;
+  }
+  try {
+    showPreferences(await api("/api/preferences", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ changes }),
+    }));
+    $("prefs-status").textContent = `Saved: ${Object.keys(changes).join(", ")}.`;
+    if ($("events").open) loadEvents();
+  } catch (error) {
+    $("prefs-status").textContent = `Not saved: ${error.message}`;
+  }
+});
+
+$("profile-delete").addEventListener("click", async () => {
+  if (!confirm("Delete the whole profile: preferences, concepts, quiz results, and the change log?")) return;
+  await api("/api/profile", { method: "DELETE" });
+  showPreferences(await api("/api/preferences"));
+  await loadConcepts();
+  if ($("events").open) loadEvents();
+});
+
 $("events").addEventListener("toggle", () => { if ($("events").open) loadEvents().catch(() => {}); });
 
-async function init() {
+async function showSettingsLine() {
   const s = await api("/api/settings");
   $("settings-line").textContent =
     `LLM: ${s.llm_backend} | voice: ${s.voice} at ${s.speed}x (${s.tts_engine})`;
-  await Promise.all([loadMaterials(), loadSessions(), loadConcepts()]);
+}
+
+async function init() {
+  await Promise.all([loadMaterials(), loadSessions(), loadConcepts(),
+    api("/api/preferences").then(showPreferences)]);
 }
 
 init().catch((error) => {
