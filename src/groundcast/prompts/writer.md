@@ -17,7 +17,8 @@ Return the script as structured output:
   - text: the exact words to be spoken.
   - kind: "claim" for anything about the subject; "framing" for an analogy or
     example that is not stated in the passages; "connective" only for pure
-    signposting with no content ("Let's start with the basics.").
+    signposting with no content ("Let's start with the basics."); "recall"
+    only for a recall question when the brief asks for recall prompts.
   - sources: the IDs of the passages that support a claim. Required for every
     claim; empty for connective sentences; for framing, the passages whose
     idea it illustrates.

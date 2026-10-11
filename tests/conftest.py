@@ -134,3 +134,25 @@ def scripted_backend() -> FakeBackend:
         }
 
     return FakeBackend({"Draft": draft, "VerifierOutput": verify, "Revisions": revise, "Edits": edit})
+
+
+def recall_backend(first: str) -> FakeBackend:
+    """A script ending in a recall segment whose second answer can never be verified."""
+    backend = scripted_backend()
+
+    def draft(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        lines = [
+            ("connective", "Let's check what stuck."),
+            ("recall", "What causes tides?"),
+            ("claim", "The Moon."),
+            ("recall", "What else matters?"),
+            ("claim", "An UNFIXABLE answer."),
+        ]
+        return {"title": "Tides", "segments": [{"heading": "Recall", "sentences": [
+            {"text": t, "kind": k, "sources": [first] if k == "claim" else []} for k, t in lines
+        ]}]}  # fmt: skip
+
+    backend.handlers["Draft"] = draft
+    backend.handlers["Edits"] = lambda role, prompt, schema: {"sentences": [], "headings": []}
+    return backend
+

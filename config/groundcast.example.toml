@@ -49,6 +49,7 @@ bm25_top_k = 4
 verify_batch_size = 20
 max_revise_rounds = 2
 writer_max_source_words = 60000
+recall_questions = 3  # when a brief asks for recall prompts
 unresolved = "drop"  # or "mark": keep and label as not verified
 
 [tts]
@@ -62,6 +63,7 @@ repo_id = "hexgrad/Kokoro-82M"
 sample_rate = 24000
 sentence_pause_s = 0.35
 segment_pause_s = 1.2
+recall_pause_s = 6.0  # silence after a recall question
 # Path to the espeak-ng program, for words Kokoro's lexicon lacks. It runs as
 # a separate process. Empty: such words are skipped.
 espeak_bin = ""

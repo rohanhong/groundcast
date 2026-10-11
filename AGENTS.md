@@ -37,8 +37,8 @@ which every statement is grounded in those materials.
   (S10 text Q&A and quizzes), `web/` (FastAPI app and static UI),
   `evaluation/`.
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
-  the Writer, reviser, and Editor prompts, and `dialogue.md` is added to the
-  Writer prompt for two-host sessions.
+  the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are
+  added to the Writer prompt for two-host sessions and recall prompts.
 - Tests mirror the modules (`tests/test_<module>.py`); the fake LLM backend,
   the scripted pipeline run, and shared fixtures live in `tests/conftest.py`.
 - Every setting is a field in `src/groundcast/config.py`; add new ones there

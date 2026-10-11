@@ -68,7 +68,7 @@ def select_sources(chunks: list[Chunk], index: BM25Index, query: str, max_words:
     return [c for i, c in enumerate(chunks) if i in keep]
 
 
-def _brief_text(brief: Brief, target_words: int) -> str:
+def _brief_text(brief: Brief, target_words: int, recall_questions: int) -> str:
     lines = [
         f"Focus: {brief.focus}",
         f"Listening context: {brief.context}",
@@ -76,6 +76,8 @@ def _brief_text(brief: Brief, target_words: int) -> str:
         "Format: " + ("two hosts, A and B, in conversation" if brief.format == "two_hosts" else "one narrator"),
         f"Length: about {brief.minutes} minutes, so about {target_words} spoken words in total",
     ]
+    if brief.recall_prompts:
+        lines.append(f"Recall prompts: end with a recall segment of {recall_questions} questions")
     if brief.title:
         lines.insert(0, f"Working title: {brief.title}")
     if brief.notes:
@@ -113,12 +115,22 @@ def draft_to_script(draft: Draft, valid: set[str], script_format: ScriptFormat =
 
 
 def write_script(
-    backend: LLMBackend, role: Role, brief: Brief, sources: list[Chunk], words_per_minute: int
+    backend: LLMBackend,
+    role: Role,
+    brief: Brief,
+    sources: list[Chunk],
+    words_per_minute: int,
+    recall_questions: int = 0,
+    recall_pause_s: float = 0.0,
 ) -> Draft:
-    target_words = brief.minutes * words_per_minute
+    seconds = brief.minutes * 60.0
+    if brief.recall_prompts:
+        # The pauses after recall questions take time but no words.
+        seconds -= recall_questions * recall_pause_s
+    target_words = max(1, round(seconds / 60.0 * words_per_minute))
     prompt = (
         "# Session brief\n\n"
-        f"{_brief_text(brief, target_words)}\n\n"
+        f"{_brief_text(brief, target_words, recall_questions)}\n\n"
         "# Passages\n\n"
         f"{format_passages(sources)}\n\n"
         "Write the script now."
@@ -126,6 +138,8 @@ def write_script(
     system = load_prompt("writer")
     if brief.format == "two_hosts":
         system += "\n\n" + load_prompt("dialogue")
+    if brief.recall_prompts:
+        system += "\n\n" + load_prompt("recall")
     return backend.complete_structured(role, system, prompt, Draft)
 
 

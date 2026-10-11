@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from groundcast.config import Settings
 from groundcast.llm import LLMBackend, Role
-from groundcast.models import Brief, Chunk, Label, Script, Sentence, Verdict
+from groundcast.models import Brief, Chunk, Label, Script, Sentence, SentenceKind, Verdict
 from groundcast.pipeline.common import Progress, no_progress
 from groundcast.pipeline.editor import edit_script
 from groundcast.pipeline.verifier import CheckItem, build_items, passages_for, verify_items
@@ -75,6 +75,16 @@ def _followers(script: Script, ids: set[str]) -> set[str]:
     return out
 
 
+def _orphan_recall(script: Script) -> set[str]:
+    """Recall questions not followed, in their segment, by an answer."""
+    out: set[str] = set()
+    for seg in script.segments:
+        for s, nxt in zip(seg.sentences, seg.sentences[1:] + [None]):
+            if s.kind == SentenceKind.RECALL and (nxt is None or nxt.kind == SentenceKind.RECALL):
+                out.add(s.id)
+    return out
+
+
 def _remove(script: Script, ids: set[str]) -> None:
     for seg in script.segments:
         seg.sentences = [s for s in seg.sentences if s.id not in ids]
@@ -105,7 +115,10 @@ class Pipeline:
         progress("write", f"Writing a {brief.minutes}-minute script from {len(sources)} passages")
         # A faster voice fits more words into the same minutes.
         pace = round(cfg.words_per_minute * self.settings.tts.speed)
-        draft = write_script(self.backend, self.roles["writer"], brief, sources, pace)
+        recall_pause = self.settings.tts.recall_pause_s
+        draft = write_script(
+            self.backend, self.roles["writer"], brief, sources, pace, cfg.recall_questions, recall_pause
+        )
         script = draft_to_script(draft, valid, brief.format)
         report.writer_sentences = len(script.sentences())
         if not report.writer_sentences:
@@ -176,6 +189,16 @@ class Pipeline:
             rechecked = verify(_with_context(script, followers)) if followers else {}
             verdicts.update(rechecked)
             unresolved = {sid for sid, v in rechecked.items() if not v.passed}
+        # A recall question whose answer was dropped would leave a pause with no answer.
+        orphans = _orphan_recall(script)
+        for s, _ in _with_context(script, orphans):
+            report.events.append(
+                ReportEntry(sentence_id=s.id, text=s.text, stage="recall", outcome="dropped",
+                            rationale="Its answer did not pass verification.")
+            )  # fmt: skip
+        _remove(script, orphans)
+        for sid in orphans:
+            verdicts.pop(sid, None)
         if not script.sentences():
             raise ValueError("no sentence passed verification")
 

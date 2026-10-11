@@ -58,6 +58,7 @@ class Brief(BaseModel):
     context: Literal["desk", "commute", "exercise", "revision"] = "commute"
     level: Literal["introductory", "intermediate", "advanced"] = "introductory"
     format: ScriptFormat = Field(default="narrator", description="One narrator, or two hosts in conversation")
+    recall_prompts: bool = Field(default=False, description="End with recall questions, each followed by a pause")
     notes: str = ""
 
 
@@ -65,6 +66,7 @@ class SentenceKind(StrEnum):
     CLAIM = "claim"  # states something about the subject; must be supported
     FRAMING = "framing"  # analogy or example; must not mislead
     CONNECTIVE = "connective"  # signposting with no content of its own
+    RECALL = "recall"  # a question to the listener; a pause and its answer follow
 
 
 class Sentence(BaseModel):

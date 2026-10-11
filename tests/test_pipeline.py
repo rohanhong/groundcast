@@ -7,7 +7,7 @@ from groundcast.models import Brief, Chunk, Material
 from groundcast.pipeline.run import Pipeline
 from groundcast.transcript import render_transcript
 
-from .conftest import FakeBackend, items_in, scripted_backend
+from .conftest import FakeBackend, items_in, recall_backend, scripted_backend
 
 Tides = tuple[Material, list[Chunk]]
 
@@ -138,3 +138,18 @@ def test_answer_checked_again_when_its_question_is_dropped(settings: Settings, t
     assert [s.text for s in result.script.sentences()] == ["The Moon causes tides."]
     assert ("Just one.", "Host A: The Moon causes tides.") in checked  # checked again without its question
     assert [e.sentence_id for e in result.report.events if e.outcome == "dropped"] == ["s1.2", "s1.3"]
+
+
+def test_recall_question_dropped_with_its_answer(settings: Settings, tides: Tides) -> None:
+    material, chunks = tides
+    backend = recall_backend(chunks[0].id)
+    brief = Brief(focus="tides", material_ids=[material.id], minutes=4, recall_prompts=True)
+    result = Pipeline(settings, backend, roles(settings.llm)).run(brief, chunks)
+
+    writer_prompt = next(p for _, t, p in backend.calls if t == "Draft")
+    assert "Recall prompts: end with a recall segment of 3 questions" in writer_prompt
+    # The pauses after the questions take time but no words.
+    seconds = 4 * 60 - settings.pipeline.recall_questions * settings.tts.recall_pause_s
+    assert f"about {round(seconds / 60 * settings.pipeline.words_per_minute)} spoken words" in writer_prompt
+    assert [s.text for s in result.script.sentences()] == ["Let's check what stuck.", "What causes tides?", "The Moon."]
+    assert [(e.sentence_id, e.stage) for e in result.report.events if e.outcome == "dropped"][-1] == ("s1.4", "recall")

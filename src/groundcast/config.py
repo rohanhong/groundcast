@@ -87,6 +87,8 @@ class PipelineSettings(_Section):
     # Upper bound on material text given to the Writer; larger selections are
     # cut down to the chunks that best match the brief.
     writer_max_source_words: int = 60000
+    # Questions in the closing recall segment when a brief asks for recall prompts.
+    recall_questions: int = Field(default=3, ge=1, le=10)
     # What happens to a sentence still failing after max_revise_rounds.
     unresolved: Literal["drop", "mark"] = "drop"
 
@@ -103,6 +105,8 @@ class TTSSettings(_Section):
     sample_rate: int = 24000
     sentence_pause_s: float = 0.35
     segment_pause_s: float = 1.2
+    # Silence after a recall question, for the listener to answer before the answer is spoken.
+    recall_pause_s: float = 6.0
     # Optional pronunciation fallback for words Kokoro's lexicon lacks. It runs
     # the espeak-ng program as a separate process (GPL; never imported).
     espeak_bin: str = ""
