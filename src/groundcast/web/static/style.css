@@ -451,6 +451,7 @@ input.switch:checked::after { transform: translateX(1.1rem); }
 .url-card .btn { align-self: flex-start; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 1.6rem 0 .9rem; }
 .toolbar h2 { font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; }
+.count:empty { display: none; }
 .count { font-size: .8rem; font-weight: 600; padding: .1rem .5rem; border-radius: 999px; background: var(--surface-3); color: var(--ink-2); }
 .search { position: relative; width: min(18rem, 100%); }
 .search .icon { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--ink-3); }

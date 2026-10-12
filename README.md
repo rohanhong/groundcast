@@ -102,7 +102,7 @@ result as an MP3 you can play in any phone player.
    starts in the background and groundcast opens in its own window (an Edge
    or Chrome app window, otherwise a tab in your default browser) at
    <http://127.0.0.1:8765/>, on `127.0.0.1` only. A second double-click
-   only brings up another window. When every groundcast window is closed
+   brings the open window to the front, or opens one. When every groundcast window is closed
    and no session or recognition is running, the service stops by itself;
    "Stop groundcast" in the sidebar stops it at once. Without a console, its
    output goes to `logs/launcher.log` in the data directory.

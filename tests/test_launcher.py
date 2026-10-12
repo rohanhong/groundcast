@@ -130,3 +130,27 @@ def test_linux_and_mac_shortcuts(tmp_path: Path, monkeypatch: Any) -> None:
     [app] = mac_bundle(command, tmp_path / "g.icns", "groundcast", tmp_path / "Apps")
     assert (Path(app) / "Contents/MacOS/groundcast").read_text().endswith("groundcast launch\n")
     assert mac_bundle(command, tmp_path / "g.icns", "groundcast", tmp_path / "Apps", remove=True) == [app]
+
+
+def test_port_check_binds_instead_of_waiting() -> None:
+    import socket
+    import time
+
+    from groundcast.launcher import port_free
+
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        port = listener.getsockname()[1]
+        assert not port_free("127.0.0.1", port)
+    start = time.perf_counter()
+    assert port_free("127.0.0.1", port)
+    assert time.perf_counter() - start < 0.5
+
+
+def test_focus_looks_for_windows_only_on_windows() -> None:
+    from groundcast.launcher import focus_window
+
+    assert focus_window(platform="linux") is False
+    if os.name == "nt":  # the real window list: nothing has this title
+        assert focus_window("| no window has this title 7f3a") is False

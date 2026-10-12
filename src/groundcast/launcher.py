@@ -15,11 +15,11 @@ import json
 import logging
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import threading
 import time
-import urllib.error
 import urllib.request
 import webbrowser
 from collections.abc import Callable, MutableMapping
@@ -36,6 +36,8 @@ log = logging.getLogger(__name__)
 
 LOG_FILE = "launcher.log"
 WATCH_INTERVAL_S = 2.0
+WINDOW_TITLE_SUFFIX = "| groundcast"  # app.js titles every view "<view> | groundcast"
+BUSY_HEALTH_TIMEOUT_S = 5.0  # a running groundcast may be slow to answer while it voices a session
 # Folders `conda activate` puts on PATH, relative to the environment.
 CONDA_DIRS_WINDOWS = ("", "Library/mingw-w64/bin", "Library/usr/bin", "Library/bin", "Scripts", "bin")
 CONDA_DIRS_POSIX = ("bin",)
@@ -77,13 +79,15 @@ def health(url: str, timeout: float = 1.0) -> dict[str, Any] | None:
     return body if isinstance(body, dict) and body.get("app") == "groundcast" else None
 
 
-def port_in_use(url: str, timeout: float = 1.0) -> bool:
-    try:
-        urllib.request.urlopen(url, timeout=timeout).close()
-    except urllib.error.HTTPError:
-        return True  # something answered
-    except OSError:
-        return False
+def port_free(host: str, port: int) -> bool:
+    """Whether nothing listens on host:port. Binding answers at once, where connecting to a closed port
+    waits for a timeout on Windows (that cost every start two seconds)."""
+    family = socket.AF_INET6 if ":" in host else socket.AF_INET
+    with socket.socket(family, socket.SOCK_STREAM) as probe:
+        try:
+            probe.bind((host, port))
+        except OSError:
+            return False
     return True
 
 
@@ -108,6 +112,39 @@ def find_browser(
 def window_command(browser: str, url: str) -> list[str]:
     """A Chromium-family browser showing url as an app: its own window, no tabs or address bar."""
     return [browser, f"--app={url}", "--new-window"]
+
+
+def focus_window(title_suffix: str = WINDOW_TITLE_SUFFIX, platform: str = sys.platform) -> bool:
+    """Bring an open groundcast app window to the front (Windows); False when there is none.
+
+    An app window's title is the page title alone, so a browser window that merely has a groundcast tab
+    (its title ends with the browser's name) does not match.
+    """
+    if platform != "win32":
+        return False
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+    found: list[int] = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def each(hwnd: int, _: int) -> bool:
+        if user32.IsWindowVisible(hwnd):
+            length = user32.GetWindowTextLengthW(hwnd)
+            title = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(hwnd, title, length + 1)
+            if title.value.endswith(title_suffix):
+                found.append(hwnd)
+        return True
+
+    user32.EnumWindows(each, 0)
+    if not found:
+        return False
+    if user32.IsIconic(found[0]):
+        user32.ShowWindow(found[0], 9)  # SW_RESTORE
+    user32.SetForegroundWindow(found[0])
+    return True
 
 
 def open_window(
@@ -196,10 +233,13 @@ def launch(settings: Settings, window: str | None = None) -> int:
     log.info("launch: python %s, PATH additions %s", sys.executable, added)
     url = server_url(settings)
 
-    if health(url):
-        log.info("groundcast already runs at %s; opening %s", url, open_window(settings, url))
-        return 0
-    if port_in_use(url):
+    if not port_free(settings.server.host, settings.server.port):
+        if health(url, timeout=BUSY_HEALTH_TIMEOUT_S):
+            if settings.launcher.window == "app" and focus_window():
+                log.info("groundcast already runs at %s; brought its window to the front", url)
+            else:
+                log.info("groundcast already runs at %s; opening %s", url, open_window(settings, url))
+            return 0
         tell(f"Another program uses {url}. Close it, or set another port in the groundcast settings "
              f"(server.port).", error=True)  # fmt: skip
         return 1
