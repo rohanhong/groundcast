@@ -13,7 +13,7 @@ A survey of high-star READMEs (astral-sh/uv and ruff, oven-sh/bun, ollama, excal
 
 ## Skeleton
 
-Everything above the intro sits in one centered block. Keep the blank lines around the HTML: GitHub needs them to render Markdown after the block.
+Everything above the intro sits in one centered block; only a logo heading that replaces the text title comes before it (see Title below). Keep the blank lines around the HTML: GitHub needs them to render Markdown after the block.
 
 ```html
 <div align="center">
