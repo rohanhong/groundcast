@@ -178,7 +178,8 @@ def suggest(
             id="weak_topics:" + ",".join(c.id for c in weak), kind="weak_topics",
             title="Revise " + ", ".join(c.name for c in weak),
             why=why + [line for key, line in base_why.items() if key not in revision],
-            brief=Brief(focus="Revise " + "; ".join(f"{c.name}: {c.description}".rstrip(": ") for c in weak),
+            brief=Brief(focus="Revise " + "; ".join(f"{c.name}: {c.description.rstrip('.')}".rstrip(": ")
+                                                  for c in weak),
                         material_ids=material_ids, **values),
             score=0.9 - 0.5 * mastery(weak[0]),
         ))  # fmt: skip

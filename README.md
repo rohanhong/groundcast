@@ -63,6 +63,9 @@ result as an MP3 you can play in any phone player.
   run on your machine; only LLM calls leave it, to the provider you choose.
 - 🎧 **Listen anywhere**: MP3 export with chapter marks, plus an HTML
   transcript whose links lead back to the source page, slide, or timestamp.
+  In the app, a player with a waveform and chapter marks keeps playing as you
+  move between pages, and the transcript follows along sentence by sentence;
+  a click on a sentence plays from there.
 - 🧠 **A profile you can see**: preferences and quiz results live in a local
   SQLite profile with an event log you can view, edit, export, or delete.
 

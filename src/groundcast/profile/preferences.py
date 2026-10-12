@@ -45,6 +45,7 @@ class PreferenceView(BaseModel):
     preferences: Preferences  # what the learner set
     effective: dict[str, Any]  # what applies now, with configured defaults filled in
     voice_choices: list[str]
+    defaults: dict[str, Any] = {}  # the configured value behind each preference
 
 
 def defaults(settings: Settings) -> dict[str, Any]:

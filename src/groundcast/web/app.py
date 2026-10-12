@@ -38,6 +38,7 @@ from groundcast.profile.preferences import (
     BRIEF_KEYS,
     PreferenceView,
     apply_preferences,
+    defaults,
     delete_profile,
     effective,
     export_profile,
@@ -51,9 +52,17 @@ from groundcast.profile.feedback import Feedback, StoredFeedback, get_feedback, 
 from groundcast.profile.suggest import Suggestion, SuggestionView, record_outcome, suggest
 from groundcast.qa import QAExchange, answer_question, load_history, save_history
 from groundcast.quiz import AttemptResult, QuizView, grade, load_quizzes, make_quiz, save_quizzes, view
-from groundcast.sessions import REPORT_FILE, SCRIPT_FILE, SessionRunner, fail_interrupted, new_session
+from groundcast.sessions import (
+    REPORT_FILE,
+    SCRIPT_FILE,
+    TIMINGS_FILE,
+    SessionRunner,
+    fail_interrupted,
+    new_session,
+)
 from groundcast.storage import read_model
 from groundcast.storage import Store
+from groundcast.transcript import TranscriptView, transcript_view
 
 
 log = logging.getLogger(__name__)
@@ -196,6 +205,7 @@ def create_app(
             "words_per_minute": current.pipeline.words_per_minute,
             "review_below": current.asr.review_below,
             "ocr_review_below": current.ocr.review_below,
+            "weak_mastery": current.suggest.weak_mastery,
         }
 
     @app.get("/api/doctor")
@@ -321,6 +331,23 @@ def create_app(
             return json.loads(path.read_text(encoding="utf-8"))
         except (FileNotFoundError, ValueError) as exc:
             raise _not_found(exc) from exc
+
+    @app.get("/api/sessions/{session_id}/transcript")
+    def get_transcript(session_id: str) -> TranscriptView:
+        record = _done_session(session_id, "Transcripts")
+        session_dir = store.session_dir(session_id)
+        script = read_model(session_dir / SCRIPT_FILE, Script)
+        timings_path = session_dir / TIMINGS_FILE
+        timings = json.loads(timings_path.read_text(encoding="utf-8")) if timings_path.is_file() else []
+        materials: dict[str, Material] = {}
+        chunks: dict[str, Chunk] = {}
+        for material_id in record.brief.material_ids:  # a removed material only loses its links
+            try:
+                materials[material_id] = store.get_material(material_id)
+                chunks.update((c.id, c) for c in store.get_chunks(material_id))
+            except (FileNotFoundError, ValueError):
+                continue
+        return transcript_view(script, timings, chunks, materials)
 
     def _done_session(session_id: str, what: str) -> SessionRecord:
         try:
@@ -478,7 +505,7 @@ def create_app(
     def _preference_view() -> PreferenceView:
         prefs = load_preferences(profile)
         return PreferenceView(preferences=prefs, effective=effective(settings, prefs),
-                              voice_choices=voice_choices(settings))  # fmt: skip
+                              voice_choices=voice_choices(settings), defaults=defaults(settings))  # fmt: skip
 
     @app.get("/api/preferences")
     def get_preferences() -> PreferenceView:

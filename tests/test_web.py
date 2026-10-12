@@ -85,3 +85,18 @@ def test_foreign_host_and_cross_site_requests_refused(settings: Settings) -> Non
 def test_local_request_rules(host: str, method: str, origin: str | None, fetch_site: str | None, refused: bool) -> None:
     problem = local_request_problem(host, method, origin, fetch_site, LOOPBACK_NAMES, 8765)
     assert (problem is not None) == refused, problem
+
+
+def test_ui_script_uses_only_ids_the_page_defines() -> None:
+    import re
+    from importlib import resources
+
+    static = resources.files("groundcast.web").joinpath("static")
+    page = static.joinpath("index.html").read_text(encoding="utf-8")
+    script = static.joinpath("app.js").read_text(encoding="utf-8")
+    defined = set(re.findall(r'\bid="([\w-]+)"', page))
+    used = set(re.findall(r'\$\("([\w-]+)"\)', script))
+    assert used and used <= defined, sorted(used - defined)
+    icons = set(re.findall(r'<symbol id="i-([\w-]+)"', page))
+    named = set(re.findall(r'\bicon\("([\w-]+)"', script)) | set(re.findall(r'href="#i-([\w-]+)"', page))
+    assert named <= icons, sorted(named - icons)

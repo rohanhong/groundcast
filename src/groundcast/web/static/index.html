@@ -3,218 +3,502 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>groundcast</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Apply the saved theme before the first paint, so the page does not flash.
+    try {
+      const theme = localStorage.getItem("groundcast-theme");
+      if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+    } catch (_) { /* storage unavailable: follow the system */ }
+  </script>
 </head>
 <body>
-  <header>
-    <h1>groundcast</h1>
-    <p class="muted" id="settings-line"></p>
-  </header>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-library" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M15.6 5.2l3.4-.9 3 15.5-3.4.9z"/></symbol>
+    <symbol id="i-create" viewBox="0 0 24 24"><path d="M11 3.5l1.8 4.9 4.9 1.8-4.9 1.8L11 16.9l-1.8-4.9-4.9-1.8 4.9-1.8z"/><path d="M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></symbol>
+    <symbol id="i-listen" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="7" rx="1.6"/><rect x="16.5" y="14" width="4.5" height="7" rx="1.6"/></symbol>
+    <symbol id="i-concepts" viewBox="0 0 24 24"><circle cx="6" cy="6.5" r="2.6"/><circle cx="18" cy="7.5" r="2.6"/><circle cx="12" cy="18" r="2.6"/><path d="M8.6 6.8l6.8.5M7.3 8.8l3.5 6.9M16.8 9.9l-3.6 5.8"/></symbol>
+    <symbol id="i-prefs" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15.5V4M7 8.5L12 4l5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+    <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 12h6M9 15.5h6M9 19h3"/></symbol>
+    <symbol id="i-slides" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 8h6M7 11h4"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></symbol>
+    <symbol id="i-audio" viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6h14M5 10h14M5 14h10M5 18h7"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5A.8.8 0 0 0 8 5.2z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1.2" fill="currentColor" stroke="none"/><rect x="14" y="4.5" width="4" height="15" rx="1.2" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 3.5v5h5"/></symbol>
+    <symbol id="i-forward" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1l2.6 2.6"/><path d="M20.5 3.5v5h-5"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5v14"/><path d="M19 5.5v13L9 12z" fill="currentColor"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M18 5v14"/><path d="M5 5.5v13L15 12z" fill="currentColor"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.5v.01"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M15.5 4.5l4 4L8 20H4v-4z"/><path d="M13 7l4 4"/></symbol>
+    <symbol id="i-merge" viewBox="0 0 24 24"><circle cx="6" cy="5.5" r="2.2"/><circle cx="6" cy="18.5" r="2.2"/><circle cx="18" cy="12" r="2.2"/><path d="M6 7.7v8.6M8 6.5c5 0 3.5 5.5 7.8 5.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-5 4v-4h0.5A1.5 1.5 0 0 1 4 14.5z"/></symbol>
+    <symbol id="i-form" viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12L20 4l-5 16-3-6.5z"/><path d="M12 13.5L20 4"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11.5M7 11l5 4.5 5-4.5"/><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></symbol>
+    <symbol id="i-quiz" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1 1-1.1 1.8v.5M12 17v.01"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8.5"/><path d="M20 3.5v5h-5"/></symbol>
+    <symbol id="i-bus" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="15" rx="3"/><path d="M5 11h14M8 18v3M16 18v3M8.5 14.5h.01M15.5 14.5h.01"/></symbol>
+    <symbol id="i-run" viewBox="0 0 24 24"><path d="M2.5 12h4l3-7 4.5 14 3-7h4.5"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5V5.5A2.5 2.5 0 0 1 6.5 3H20v14H6.5A2.5 2.5 0 0 0 4 19.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+    <symbol id="i-cup" viewBox="0 0 24 24"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2.5M12 3.5v2.5"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="8.5" cy="8.5" r="3.4"/><circle cx="17" cy="9.5" r="2.8"/><path d="M2.5 20a6 6 0 0 1 12 0M15 14.7a5 5 0 0 1 7 4.8"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9.5C7.5 20 4 17 4 12V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M3.8 18a9 9 0 1 1 16.4 0"/><path d="M12 14l4.5-4.5"/><circle cx="12" cy="14" r="1.2"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 3.5v5h5M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l2 5.5L19.5 10.5 14 12.5 12 18l-2-5.5-5.5-2L10 8.5z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-follow" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10M4 18h7"/><path d="M18 14v6M15.5 17.5L18 20l2.5-2.5"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.7-6.5-11a6.5 6.5 0 0 1 13 0c0 5.3-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  </svg>
 
-  <main>
-    <section>
-      <h2>1. Materials</h2>
-      <p class="muted">PDF (with a text layer or scanned), PowerPoint, Word, Markdown, plain text, saved web pages,
-        images of notes or handwriting, video, or audio. Files stay in your local data directory. Speech and
-        scanned text are recognised on this machine; check and correct that text before you use it.</p>
-      <form id="upload-form">
-        <input type="file" id="upload-input" multiple
-          accept=".pdf,.pptx,.docx,.md,.markdown,.txt,.html,.htm,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.mp4,.mkv,.webm,.mov,.m4v,.avi,.mp3,.m4a,.wav,.ogg,.opus,.flac">
-        <button type="submit">Add</button>
-      </form>
-      <form id="url-form" class="qa-form">
-        <input id="url-input" type="text" inputmode="url" placeholder="Or a web page address: https://...">
-        <button type="submit">Fetch</button>
-      </form>
-      <p id="upload-status" class="muted" role="status"></p>
-      <ul id="materials" class="list"></ul>
-      <details id="chunk-view" hidden>
-        <summary id="chunk-title"></summary>
-        <ol id="chunk-list" class="chunks"></ol>
-      </details>
-      <div id="review-view" hidden>
-        <h3 id="review-title"></h3>
-        <p class="muted">Recognised speech and text can be wrong, and the Verifier treats this text as the truth.
-          Listen or look where needed, correct each passage, clear a passage to drop it, then confirm. Passages
-          marked <span class="low">low confidence</span>, and the words after <span class="low">check</span>,
-          deserve a closer look.</p>
-        <ol id="review-list" class="review"></ol>
-        <button id="review-confirm" type="button">Confirm text</button>
-        <button id="review-cancel" type="button" class="link">Close</button>
-        <p id="review-status" class="muted" role="status"></p>
-      </div>
-    </section>
+  <a class="skip" href="#main">Skip to content</a>
 
-    <section>
-      <h2>2. Brief</h2>
-      <div id="suggestions" hidden>
-        <p class="muted">Suggested for you. Each says why; using one only fills in the form.</p>
-        <ol id="suggestion-list" class="suggestions"></ol>
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="#library" aria-label="groundcast home">
+        <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
+          <defs>
+            <linearGradient id="logo-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" style="stop-color: var(--brand-1)"/>
+              <stop offset="1" style="stop-color: var(--brand-2)"/>
+            </linearGradient>
+          </defs>
+          <rect width="40" height="40" rx="11" fill="url(#logo-grad)"/>
+          <g fill="#fff">
+            <rect x="9" y="17" width="3" height="11" rx="1.5"/>
+            <rect x="14.5" y="11" width="3" height="17" rx="1.5"/>
+            <rect x="20" y="14" width="3" height="14" rx="1.5"/>
+            <rect x="25.5" y="19" width="3" height="9" rx="1.5"/>
+            <rect x="8" y="30" width="22" height="2.4" rx="1.2" opacity=".75"/>
+          </g>
+        </svg>
+        <span class="brand-text">
+          <span class="brand-name">groundcast</span>
+          <span class="brand-tag">Study audio, grounded in your materials</span>
+        </span>
+      </a>
+      <nav class="nav" aria-label="Main">
+        <a href="#library" data-view="library">
+          <svg class="icon"><use href="#i-library"/></svg><span>Library</span>
+          <span class="badge warn" id="badge-library" hidden></span>
+        </a>
+        <a href="#create" data-view="create">
+          <svg class="icon"><use href="#i-create"/></svg><span>New session</span>
+        </a>
+        <a href="#listen" data-view="listen">
+          <svg class="icon"><use href="#i-listen"/></svg><span>Sessions</span>
+          <span class="badge live" id="badge-listen" hidden></span>
+        </a>
+        <a href="#concepts" data-view="concepts">
+          <svg class="icon"><use href="#i-concepts"/></svg><span>Concepts</span>
+        </a>
+        <a href="#profile" data-view="profile">
+          <svg class="icon"><use href="#i-prefs"/></svg><span>Preferences</span>
+        </a>
+      </nav>
+      <div class="sidebar-foot">
+        <p class="settings-line" id="settings-line"></p>
+        <div class="theme-switch" role="radiogroup" aria-label="Colour theme">
+          <button type="button" role="radio" data-theme-choice="auto" title="Follow the system">
+            <svg class="icon"><use href="#i-auto"/></svg><span class="sr">System</span></button>
+          <button type="button" role="radio" data-theme-choice="light" title="Light">
+            <svg class="icon"><use href="#i-sun"/></svg><span class="sr">Light</span></button>
+          <button type="button" role="radio" data-theme-choice="dark" title="Dark">
+            <svg class="icon"><use href="#i-moon"/></svg><span class="sr">Dark</span></button>
+        </div>
       </div>
-      <details id="chat" open>
-        <summary>Describe it in your own words</summary>
-        <div id="chat-log" class="chat-log"></div>
-        <form id="chat-form" class="qa-form">
-          <input id="chat-input" type="text" placeholder="For example: 15 minutes on the bus about the ice findings, exam on Friday">
-          <button type="submit">Send</button>
+    </aside>
+
+    <main id="main" tabindex="-1">
+      <!-- 1. Library -->
+      <section class="view" id="view-library" data-view="library" aria-labelledby="h-library">
+        <header class="view-head">
+          <p class="eyebrow">Step 1</p>
+          <h1 id="h-library">Library</h1>
+          <p class="lede">Your study materials. Files stay in your local data directory, and speech and scanned
+            text are recognised on this machine. Check recognised text before you use it.</p>
+        </header>
+
+        <ol class="onboard" id="onboarding" hidden>
+          <li><span class="onboard-n">1</span><strong>Add materials</strong>
+            <span>Lecture slides, PDFs, notes, a recorded lecture, or a web page.</span></li>
+          <li><span class="onboard-n">2</span><strong>Describe the session</strong>
+            <span>In your own words, or with a short form. You review it before anything starts.</span></li>
+          <li><span class="onboard-n">3</span><strong>Listen, then check yourself</strong>
+            <span>Every sentence links to its source. Ask questions and take a quiz afterwards.</span></li>
+        </ol>
+
+        <div class="add-grid">
+          <label class="dropzone" id="dropzone" for="upload-input">
+            <input type="file" id="upload-input" class="sr" multiple
+              accept=".pdf,.pptx,.docx,.md,.markdown,.txt,.html,.htm,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.mp4,.mkv,.webm,.mov,.m4v,.avi,.mp3,.m4a,.wav,.ogg,.opus,.flac">
+            <span class="drop-icon"><svg class="icon"><use href="#i-upload"/></svg></span>
+            <strong>Drop files here</strong>
+            <span class="muted">or click to choose them</span>
+            <span class="kind-chips" aria-hidden="true">
+              <span>PDF</span><span>Slides</span><span>Word</span><span>Markdown</span><span>Text</span>
+              <span>Web page</span><span>Photos of notes</span><span>Video</span><span>Audio</span>
+            </span>
+            <span class="upload-progress" id="upload-progress" hidden>
+              <span class="meter"><span id="upload-bar"></span></span>
+              <span id="upload-label" class="muted"></span>
+            </span>
+          </label>
+          <form id="url-form" class="card url-card">
+            <h2 class="card-title"><svg class="icon"><use href="#i-globe"/></svg>Fetch a web page</h2>
+            <p class="muted small">The main text is kept with the address and the time it was fetched.</p>
+            <div class="input-icon">
+              <svg class="icon"><use href="#i-link"/></svg>
+              <input id="url-input" type="text" inputmode="url" autocomplete="off" placeholder="https://..."
+                aria-label="Web page address">
+            </div>
+            <button class="btn primary" type="submit">Fetch</button>
+          </form>
+        </div>
+        <p id="upload-status" class="status" role="status"></p>
+
+        <div class="toolbar">
+          <h2>Materials <span class="count" id="materials-count"></span></h2>
+          <label class="search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input id="materials-search" type="search" placeholder="Filter by name" aria-label="Filter materials">
+          </label>
+        </div>
+        <ul id="materials" class="material-grid"></ul>
+      </section>
+
+      <!-- 2. New session -->
+      <section class="view" id="view-create" data-view="create" aria-labelledby="h-create" hidden>
+        <header class="view-head">
+          <p class="eyebrow">Step 2</p>
+          <h1 id="h-create">New session</h1>
+          <p class="lede">Say what you want to learn and how you will listen. Nothing starts until you confirm
+            the brief.</p>
+        </header>
+
+        <section class="block" id="suggestions" hidden>
+          <div class="block-head">
+            <h2>Suggested for you</h2>
+            <p class="muted small">Each one says why. Using one fills in the brief; you still review it.</p>
+          </div>
+          <div id="suggestion-list" class="suggestion-row"></div>
+        </section>
+
+        <section class="block">
+          <div class="block-head">
+            <h2>Materials for this session</h2>
+            <p class="muted small" id="picker-count"></p>
+          </div>
+          <div id="material-picker" class="picker" role="group" aria-label="Materials for this session"></div>
+        </section>
+
+        <div class="mode-tabs" role="tablist" aria-label="How to describe the session">
+          <button type="button" role="tab" id="tab-chat" aria-controls="panel-chat" aria-selected="true">
+            <svg class="icon"><use href="#i-chat"/></svg>Describe it</button>
+          <button type="button" role="tab" id="tab-form" aria-controls="panel-form" aria-selected="false">
+            <svg class="icon"><use href="#i-form"/></svg>Fill in the form</button>
+        </div>
+
+        <section class="block chat-card" id="panel-chat" role="tabpanel" aria-labelledby="tab-chat">
+          <div id="chat-log" class="chat-log" aria-live="polite">
+            <div class="bubble assistant intro">Tell me what to cover, how long you have, and where you will
+              listen. For example: <em>15 minutes on the bus about the ice findings, exam on Friday.</em></div>
+          </div>
+          <form id="chat-form" class="composer">
+            <input id="chat-input" type="text" autocomplete="off" aria-label="Describe the session"
+              placeholder="Describe the session in your own words">
+            <button class="btn primary icon-only" type="submit" aria-label="Send">
+              <svg class="icon"><use href="#i-send"/></svg></button>
+          </form>
+          <div class="chat-actions">
+            <button id="chat-use" type="button" class="btn primary" hidden>
+              <svg class="icon"><use href="#i-check"/></svg>Use this brief</button>
+            <button id="chat-reset" type="button" class="btn ghost">Start over</button>
+            <span id="chat-status" class="status" role="status"></span>
+          </div>
+        </section>
+
+        <section class="block" id="panel-form" role="tabpanel" aria-labelledby="tab-form" hidden>
+          <form id="brief-form" class="brief-form">
+            <label class="field">
+              <span class="label">What should the session cover?</span>
+              <textarea id="focus" rows="3" required
+                placeholder="For example: the two stages of photosynthesis and why they depend on each other"></textarea>
+            </label>
+            <div class="field">
+              <span class="label" id="minutes-label">Length</span>
+              <div class="slider-row">
+                <input id="minutes" type="range" min="2" max="60" step="1" value="10" aria-labelledby="minutes-label">
+                <output id="minutes-out" for="minutes" class="slider-value"></output>
+              </div>
+              <p class="hint" id="minutes-hint"></p>
+            </div>
+            <fieldset class="field">
+              <legend class="label">Where will you listen?</legend>
+              <div class="chips" id="context-group"></div>
+            </fieldset>
+            <fieldset class="field">
+              <legend class="label">Format</legend>
+              <div class="choice-cards" id="format-group"></div>
+            </fieldset>
+            <fieldset class="field">
+              <legend class="label">Level</legend>
+              <div class="seg" id="level-group"></div>
+            </fieldset>
+            <label class="switch-row">
+              <input id="recall" type="checkbox" class="switch">
+              <span><strong>End with recall questions</strong>
+                <small class="muted">Each is followed by a pause to answer in your head.</small></span>
+            </label>
+            <div class="field-row">
+              <label class="field">
+                <span class="label">Title <em>optional</em></span>
+                <input id="title" type="text" placeholder="The Writer chooses one">
+              </label>
+              <label class="field">
+                <span class="label">Notes <em>optional</em></span>
+                <input id="notes" type="text" placeholder="For example: I keep mixing up the two stages">
+              </label>
+            </div>
+            <div class="form-actions">
+              <button class="btn primary lg" type="submit">Review brief<svg class="icon"><use href="#i-arrow"/></svg></button>
+            </div>
+          </form>
+        </section>
+
+        <section class="block review-card" id="brief-review" hidden>
+          <div class="block-head">
+            <h2>Confirm the brief</h2>
+            <p class="muted small">Writing, checking, and voicing take a few minutes; you can leave this page.</p>
+          </div>
+          <dl id="brief-summary" class="summary"></dl>
+          <div class="form-actions">
+            <button id="brief-edit" type="button" class="btn ghost">Edit</button>
+            <button id="brief-confirm" type="button" class="btn primary lg">
+              <svg class="icon"><use href="#i-sparkle"/></svg>Start session</button>
+          </div>
+        </section>
+        <p id="brief-status" class="status" role="status"></p>
+      </section>
+
+      <!-- 3. Sessions -->
+      <section class="view" id="view-listen" data-view="listen" aria-labelledby="h-listen" hidden>
+        <header class="view-head">
+          <p class="eyebrow">Step 3</p>
+          <h1 id="h-listen">Sessions</h1>
+          <p class="lede">Listen with the transcript, open any sentence's source, then check yourself with
+            questions and a quiz.</p>
+        </header>
+        <div class="listen-layout">
+          <ul id="sessions" class="session-list" aria-label="Sessions"></ul>
+          <article id="session-detail" class="detail" hidden></article>
+        </div>
+      </section>
+
+      <!-- 4. Concepts -->
+      <section class="view" id="view-concepts" data-view="concepts" aria-labelledby="h-concepts" hidden>
+        <header class="view-head">
+          <p class="eyebrow">What you know</p>
+          <h1 id="h-concepts">Concepts</h1>
+          <p class="lede">Concepts found in your materials, with your quiz results on each. Rename or merge them;
+            every change goes into the log.</p>
+        </header>
+        <div class="stat-row" id="concept-stats"></div>
+        <div class="toolbar">
+          <label class="search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input id="concept-search" type="search" placeholder="Filter concepts" aria-label="Filter concepts">
+          </label>
+          <label class="sort">Sort
+            <select id="concept-sort">
+              <option value="weakest">Weakest first</option>
+              <option value="name">By name</option>
+              <option value="asked">Most quizzed</option>
+            </select>
+          </label>
+        </div>
+        <ul id="concepts" class="concept-grid"></ul>
+      </section>
+
+      <!-- 5. Preferences -->
+      <section class="view" id="view-profile" data-view="profile" aria-labelledby="h-profile" hidden>
+        <header class="view-head">
+          <p class="eyebrow">Your profile</p>
+          <h1 id="h-profile">Preferences</h1>
+          <p class="lede">Your defaults. "Default" uses the configured value, shown in brackets; what you choose
+            in a brief still wins.</p>
+        </header>
+        <form id="prefs-form" class="prefs">
+          <section class="card">
+            <h2 class="card-title"><svg class="icon"><use href="#i-audio"/></svg>Voice and pace</h2>
+            <div class="field-row">
+              <label class="field"><span class="label">Voice</span><select id="pref-voice"></select></label>
+              <label class="field"><span class="label">Second host's voice</span>
+                <select id="pref-second_voice"></select></label>
+              <label class="field"><span class="label">Speed</span>
+                <input id="pref-speed" type="number" min="0.5" max="2" step="0.05"></label>
+            </div>
+            <div class="pref-line"><span class="label">Adapt pace<small class="muted">Slower for dense parts,
+              faster for recaps</small></span><div class="seg" data-pref="adapt_pace"></div></div>
+          </section>
+          <section class="card">
+            <h2 class="card-title"><svg class="icon"><use href="#i-form"/></svg>Session defaults</h2>
+            <div class="field-row">
+              <label class="field"><span class="label">Minutes</span>
+                <input id="pref-minutes" type="number" min="2" max="60"></label>
+            </div>
+            <div class="pref-line"><span class="label">Format</span><div class="seg" data-pref="format"></div></div>
+            <div class="pref-line"><span class="label">Listening context</span>
+              <div class="seg" data-pref="context"></div></div>
+            <div class="pref-line"><span class="label">Level</span><div class="seg" data-pref="level"></div></div>
+            <div class="pref-line"><span class="label">Recall questions</span>
+              <div class="seg" data-pref="recall_prompts"></div></div>
+          </section>
+          <section class="card">
+            <h2 class="card-title"><svg class="icon"><use href="#i-concepts"/></svg>Learning</h2>
+            <div class="field-row">
+              <label class="field"><span class="label">Quiz questions</span>
+                <input id="pref-quiz_questions" type="number" min="1" max="20"></label>
+            </div>
+            <div class="pref-line"><span class="label">Find concepts in new materials</span>
+              <div class="seg" data-pref="extract_concepts"></div></div>
+            <div class="pref-line"><span class="label">Learn defaults from my sessions</span>
+              <div class="seg" data-pref="infer_preferences"></div></div>
+          </section>
+          <div class="save-bar">
+            <span id="prefs-status" class="status" role="status"></span>
+            <button class="btn primary" type="submit">Save preferences</button>
+          </div>
         </form>
-        <p id="chat-status" class="muted" role="status"></p>
-        <button id="chat-use" type="button" class="secondary" hidden>Use this brief</button>
-        <button id="chat-reset" type="button" class="link">Start over</button>
-      </details>
-      <p class="muted">Or fill in the form:</p>
-      <form id="brief-form">
-        <label>What should the session cover?
-          <textarea id="focus" rows="3" required placeholder="For example: the two stages of photosynthesis and why they depend on each other"></textarea>
-        </label>
-        <label>Title (optional)
-          <input id="title" type="text">
-        </label>
-        <div class="row">
-          <label>Minutes
-            <input id="minutes" type="number" min="2" max="60" value="10" required>
-          </label>
-          <label>Listening context
-            <select id="context">
-              <option value="commute">Commute</option>
-              <option value="exercise">Exercise</option>
-              <option value="revision">Revision before an exam</option>
-              <option value="desk">At my desk</option>
-            </select>
-          </label>
-          <label>Level
-            <select id="level">
-              <option value="introductory">Introductory</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </label>
-          <label>Format
-            <select id="format">
-              <option value="narrator">One narrator</option>
-              <option value="two_hosts">Two hosts</option>
-            </select>
-          </label>
-        </div>
-        <label class="check">
-          <input id="recall" type="checkbox">
-          End with recall questions, each followed by a pause to answer in your head
-        </label>
-        <label>Notes (optional)
-          <input id="notes" type="text" placeholder="For example: I keep mixing up the two stages">
-        </label>
-        <button type="submit">Review brief</button>
-      </form>
-      <div id="brief-review" hidden>
-        <h3>Confirm the brief</h3>
-        <dl id="brief-summary"></dl>
-        <button id="brief-confirm" type="button">Start session</button>
-        <button id="brief-edit" type="button" class="secondary">Edit</button>
+
+        <section class="card">
+          <h2 class="card-title"><svg class="icon"><use href="#i-sparkle"/></svg>What groundcast has learned</h2>
+          <p class="muted small">From the briefs of your sessions. Used only to fill in suggestions, and only once
+            confident; your preferences above always win. Keep a value to make it a preference.</p>
+          <ul id="learned-list" class="learned"></ul>
+          <p id="acceptance" class="muted small"></p>
+        </section>
+
+        <details class="card fold" id="events">
+          <summary><h2 class="card-title"><svg class="icon"><use href="#i-history"/></svg>Change log</h2>
+            <svg class="icon chev"><use href="#i-chev"/></svg></summary>
+          <ol id="event-list" class="timeline"></ol>
+        </details>
+
+        <details class="card fold" id="doctor">
+          <summary><h2 class="card-title"><svg class="icon"><use href="#i-gauge"/></svg>System check</h2>
+            <svg class="icon chev"><use href="#i-chev"/></svg></summary>
+          <p class="muted small">What this machine has for each part of groundcast, and how to add what is
+            missing.</p>
+          <ul id="doctor-list" class="checks"></ul>
+          <button id="doctor-run" type="button" class="btn ghost"><svg class="icon"><use href="#i-refresh"/></svg>Check again</button>
+        </details>
+
+        <section class="card danger-zone">
+          <h2 class="card-title"><svg class="icon"><use href="#i-shield"/></svg>Your data</h2>
+          <p class="muted small">The profile holds your preferences, concepts, quiz results, feedback, and the
+            change log. Materials and sessions stay in the data directory either way.</p>
+          <div class="form-actions start">
+            <a class="btn ghost" href="/api/profile/export" download="groundcast-profile.json">
+              <svg class="icon"><use href="#i-download"/></svg>Export the profile</a>
+            <button id="profile-delete" type="button" class="btn danger">
+              <svg class="icon"><use href="#i-trash"/></svg>Delete the profile</button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- Player dock: one audio element for the whole app, so playback continues across views -->
+  <div class="dock" id="dock" hidden>
+    <div class="dock-progress" id="dock-progress"><span id="dock-fill"></span></div>
+    <div class="dock-inner">
+      <button type="button" class="dock-cover" id="dock-open" title="Show the session">
+        <svg class="icon"><use href="#i-audio"/></svg></button>
+      <div class="dock-text">
+        <strong id="dock-title"></strong>
+        <span id="dock-chapter" class="muted"></span>
       </div>
-      <p id="brief-status" class="muted" role="status"></p>
-    </section>
+      <div class="dock-controls">
+        <button type="button" class="ctl" id="dock-back" title="Back 15 seconds (J)">
+          <svg class="icon"><use href="#i-back"/></svg><span class="ctl-n">15</span></button>
+        <button type="button" class="ctl play" id="dock-play" title="Play or pause (K)">
+          <svg class="icon"><use href="#i-play"/></svg></button>
+        <button type="button" class="ctl" id="dock-fwd" title="Forward 30 seconds (L)">
+          <svg class="icon"><use href="#i-forward"/></svg><span class="ctl-n">30</span></button>
+      </div>
+      <span class="dock-time" id="dock-time"></span>
+      <button type="button" class="speed" id="dock-speed" title="Playback speed"></button>
+      <button type="button" class="ctl small" id="dock-close" title="Stop and close the player">
+        <svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+  </div>
+  <audio id="audio" preload="metadata"></audio>
 
-    <section>
-      <h2>3. Sessions</h2>
-      <ul id="sessions" class="list"></ul>
-    </section>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
 
-    <section>
-      <h2>4. Concepts</h2>
-      <p class="muted">Concepts found in your materials, with your quiz results on each. Rename or merge
-        them; every change goes into the log.</p>
-      <ul id="concepts" class="list"></ul>
-    </section>
+  <dialog id="text-dialog" class="sheet" aria-labelledby="text-title">
+    <header class="sheet-head">
+      <h2 id="text-title"></h2>
+      <button type="button" class="ctl small" data-close title="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+    </header>
+    <ol id="text-list" class="passages"></ol>
+  </dialog>
 
-    <section>
-      <h2>5. Preferences</h2>
-      <p class="muted">Your defaults. A blank field uses the configured default, shown as its placeholder;
-        what you choose in a brief still wins.</p>
-      <form id="prefs-form">
-        <div class="row">
-          <label>Voice <select id="pref-voice"></select></label>
-          <label>Second host's voice <select id="pref-second_voice"></select></label>
-          <label>Speed <input id="pref-speed" type="number" min="0.5" max="2" step="0.05"></label>
-        </div>
-        <div class="row">
-          <label>Minutes <input id="pref-minutes" type="number" min="2" max="60"></label>
-          <label>Format
-            <select id="pref-format">
-              <option value="">(default)</option>
-              <option value="narrator">One narrator</option>
-              <option value="two_hosts">Two hosts</option>
-            </select>
-          </label>
-          <label>Listening context
-            <select id="pref-context">
-              <option value="">(default)</option>
-              <option value="commute">Commute</option>
-              <option value="exercise">Exercise</option>
-              <option value="revision">Revision before an exam</option>
-              <option value="desk">At my desk</option>
-            </select>
-          </label>
-          <label>Level
-            <select id="pref-level">
-              <option value="">(default)</option>
-              <option value="introductory">Introductory</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </label>
-        </div>
-        <div class="row">
-          <label>Quiz questions <input id="pref-quiz_questions" type="number" min="1" max="20"></label>
-          <label>Recall questions
-            <select id="pref-recall_prompts">
-              <option value="">(default)</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-          <label>Find concepts in new materials
-            <select id="pref-extract_concepts">
-              <option value="">(default)</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-          <label>Adapt pace (slower for dense parts, faster for recaps)
-            <select id="pref-adapt_pace">
-              <option value="">(default)</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-          <label>Learn defaults from my sessions
-            <select id="pref-infer_preferences">
-              <option value="">(default)</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-        </div>
-        <button type="submit">Save preferences</button>
-      </form>
-      <p id="prefs-status" class="muted" role="status"></p>
-      <details id="learned">
-        <summary>What groundcast has learned from your sessions</summary>
-        <p class="muted">Used only to fill in suggestions, and only once confident; your preferences above always
-          win. Keep a value to make it a preference.</p>
-        <ul id="learned-list" class="list"></ul>
-        <p id="acceptance" class="muted"></p>
-      </details>
-      <details id="events">
-        <summary>Change log</summary>
-        <ol id="event-list" class="chunks"></ol>
-      </details>
-      <p class="muted">
-        <a href="/api/profile/export" download="groundcast-profile.json">Export the whole profile</a> |
-        <button id="profile-delete" type="button" class="link">Delete the whole profile</button>
-      </p>
-    </section>
-  </main>
+  <dialog id="review-dialog" class="sheet wide" aria-labelledby="review-title">
+    <header class="sheet-head">
+      <div>
+        <h2 id="review-title"></h2>
+        <p class="muted small">Recognised speech and text can be wrong, and the Verifier treats this text as the
+          truth. Correct each passage, clear a passage to drop it, then confirm. Passages marked
+          <span class="tag warn">low confidence</span> and words marked <span class="tag warn">check</span>
+          deserve a closer look.</p>
+      </div>
+      <button type="button" class="ctl small" data-close title="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+    </header>
+    <ol id="review-list" class="review"></ol>
+    <footer class="sheet-foot">
+      <span id="review-status" class="status" role="status"></span>
+      <button id="review-cancel" type="button" class="btn ghost">Close</button>
+      <button id="review-confirm" type="button" class="btn primary"><svg class="icon"><use href="#i-check"/></svg>Confirm text</button>
+    </footer>
+  </dialog>
+
+  <dialog id="ask-dialog" class="sheet narrow" aria-labelledby="ask-title">
+    <form method="dialog">
+      <h2 id="ask-title"></h2>
+      <p id="ask-body" class="muted"></p>
+      <input id="ask-input" type="text" hidden aria-labelledby="ask-title">
+      <footer class="sheet-foot">
+        <!-- OK comes first so Enter in the text field confirms; CSS shows Cancel first -->
+        <button value="ok" id="ask-ok" class="btn primary"></button>
+        <button value="cancel" class="btn ghost" formnovalidate>Cancel</button>
+      </footer>
+    </form>
+  </dialog>
 
   <script src="app.js"></script>
 </body>

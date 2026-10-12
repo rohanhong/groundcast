@@ -141,3 +141,25 @@ def test_recall_question_is_followed_by_a_pause(settings: Settings, store: Store
     spoken = question_words * 60 / settings.pipeline.words_per_minute
     assert starts["s1.3"] - starts["s1.2"] >= spoken + settings.tts.recall_pause_s - 0.01
     assert 'class="recall"' in (d / TRANSCRIPT_FILE).read_text(encoding="utf-8")
+
+
+def test_transcript_api_times_sentences_and_numbers_sources(settings: Settings, store: Store, tides: Tides) -> None:
+    from fastapi.testclient import TestClient
+
+    from groundcast.web.app import create_app
+
+    material, _ = tides
+    record = run_session(new_session(store, Brief(focus="tides", material_ids=[material.id], minutes=2)), store,
+                         settings, backend=scripted_backend())  # fmt: skip
+    queued = new_session(store, Brief(focus="tides", material_ids=[material.id]))
+    app = create_app(settings, runner=object())  # type: ignore[arg-type]
+    with TestClient(app, base_url="http://127.0.0.1:8765") as client:
+        view = client.get(f"/api/sessions/{record.id}/transcript").json()
+        assert client.get(f"/api/sessions/{queued.id}/transcript").status_code == 409
+    sentences = [s for seg in view["segments"] for s in seg["sentences"]]
+    starts = [s["start_s"] for s in sentences]
+    assert starts == sorted(starts) and starts[0] > 0  # the spoken notice comes first
+    assert view["segments"][0]["start_s"] == 0.0 and view["segments"][1]["start_s"] > 0
+    cited = [n for s in sentences for n in s["sources"]]
+    assert cited and set(cited) == set(range(1, len(view["sources"]) + 1))
+    assert view["sources"][cited[0] - 1]["path"].startswith(f"materials/{material.id}")
