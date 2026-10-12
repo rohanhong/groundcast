@@ -1,12 +1,12 @@
 <div align="center">
 
+<h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../.github/assets/banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="../../.github/assets/banner-light.svg">
   <img alt="Groundcast" src="../../.github/assets/banner-light.svg" width="440">
 </picture>
-
-<h1>🎧 Groundcast</h1>
+</h1>
 
 <p><b>把你自己的学习资料变成播客式音频，每一句陈述都有资料依据。</b></p>
 

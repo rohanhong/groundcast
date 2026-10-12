@@ -1,12 +1,12 @@
 <div align="center">
 
+<h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset=".github/assets/banner-light.svg">
   <img alt="Groundcast" src=".github/assets/banner-light.svg" width="440">
 </picture>
-
-<h1>🎧 Groundcast</h1>
+</h1>
 
 <p><b>Turn your own study materials into podcast-style audio sessions, with every statement grounded in those materials.</b></p>
 

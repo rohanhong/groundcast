@@ -43,7 +43,7 @@ Everything above the intro sits in one centered block. Keep the blank lines arou
 Header rules:
 
 * Logo block: see `logo.md`. With no image, the block is omitted; a logo still waiting for its file stays inside an HTML comment.
-* Title: the project's proper name, with one emoji that fits the project.
+* Title: the project's proper name, with one emoji that fits the project. When the header image already shows the name (a logo with its wordmark), the `<picture>` block goes inside the `<h1>` in place of the text title, so the page keeps one top heading, named by the image's `alt`, and the name is not shown twice.
 * Tagline: one sentence, bold, no period needed; it says what the project is, not how it is built.
 * Badge row: see `badges.md`. One badge per line so diffs stay readable.
 * Switcher: a globe emoji, then every language in the same order in every README; the current language is bold and unlinked, the others link to their files; separate entries with ` | `. Label each language with its own name (endonym), never its English name. Omit the switcher when there is only `README.md`.
