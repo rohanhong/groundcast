@@ -76,8 +76,27 @@ class LauncherSettings(_Section):
 
 
 class LLMSettings(_Section):
-    backend: Literal["claude-cli", "anthropic-api"] = "claude-cli"
+    backend: Literal["claude-cli", "codex-cli", "anthropic-api"] = "claude-cli"
     claude_bin: str = "claude"
+    # The Codex backend runs codex_bin from PATH, else the newest match of these
+    # patterns (the desktop app keeps its CLI in a versioned folder off PATH).
+    codex_bin: str = "codex"
+    codex_bin_globs: list[str] = Field(default_factory=lambda: ["$LOCALAPPDATA/OpenAI/Codex/bin/*/codex.exe"])
+    # Maps the model aliases below to Codex model IDs; a full ID passes through.
+    codex_models: dict[str, str] = Field(
+        default_factory=lambda: {"opus": "gpt-6-astra", "sonnet": "gpt-6.1-sol", "haiku": "gpt-6-luna"}
+    )
+    # Codex features switched off so each call is a plain completion with no
+    # agent tools; names this Codex version does not list are skipped.
+    codex_disable_features: list[str] = Field(
+        default_factory=lambda: [
+            "shell_tool", "unified_exec", "apps", "plugins", "remote_plugin", "browser_use", "browser_use_external",
+            "in_app_browser", "computer_use", "image_generation", "view_image", "multi_agent", "skill_search",
+            "tool_suggest", "goals", "sleep_tool", "hooks", "code_mode_host", "workspace_dependencies",
+        ]  # fmt: skip
+    )
+    # Further `codex exec -c key=value` overrides, the value in TOML.
+    codex_config: list[str] = Field(default_factory=lambda: ['web_search="disabled"', "include_apply_patch_tool=false"])
     api_key_env: str = "ANTHROPIC_API_KEY"
     api_max_tokens: int = 32000
     # The API backend maps the CLI-style model aliases below to API model IDs; a full

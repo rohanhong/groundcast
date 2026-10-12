@@ -289,7 +289,7 @@ window.addEventListener("hashchange", route);
 
 // Settings line, and readable names for configured IDs
 
-const LLM_NAMES = { "claude-cli": "Claude Code", "anthropic-api": "Anthropic API" };
+const LLM_NAMES = { "claude-cli": "Claude Code", "codex-cli": "Codex", "anthropic-api": "Anthropic API" };
 const ENGINE_NAMES = { kokoro: "Kokoro", piper: "Piper", silent: "Silent (no audio)" };
 const VOICE_ACCENTS = { a: "American", b: "British", e: "Spanish", f: "French", h: "Hindi", i: "Italian", j: "Japanese",
   p: "Brazilian", z: "Mandarin" };

@@ -25,6 +25,8 @@ from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
 
+from groundcast.llm import find_cli
+
 KEEP = "keep"
 Version = tuple[int, int]
 Runner = Callable[..., subprocess.CompletedProcess[str]]
@@ -313,7 +315,7 @@ def run_setup(
     detect: Callable[[str], Gpu | None] | None = None,
     torch_version: Callable[[], str | None] = lambda: installed_version("torch"),
 ) -> int:
-    """args: yes, dry_run, torch, asr/piper/api (True, False, or None to ask), config, claude_bin, backend."""
+    """args: yes, dry_run, torch, asr/piper/api (True, False, or None to ask), config, llm (LLMSettings)."""
     options = options or load_options()
     gpu = (detect or (lambda smi: detect_gpu(smi, run)))(options.nvidia_smi)
     current = torch_version()
@@ -326,8 +328,9 @@ def run_setup(
     else:
         out("GPU: no NVIDIA GPU found (nvidia-smi did not answer)")
     out(f"PyTorch: {current or 'not installed'}")
-    claude = which(args.claude_bin)
-    out(f"Claude Code CLI: {claude or 'not found'}")
+    cli = find_cli(args.llm, which)
+    if cli is not None:
+        out(f"{cli.name}: {cli.path or 'not found; ' + cli.fix}")
     out("")
 
     builds = platform_builds(options)
@@ -351,7 +354,7 @@ def run_setup(
         if component.required:
             continue
         recommended = component.recommended or any(installed(r) for r in component_requirements(component, None))
-        if key == "api" and args.backend == "claude-cli" and claude is None:
+        if key == "api" and args.llm.backend == "claude-cli" and cli is not None and cli.path is None:
             recommended = True  # without the CLI, an API key is the way to an LLM
         flag = getattr(args, key, None)
         if flag is not None:

@@ -14,7 +14,7 @@ never in a public issue.
 
 - **Report a bug**: open an issue with what you ran, what you expected, what
   happened, and your OS, Python version, and LLM backend (Claude Code CLI
-  version, or API).
+  version, Codex CLI version, or API).
 - **Suggest a change**: open an issue first for anything larger than a small
   fix, so the approach can be agreed before you write it.
 - **Send a pull request**: fixes and improvements to code, prompts, and docs

@@ -72,8 +72,8 @@ result as an MP3 you can play in any phone player.
 > [!NOTE]
 > Needs git, conda (for example [Miniforge](https://conda-forge.org/download/)),
 > and, for the default LLM backend, an installed and signed-in Claude Code CLI
-> (an API key works too). Developed on Windows 11 with an 8 GB NVIDIA GPU; the
-> default TTS model also runs on CPU.
+> (a signed-in Codex CLI or an API key works too: set `llm.backend`). Developed
+> on Windows 11 with an 8 GB NVIDIA GPU; the default TTS model also runs on CPU.
 
 1. Clone the repository:
    ```bash
@@ -226,6 +226,7 @@ first.
 ## 🔗 Resources
 
 - [Claude Code](https://github.com/anthropics/claude-code): the default LLM backend, driven in headless mode.
+- [Codex CLI](https://github.com/openai/codex): the optional `codex-cli` LLM backend, driven through `codex exec`.
 - [FastAPI](https://fastapi.tiangolo.com): the local service framework.
 - [FActScore](https://doi.org/10.18653/v1/2023.emnlp-main.741): splitting long text into atomic claims.
 - [MiniCheck](https://doi.org/10.18653/v1/2024.emnlp-main.499): low-cost claim checking against source documents.

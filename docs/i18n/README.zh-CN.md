@@ -43,7 +43,7 @@ Groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
 ## 🚀 快速开始
 
 > [!NOTE]
-> 需要 git、conda（例如 [Miniforge](https://conda-forge.org/download/)），以及默认 LLM 后端所需的、已安装并登录的 Claude Code CLI（也可使用 API key）。开发环境为 Windows 11 与 8 GB NVIDIA GPU；默认的语音合成模型也可在 CPU 上运行。
+> 需要 git、conda（例如 [Miniforge](https://conda-forge.org/download/)），以及默认 LLM 后端所需的、已安装并登录的 Claude Code CLI（也可使用已登录的 Codex CLI 或 API key，通过 `llm.backend` 设置）。开发环境为 Windows 11 与 8 GB NVIDIA GPU；默认的语音合成模型也可在 CPU 上运行。
 
 1. 克隆仓库：
    ```bash
@@ -140,6 +140,7 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 ## 🔗 相关资源
 
 - [Claude Code](https://github.com/anthropics/claude-code)：默认的 LLM 后端，以无界面模式调用。
+- [Codex CLI](https://github.com/openai/codex)：可选的 `codex-cli` LLM 后端，通过 `codex exec` 调用。
 - [FastAPI](https://fastapi.tiangolo.com)：本地服务框架。
 - [FActScore](https://doi.org/10.18653/v1/2023.emnlp-main.741)：把长文本拆分为原子陈述。
 - [MiniCheck](https://doi.org/10.18653/v1/2024.emnlp-main.499)：低成本地依据源文档核查陈述。

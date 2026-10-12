@@ -43,8 +43,18 @@ page_timeout_s = 600.0  # a page silent this long counts as closed (a crashed or
 shortcut_name = "Groundcast"
 
 [llm]
-backend = "claude-cli"  # or "anthropic-api" (needs the "api" extra)
+backend = "claude-cli"  # or "codex-cli", or "anthropic-api" (needs the "api" extra)
 claude_bin = "claude"
+codex_bin = "codex"  # Codex may still read your global ~/.codex/AGENTS.md
+# Tried when codex_bin is not on PATH; the newest match wins.
+codex_bin_globs = ["$LOCALAPPDATA/OpenAI/Codex/bin/*/codex.exe"]
+# Codex features switched off so each call has no agent tools.
+codex_disable_features = [
+  "shell_tool", "unified_exec", "apps", "plugins", "remote_plugin", "browser_use", "browser_use_external",
+  "in_app_browser", "computer_use", "image_generation", "view_image", "multi_agent", "skill_search",
+  "tool_suggest", "goals", "sleep_tool", "hooks", "code_mode_host", "workspace_dependencies",
+]
+codex_config = ['web_search="disabled"', "include_apply_patch_tool=false"]  # more `codex exec -c` overrides
 api_key_env = "ANTHROPIC_API_KEY"
 api_max_tokens = 32000
 writer_model = "opus"
@@ -71,6 +81,11 @@ retry_backoff_s = 10.0  # wait before retry n is n times this
 opus = "claude-opus-5-5"
 sonnet = "claude-sonnet-5-5"
 haiku = "claude-haiku-5-5"
+
+[llm.codex_models]
+opus = "gpt-6-astra"
+sonnet = "gpt-6.1-sol"
+haiku = "gpt-6-luna"
 
 [ingest]
 pdftotext_bin = "pdftotext"

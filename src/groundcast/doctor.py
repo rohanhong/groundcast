@@ -25,6 +25,7 @@ from pydantic import BaseModel
 
 from groundcast.config import Settings
 from groundcast.install import Gpu, detect_gpu, is_installed, load_options, recommend_build
+from groundcast.llm import find_cli
 
 Status = Literal["ok", "missing", "optional", "warn"]
 
@@ -165,15 +166,14 @@ def run_checks(
 
     # LLM backend
     llm = settings.llm
-    if llm.backend == "claude-cli":
-        path = which(llm.claude_bin)
-        if path:
-            detail = f"Claude Code CLI at {path} (sign-in not checked)"
+    cli = find_cli(llm, which)
+    if cli is not None:
+        if cli.path:
+            detail = f"{cli.name} at {cli.path} (sign-in not checked)"
             checks.append(Check(name="LLM backend", status="ok", detail=detail))
         else:
-            fix = 'install Claude Code and sign in, or set llm.backend = "anthropic-api"'
-            detail = f"Claude Code CLI not found ({llm.claude_bin})"
-            checks.append(Check(name="LLM backend", status="missing", detail=detail, fix=fix))
+            detail = f"{cli.name} not found ({cli.setting})"
+            checks.append(Check(name="LLM backend", status="missing", detail=detail, fix=cli.fix))
     else:
         problems = ([] if module("anthropic") else ["the anthropic package is not installed"]) + (
             [] if environ.get(llm.api_key_env) else [f"{llm.api_key_env} is not set"])  # fmt: skip

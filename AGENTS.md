@@ -56,8 +56,8 @@ which every statement is grounded in those materials.
   recognition for video and audio and OCR for scans and images, whose text
   waits for the user's review), `material_view.py` (source labels, links,
   and the per-material text view), `pipeline/` (writer, verifier,
-  editor, run), `llm/` (the `LLMBackend` interface and its CLI and API
-  backends), `elicit.py` (brief by dialogue), `voice_direction.py` (pace
+  editor, run), `llm/` (the `LLMBackend` interface and its Claude Code
+  CLI, Codex CLI, and API backends), `elicit.py` (brief by dialogue), `voice_direction.py` (pace
   per segment), `tts/`, `sessions.py` (export), `qa.py` and `quiz.py`
   (text Q&A and quizzes), `profile/` (the SQLite profile:
   preferences, inferred preferences and ranked suggestions, session

@@ -28,7 +28,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
     from groundcast.install import run_setup
 
     settings = _settings(args)
-    args.claude_bin, args.backend = settings.llm.claude_bin, settings.llm.backend
+    args.llm = settings.llm
     return run_setup(args, out=lambda line: print(line, flush=True))
 
 

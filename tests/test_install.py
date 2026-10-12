@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from groundcast.config import Settings
+from groundcast.config import LLMSettings, Settings
 from groundcast.doctor import Check, failed, format_checks, run_checks
 from groundcast.install import (
     KEEP,
@@ -96,7 +96,7 @@ def test_the_plan_installs_only_what_is_missing() -> None:
 
 def _args(**kw: object) -> argparse.Namespace:
     base = {"yes": False, "dry_run": False, "torch": None, "asr": None, "piper": None, "api": None, "config": None,
-            "claude_bin": "claude", "backend": "claude-cli", "shortcut": None}  # fmt: skip
+            "llm": LLMSettings(codex_bin_globs=[]), "shortcut": None}  # fmt: skip
     return argparse.Namespace(**{**base, **kw})
 
 
@@ -116,6 +116,14 @@ def test_dry_run_prints_the_commands_and_installs_nothing() -> None:
     assert "python -m pip install torch==2.14.1+cpu --index-url https://download.pytorch.org/whl/cpu" in text
     assert "piper-tts" in text and "Dry run" in text
     assert "anthropic" in text  # no Claude Code CLI: the API backend is recommended
+
+    # No Codex for the Codex backend: the API extra would not help, so setup says how to get Codex.
+    lines.clear()
+    codex = LLMSettings(backend="codex-cli", codex_bin_globs=[])
+    run_setup(_args(dry_run=True, torch="cpu", llm=codex), out=lines.append, run=run, which=lambda name: None,
+              installed=lambda r: False, detect=lambda smi: None, torch_version=lambda: None)  # fmt: skip
+    text = "\n".join(lines)
+    assert "Codex CLI: not found; install Codex" in text and "anthropic" not in text
 
 
 def test_interactive_setup_asks_then_runs_pip_and_the_doctor() -> None:
@@ -203,6 +211,19 @@ def test_doctor_checks_kokoro_and_the_api_backend(settings: Settings, tmp_path: 
     assert by_name["LLM backend"].detail == "ANTHROPIC_API_KEY is not set"
     ready = _checks(kokoro, tmp_path, environ={"ANTHROPIC_API_KEY": "x"})
     assert {c.name: c for c in ready}["LLM backend"].status == "ok"
+
+
+def test_doctor_finds_codex_off_path(settings: Settings, tmp_path: Path) -> None:
+    exe = tmp_path / "bin" / "v1" / "codex.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_bytes(b"")
+    pattern = str(tmp_path / "bin" / "*" / "codex.exe")
+    llm = settings.llm.model_copy(update={"backend": "codex-cli", "codex_bin_globs": [pattern]})
+    checks = _checks(settings.model_copy(update={"llm": llm}), tmp_path, which=lambda name: None)
+    assert {c.name: c for c in checks}["LLM backend"].detail.startswith(f"Codex CLI at {exe}")
+    gone = llm.model_copy(update={"codex_bin_globs": []})
+    checks = _checks(settings.model_copy(update={"llm": gone}), tmp_path, which=lambda name: None)
+    assert {c.name: c for c in checks}["LLM backend"].status == "missing"
 
 
 def test_doctor_endpoint(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
