@@ -16,12 +16,13 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Request, Response, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from groundcast.config import Settings, config_file_path
 from groundcast.doctor import Check, run_checks
+from groundcast.icon import digest as icon_digest
 from groundcast.ingest import (
     ExtractionError,
     ingest_file,
@@ -627,5 +628,15 @@ def create_app(
     app.mount("/data/materials", StaticFiles(directory=store.materials_dir), name="materials")
     app.mount("/data/sessions", StaticFiles(directory=store.sessions_dir), name="sessions")
     static_dir = resources.files("groundcast.web").joinpath("static")
+
+    @app.get("/", include_in_schema=False)
+    @app.get("/index.html", include_in_schema=False)
+    def page() -> HTMLResponse:
+        # The favicon address carries the drawing's digest: browsers keep a favicon by its address, and an
+        # app window shows it as the window icon, so a changed icon would otherwise stay old there.
+        html = static_dir.joinpath("index.html").read_text(encoding="utf-8")
+        return HTMLResponse(html.replace('"favicon.svg"', f'"favicon.svg?v={icon_digest()}"'),
+                            headers={"Cache-Control": "no-cache"})  # fmt: skip
+
     app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="ui")
     return app

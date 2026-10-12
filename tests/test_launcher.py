@@ -191,3 +191,26 @@ def test_quit_runs_the_window_closer_then_stops(settings: Settings) -> None:
     failing.config.app.state.request_shutdown()
     assert failing.should_exit  # a failed window close never blocks the stop
     assert close_windows(platform="linux") == 0
+
+
+def test_icon_file_is_written_once_and_older_ones_stay(tmp_path: Path) -> None:
+    from groundcast.icon import digest, icon_file
+
+    (tmp_path / "groundcast-00000000.ico").write_bytes(b"an earlier drawing, still used by a shortcut")
+    path = icon_file(tmp_path, "ico")
+    assert path.name == f"groundcast-{digest()}.ico" and path.read_bytes()[:4] == b"\x00\x00\x01\x00"
+    written = path.stat().st_mtime_ns
+    assert icon_file(tmp_path, "ico") == path and path.stat().st_mtime_ns == written  # not written again
+    assert (tmp_path / "groundcast-00000000.ico").exists()
+
+
+def test_window_icons_only_for_app_windows_on_windows(settings: Settings, tmp_path: Path) -> None:
+    from groundcast.launcher import WindowIcons, window_icons
+
+    assert window_icons(settings, platform="linux") is None
+    tab = settings.model_copy(update={"launcher": settings.launcher.model_copy(update={"window": "browser"})})
+    assert window_icons(tab, platform="win32") is None
+    keeper = window_icons(settings, platform="win32")
+    assert keeper is not None and keeper.ico.is_file() and keeper.ico.parent == settings.data_dir / "app"
+    assert WindowIcons(keeper.ico, platform="linux").apply() == 0
+    assert WindowIcons(tmp_path / "missing.ico", platform="win32").apply() == 0

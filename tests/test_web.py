@@ -43,6 +43,17 @@ def test_upload_and_session_flow(settings: Settings) -> None:
         assert client.get("/api/sessions/..%2F..%2Fx").status_code == 404
 
 
+def test_page_links_the_favicon_by_the_drawing_digest(settings: Settings) -> None:
+    from groundcast.icon import digest
+
+    with local_client(create_app(settings, runner=RecordingRunner())) as client:  # type: ignore[arg-type]
+        for path in ("/", "/index.html"):
+            page = client.get(path)
+            assert page.headers["cache-control"] == "no-cache"
+            assert f'"favicon.svg?v={digest()}"' in page.text and '"favicon.svg"' not in page.text
+        assert client.get(f"/favicon.svg?v={digest()}").headers["content-type"].startswith("image/svg")
+
+
 def test_unsupported_upload_rejected(settings: Settings) -> None:
     with local_client(create_app(settings, runner=RecordingRunner())) as client:  # type: ignore[arg-type]
         r = client.post("/api/materials", files=[("files", ("a.docx", b"x", "application/octet-stream"))])

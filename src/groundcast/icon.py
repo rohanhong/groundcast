@@ -7,10 +7,13 @@ are defined once below, in a unit box (0 to 1, y down); `svg()` writes them
 as vector shapes and `render()` samples them several times per pixel, so
 the two outputs match without any binary image in the repository.
 web/static/favicon.svg is `svg()`'s output (a test keeps them the same).
+Icon files carry `digest()` in their names, and the page links the favicon
+with it, so a changed drawing is never shown from an old cached copy.
 """
 
 from __future__ import annotations
 
+import hashlib
 import math
 import struct
 import zlib
@@ -31,7 +34,7 @@ GLOW = ("#ffc46b", 0.7, 0.22)  # around the source: colour, opacity at the centr
 SOURCE = ("#fff7e8", 0.066)  # colour, radius
 
 SAMPLES = 4  # per pixel side
-ICO_SIZES = (16, 24, 32, 48, 64, 128, 256)
+ICO_SIZES = (16, 20, 24, 32, 40, 48, 64, 128, 256)  # window icon sizes at 100 to 200 % scaling
 ICNS_TYPES = {128: b"ic07", 256: b"ic08", 512: b"ic09"}
 SVG_BOX = 100.0
 
@@ -191,20 +194,34 @@ def icns(types: dict[int, bytes] = ICNS_TYPES) -> bytes:
     return b"icns" + struct.pack(">I", 8 + len(body)) + body
 
 
+def digest() -> str:
+    """A short digest of the drawing, which changes whenever the icon does."""
+    return hashlib.sha256(svg().encode("utf-8")).hexdigest()[:8]
+
+
+ICON_MAKERS = {"png": lambda: png(256), "ico": ico, "icns": icns}
+
+
+def icon_file(folder: Path, suffix: str) -> Path:
+    """The icon file of the current drawing in folder, written when it is missing; other files stay."""
+    path = folder / f"groundcast-{digest()}.{suffix}"
+    if not path.is_file():
+        folder.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(ICON_MAKERS[suffix]())
+    return path
+
+
 def write_icons(folder: Path) -> dict[str, Path]:
     """Write the PNG (256 px), ICO, and ICNS icons into folder; return them by suffix.
 
     The names carry a digest of the drawing: Windows caches a shortcut's icon by file path, so a changed
     icon needs a new path to show. Icons of earlier drawings in folder are removed.
     """
-    import hashlib
-
     folder.mkdir(parents=True, exist_ok=True)
-    digest = hashlib.sha256(svg().encode("utf-8")).hexdigest()[:8]
-    files = {"png": png(256), "ico": ico(), "icns": icns()}
+    files = {suffix: make() for suffix, make in ICON_MAKERS.items()}
     out = {}
     for suffix, data in files.items():
-        path = folder / f"groundcast-{digest}.{suffix}"
+        path = folder / f"groundcast-{digest()}.{suffix}"
         path.write_bytes(data)
         out[suffix] = path
     for old in folder.glob("groundcast*.*"):

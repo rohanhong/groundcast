@@ -6,7 +6,9 @@ and poppler live there). If groundcast already answers on its port, only a
 window opens. Otherwise the service starts, a window opens once it answers,
 and the service stops again when no groundcast page has been open for a
 while and no work is running. Without a console, output goes to a log file
-in the data directory and a start failure shows a message box.
+in the data directory and a start failure shows a message box. On Windows,
+the app windows get the Groundcast icon from its .ico file while they are
+open, since the browser would show its cached, stretched favicon there.
 """
 
 from __future__ import annotations
@@ -36,6 +38,9 @@ log = logging.getLogger(__name__)
 
 LOG_FILE = "launcher.log"
 WATCH_INTERVAL_S = 2.0
+# Just after a window opens, check for it (and give it the icon) this often, for this long.
+FIRST_WINDOW_INTERVAL_S = 0.25
+FIRST_WINDOW_PERIOD_S = 20.0
 PRODUCT = "Groundcast"  # the name people read; `groundcast` stays the command
 WINDOW_TITLE_SUFFIX = "| Groundcast"  # app.js titles every view "<view> | Groundcast"
 BUSY_HEALTH_TIMEOUT_S = 5.0  # a running groundcast may be slow to answer while it voices a session
@@ -169,6 +174,80 @@ def close_windows(title_suffix: str = WINDOW_TITLE_SUFFIX, platform: str = sys.p
     return len(windows)
 
 
+class WindowIcons:
+    """Put the Groundcast icon on the open app windows (Windows only; elsewhere nothing is done).
+
+    A browser gives an app window the page's favicon as its icon: an old one from its own cache after the
+    icon changes, and stretched from 16 pixels, so it looks blurred in the title bar and the taskbar. The
+    .ico file holds a sharp image for each size. The browser sets its icon again when the page reloads, so
+    apply() runs repeatedly; it changes only the windows that do not show the icon.
+    """
+
+    WM_GETICON, WM_SETICON = 0x007F, 0x0080
+    SM_CXICON, SM_CXSMICON = 11, 49
+    SMTO_ABORTIFHUNG, TIMEOUT_MS = 0x0002, 500
+
+    def __init__(self, ico: Path, platform: str = sys.platform) -> None:
+        self.ico = ico
+        self.platform = platform
+        self._handles: dict[int, int] = {}  # icon size in pixels -> icon handle, loaded once
+        self._user32: Any = None
+
+    def _api(self) -> Any:
+        if self._user32 is None:
+            import ctypes
+            from ctypes import wintypes
+
+            user32 = ctypes.WinDLL("user32")  # own function objects, so these signatures stay local
+            user32.LoadImageW.restype = wintypes.HANDLE
+            user32.LoadImageW.argtypes = [wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT, ctypes.c_int,
+                                          ctypes.c_int, wintypes.UINT]  # fmt: skip
+            user32.SendMessageTimeoutW.restype = wintypes.LPARAM
+            user32.SendMessageTimeoutW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM,
+                                                   wintypes.LPARAM, wintypes.UINT, wintypes.UINT,
+                                                   ctypes.POINTER(ctypes.c_size_t)]  # fmt: skip
+            self._user32 = user32
+        return self._user32
+
+    def _send(self, hwnd: int, message: int, wparam: int, lparam: int) -> int | None:
+        """SendMessage that gives up on a window that does not answer; None then."""
+        import ctypes
+
+        result = ctypes.c_size_t()
+        ok = self._api().SendMessageTimeoutW(hwnd, message, wparam, lparam, self.SMTO_ABORTIFHUNG, self.TIMEOUT_MS,
+                                             ctypes.byref(result))  # fmt: skip
+        return result.value if ok else None
+
+    def _sizes(self, hwnd: int) -> tuple[int, int]:
+        """The small and large icon sizes for the window's display scaling."""
+        user32 = self._api()
+        try:
+            dpi = user32.GetDpiForWindow(hwnd) or 96
+            metric = user32.GetSystemMetricsForDpi
+            return metric(self.SM_CXSMICON, dpi), metric(self.SM_CXICON, dpi)
+        except AttributeError:  # before Windows 10 (1607): the system scaling
+            return user32.GetSystemMetrics(self.SM_CXSMICON), user32.GetSystemMetrics(self.SM_CXICON)
+
+    def _icon(self, size: int) -> int:
+        if size not in self._handles:
+            # IMAGE_ICON (1) from the file (LR_LOADFROMFILE): Windows takes the .ico image of this size.
+            self._handles[size] = self._api().LoadImageW(None, str(self.ico), 1, size, size, 0x0010) or 0
+        return self._handles[size]
+
+    def apply(self) -> int:
+        """Give every open app window the icon where it lacks it; return how many windows were changed."""
+        if self.platform != "win32" or not self.ico.is_file():
+            return 0
+        changed = 0
+        for hwnd in app_windows(platform=self.platform):
+            for kind, size in enumerate(self._sizes(hwnd)):  # ICON_SMALL = 0, ICON_BIG = 1
+                icon = self._icon(size)
+                if icon and self._send(hwnd, self.WM_GETICON, kind, 0) not in (icon, None):
+                    self._send(hwnd, self.WM_SETICON, kind, icon)
+                    changed += 1
+        return changed
+
+
 def open_window(
     settings: Settings,
     url: str,
@@ -250,6 +329,20 @@ def tell(message: str, error: bool = False) -> None:
             pass
 
 
+def window_icons(settings: Settings, platform: str = sys.platform) -> WindowIcons | None:
+    """The icon keeper for app windows on Windows, with the .ico of the current drawing; None elsewhere."""
+    if platform != "win32" or settings.launcher.window != "app":
+        return None
+    from groundcast.icon import icon_file
+    from groundcast.shortcuts import ICON_FOLDER
+
+    try:
+        return WindowIcons(icon_file(settings.data_dir / ICON_FOLDER, "ico"), platform)
+    except OSError as exc:
+        log.warning("no window icon: %s", exc)
+        return None
+
+
 def launch(settings: Settings, window: str | None = None) -> int:
     """Open groundcast: reuse a running service or start one; stop it when its pages are closed."""
     if window:
@@ -290,11 +383,21 @@ def launch(settings: Settings, window: str | None = None) -> int:
                 return
             time.sleep(0.1)
         log.info("serving %s; opening %s", url, open_window(settings, url))
-        if not cfg.stop_when_closed or cfg.window == "none":
+        icons = window_icons(settings)
+        stopping = cfg.stop_when_closed and cfg.window != "none"
+        if icons is None and not stopping:
             return
+        opened = time.monotonic()
         while not server.should_exit:
-            time.sleep(WATCH_INTERVAL_S)
-            if should_stop(app.state.presence.closed_for(), cfg.close_grace_s, lambda: busy(settings)):
+            # Often at first, so the window shows the icon as it appears; then at the usual pace.
+            first = time.monotonic() - opened < FIRST_WINDOW_PERIOD_S
+            time.sleep(FIRST_WINDOW_INTERVAL_S if first else WATCH_INTERVAL_S)
+            if icons is not None:
+                try:
+                    icons.apply()
+                except OSError as exc:  # the icon is a courtesy; watching must go on
+                    log.warning("window icon: %s", exc)
+            if stopping and should_stop(app.state.presence.closed_for(), cfg.close_grace_s, lambda: busy(settings)):
                 log.info("no groundcast page is open and no work is running; stopping")
                 server.should_exit = True
 

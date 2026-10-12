@@ -69,7 +69,9 @@ which every statement is grounded in those materials.
   ground line): `web/static/favicon.svg` and the README banners in
   `.github/assets/` are its output, and the shortcut icons are rendered from
   it, so no binary image is tracked. After changing the drawing, regenerate
-  those files (a test compares them).
+  those files (a test compares them). The page links the favicon with the
+  drawing's digest, and on Windows the launcher sets the .ico on the app
+  windows, since the browser would show its cached, stretched favicon there.
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
   the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are
   added to the Writer prompt for two-host sessions and recall prompts.
