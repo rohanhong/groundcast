@@ -37,7 +37,7 @@ def _minimal_pdf(pages: list[str]) -> bytes:
     return out
 
 
-def test_markdown_chunks_have_spec_ids(settings: Settings, store: Store) -> None:
+def test_markdown_chunks_have_stable_ids(settings: Settings, store: Store) -> None:
     m = ingest_file(FIXTURES / "tides.md", store, settings)
     chunks = store.get_chunks(m.id)
     assert m.kind == "markdown" and m.pages == 1 and len(m.id) == 8

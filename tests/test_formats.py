@@ -1,4 +1,4 @@
-"""M3 material formats: PowerPoint, Word, web pages, video and audio."""
+"""Material formats: PowerPoint, Word, web pages, video and audio."""
 
 from __future__ import annotations
 

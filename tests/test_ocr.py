@@ -1,4 +1,4 @@
-"""M5: text recognition for images and scanned PDF pages."""
+"""Text recognition for images and scanned PDF pages."""
 
 from pathlib import Path
 
