@@ -55,7 +55,7 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    - Linux 或 macOS：`./install.sh`
 
    加上 `--yes` 可不经询问采用全部推荐项，加上 `--dry-run` 只打印 pip 命令，也可直接指定选择，例如 `--torch cpu --no-asr`。模型权重在首次使用时下载（Kokoro 约 330 MB，语音识别模型约 1.6 GB）。
-3. 双击 groundcast 快捷方式。不会打开终端：服务在后台启动，groundcast 在自己的窗口中打开（Edge 或 Chrome 的应用窗口，没有时使用默认浏览器的标签页），地址是 <http://127.0.0.1:8765/>，只在 `127.0.0.1` 上提供服务。再次双击会把已打开的窗口切到最前面，没有窗口时才打开一个。所有 groundcast 窗口都关闭、且没有正在生成的会话或正在进行的识别时，服务会自行停止；侧栏中的“Stop groundcast”可以立即停止它。由于没有控制台，它的输出写入数据目录中的 `logs/launcher.log`。
+3. 双击 groundcast 快捷方式。不会打开终端：服务在后台启动，groundcast 在自己的窗口中打开（Edge 或 Chrome 的应用窗口，没有时使用默认浏览器的标签页），地址是 <http://127.0.0.1:8765/>，只在 `127.0.0.1` 上提供服务。再次双击会把已打开的窗口切到最前面，没有窗口时才打开一个。所有 groundcast 窗口都关闭、且没有正在生成的会话或正在进行的识别时，服务会自行停止；侧栏中的“Quit groundcast”会关闭窗口并立即停止服务。由于没有控制台，它的输出写入数据目录中的 `logs/launcher.log`。
 
    在终端里，`groundcast launch` 的效果相同，`groundcast serve` 在前台运行服务；`groundcast shortcut` 会重新创建快捷方式（加 `--remove` 则删除）。`[launcher]` 设置决定使用哪种窗口以及服务何时停止。
 

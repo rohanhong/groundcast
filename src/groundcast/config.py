@@ -30,6 +30,8 @@ class _Section(BaseModel):
 class ServerSettings(_Section):
     host: str = "127.0.0.1"
     port: int = 8765
+    # On stop, how long open connections (a playing audio stream) may hold the process before they are cut.
+    shutdown_timeout_s: float = Field(default=2.0, ge=0)
 
     @field_validator("host")
     @classmethod

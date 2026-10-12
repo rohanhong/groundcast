@@ -2091,15 +2091,26 @@ function startPresence() {
 window.addEventListener("pagehide", () => checkIn(false));
 window.addEventListener("pageshow", (event) => { if (event.persisted) startPresence(); });
 
-function showOffline(title = null, body = null) {
-  if (!$("offline").hidden) return;
+function stopMedia() {
+  // Dropping the source closes the audio stream, which would otherwise hold the service open while it stops.
+  if (!player.id) return;
+  store(STORE_KEYS.position + player.id, audio.currentTime);
+  player.id = null; // first, so the error event of the emptied player is not reported
+  audio.pause();
+  audio.removeAttribute("src");
+  audio.load();
+}
+
+function showOffline(title = null, body = null, waiting = true) {
   if (title) $("offline-title").textContent = title;
   if (body) $("offline-body").textContent = body;
+  $("offline-wait").hidden = !waiting;
+  if (!$("offline").hidden) return;
   $("offline").hidden = false;
   clearInterval(presenceTimer);
   clearTimeout(sessionTimer);
   clearTimeout(materialTimer);
-  audio.pause();
+  stopMedia();
   clearInterval(offlineTimer);
   offlineTimer = setInterval(async () => {
     try {
@@ -2111,15 +2122,18 @@ function showOffline(title = null, body = null) {
 
 $("app-stop").addEventListener("click", async () => {
   const running = state.sessions.filter((s) => s.status === "queued" || s.status === "running").length;
-  const ok = await ask({ title: "Stop groundcast?", ok: "Stop", danger: running > 0,
+  const ok = await ask({ title: "Quit groundcast?", ok: "Quit", danger: running > 0,
     body: running ? `${plural(running, "session")} still being made will be cut short and marked as failed.`
-      : "The service stops on this computer. Start it again from the groundcast shortcut." });
+      : "The window closes and the service stops. Start it again from the groundcast shortcut." });
   if (!ok) return;
+  stopMedia();
+  checkIn(false);
   try {
     await api("/api/shutdown", { method: "POST" });
     stopped = true;
     showOffline("groundcast has stopped", "You can close this window. To start it again, use the groundcast shortcut "
-      + "on your desktop or in the Start menu.");
+      + "on your desktop or in the Start menu.", false);
+    window.close(); // where the browser allows it; the launcher also closes app windows
   } catch (error) {
     if (!stopped) toast(error.message, "error");
   }

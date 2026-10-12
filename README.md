@@ -104,7 +104,7 @@ result as an MP3 you can play in any phone player.
    <http://127.0.0.1:8765/>, on `127.0.0.1` only. A second double-click
    brings the open window to the front, or opens one. When every groundcast window is closed
    and no session or recognition is running, the service stops by itself;
-   "Stop groundcast" in the sidebar stops it at once. Without a console, its
+   "Quit groundcast" in the sidebar closes the window and stops the service at once. Without a console, its
    output goes to `logs/launcher.log` in the data directory.
 
    From a terminal, `groundcast launch` does the same, and `groundcast serve`

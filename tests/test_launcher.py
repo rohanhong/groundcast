@@ -154,3 +154,20 @@ def test_focus_looks_for_windows_only_on_windows() -> None:
     assert focus_window(platform="linux") is False
     if os.name == "nt":  # the real window list: nothing has this title
         assert focus_window("| no window has this title 7f3a") is False
+
+
+def test_quit_runs_the_window_closer_then_stops(settings: Settings) -> None:
+    from groundcast.launcher import close_windows, make_server
+    from groundcast.web.app import create_app
+
+    order: list[str] = []
+    app = create_app(settings, runner=object())  # type: ignore[arg-type]
+    server = make_server(settings, app, on_stop=lambda: order.append("windows closed"))
+    assert server.config.timeout_graceful_shutdown == settings.server.shutdown_timeout_s
+    app.state.request_shutdown()
+    assert order == ["windows closed"] and server.should_exit
+    failing = make_server(settings, create_app(settings, runner=object()),  # type: ignore[arg-type]
+                          on_stop=lambda: (_ for _ in ()).throw(OSError("no desktop")))  # fmt: skip
+    failing.config.app.state.request_shutdown()
+    assert failing.should_exit  # a failed window close never blocks the stop
+    assert close_windows(platform="linux") == 0

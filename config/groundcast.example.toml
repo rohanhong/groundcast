@@ -14,6 +14,7 @@
 [server]
 host = "127.0.0.1"  # loopback only
 port = 8765
+shutdown_timeout_s = 2.0  # on stop, how long open connections (a playing audio stream) may hold the process
 
 [launcher]
 # `groundcast launch`, which the desktop shortcut runs.

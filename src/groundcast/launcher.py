@@ -114,14 +114,14 @@ def window_command(browser: str, url: str) -> list[str]:
     return [browser, f"--app={url}", "--new-window"]
 
 
-def focus_window(title_suffix: str = WINDOW_TITLE_SUFFIX, platform: str = sys.platform) -> bool:
-    """Bring an open groundcast app window to the front (Windows); False when there is none.
+def app_windows(title_suffix: str = WINDOW_TITLE_SUFFIX, platform: str = sys.platform) -> list[int]:
+    """Handles of the open groundcast app windows (Windows only; elsewhere none are found).
 
     An app window's title is the page title alone, so a browser window that merely has a groundcast tab
     (its title ends with the browser's name) does not match.
     """
     if platform != "win32":
-        return False
+        return []
     import ctypes
     from ctypes import wintypes
 
@@ -139,12 +139,33 @@ def focus_window(title_suffix: str = WINDOW_TITLE_SUFFIX, platform: str = sys.pl
         return True
 
     user32.EnumWindows(each, 0)
-    if not found:
+    return found
+
+
+def focus_window(title_suffix: str = WINDOW_TITLE_SUFFIX, platform: str = sys.platform) -> bool:
+    """Bring an open groundcast app window to the front; False when there is none."""
+    windows = app_windows(title_suffix, platform)
+    if not windows:
         return False
-    if user32.IsIconic(found[0]):
-        user32.ShowWindow(found[0], 9)  # SW_RESTORE
-    user32.SetForegroundWindow(found[0])
+    import ctypes
+
+    user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+    if user32.IsIconic(windows[0]):
+        user32.ShowWindow(windows[0], 9)  # SW_RESTORE
+    user32.SetForegroundWindow(windows[0])
     return True
+
+
+def close_windows(title_suffix: str = WINDOW_TITLE_SUFFIX, platform: str = sys.platform) -> int:
+    """Ask every groundcast app window to close, as its close button would; return how many."""
+    windows = app_windows(title_suffix, platform)
+    if windows:
+        import ctypes
+
+        post = ctypes.windll.user32.PostMessageW  # type: ignore[attr-defined]
+        for hwnd in windows:
+            post(hwnd, 0x0010, 0, 0)  # WM_CLOSE
+    return len(windows)
 
 
 def open_window(
@@ -184,13 +205,20 @@ def should_stop(closed_for: float | None, grace_s: float, is_busy: Callable[[], 
     return closed_for is not None and closed_for >= grace_s and not is_busy()
 
 
-def make_server(settings: Settings, app: FastAPI) -> uvicorn.Server:
-    """A uvicorn server whose app can stop it (POST /api/shutdown)."""
+def make_server(settings: Settings, app: FastAPI, on_stop: Callable[[], object] | None = None) -> uvicorn.Server:
+    """A uvicorn server whose app can stop it (POST /api/shutdown); on_stop runs first."""
     import uvicorn
 
-    server = uvicorn.Server(uvicorn.Config(app, host=settings.server.host, port=settings.server.port, log_level="info"))
+    config = uvicorn.Config(app, host=settings.server.host, port=settings.server.port, log_level="info",
+                            timeout_graceful_shutdown=settings.server.shutdown_timeout_s)  # fmt: skip
+    server = uvicorn.Server(config)
 
     def stop() -> None:
+        if on_stop is not None:
+            try:
+                on_stop()
+            except OSError as exc:  # closing windows is a courtesy; stopping must not fail on it
+                log.warning("before stopping: %s", exc)
         server.should_exit = True
 
     app.state.request_shutdown = stop
@@ -247,7 +275,8 @@ def launch(settings: Settings, window: str | None = None) -> int:
     from groundcast.web.app import create_app
 
     app = create_app(settings)
-    server = make_server(settings, app)
+    # Quit in the app closes its windows too, as quitting a desktop program does.
+    server = make_server(settings, app, on_stop=close_windows if settings.launcher.window == "app" else None)
     cfg = settings.launcher
 
     def watch() -> None:
