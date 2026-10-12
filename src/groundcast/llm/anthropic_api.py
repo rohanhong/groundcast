@@ -1,4 +1,4 @@
-"""Mode A: the Anthropic API with the user's own key (optional extra "api")."""
+"""API backend: the Anthropic API with the user's own key (optional extra "api")."""
 
 from __future__ import annotations
 

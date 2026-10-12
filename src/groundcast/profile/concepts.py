@@ -1,4 +1,4 @@
-"""The global concept table (spec 8.1, Q13).
+"""The global concept table.
 
 One table for all materials, so quiz results add up across them. A concept's
 ID is the slug of its name when it was created and never changes; renaming

@@ -2,7 +2,7 @@
 
 The kokoro package imports misaki.espeak at module load, which imports the
 GPL phonemizer package and loads the espeak-ng library into this process.
-groundcast runs GPL programs only as separate processes (spec section 15),
+groundcast runs GPL programs only as separate processes,
 so a stub replaces misaki.espeak before kokoro is imported. Words missing
 from Kokoro's lexicon then go to EspeakCLIFallback, which runs the espeak-ng
 program in its own process, when tts.espeak_bin is set; otherwise they are

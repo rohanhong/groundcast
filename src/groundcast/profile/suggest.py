@@ -1,4 +1,4 @@
-"""Inferred preferences and ranked session suggestions (spec 8.1, 8.2; M4).
+"""Inferred preferences and ranked session suggestions.
 
 Inferred preferences come from the briefs of the learner's own sessions.
 Each session counts with a weight that halves every suggest.half_life_days,
@@ -11,7 +11,7 @@ An explicit preference always wins, and inference can be switched off.
 Suggestions are ranked: revise the concepts with the weakest quiz results,
 repeat the last session, or start a material not studied yet. Accepting a
 suggestion unchanged or editing it is logged; the share of suggestions
-accepted without edits is the personalisation measure of spec section 13.
+accepted without edits measures how well the personalisation works.
 """
 
 from __future__ import annotations

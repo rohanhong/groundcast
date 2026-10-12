@@ -4,7 +4,7 @@ Recognised speech is grouped into passages: a pause of asr.paragraph_gap_s,
 the chunk word limit, or asr.max_passage_s starts a new one. Each passage is
 its own unit with locator t<start second>, so a source link can open the
 recording at that moment. Every passage keeps the mean probability of its
-words, which the review step shows before the text can be used (spec S0).
+words, which the review step shows before the text can be used.
 """
 
 from __future__ import annotations
@@ -126,7 +126,7 @@ class WhisperTranscriber:
                 model = self._model(device)
                 segments, _ = model.transcribe(
                     audio,
-                    language="en",  # N5: English only
+                    language="en",  # English only
                     beam_size=self.cfg.beam_size,
                     vad_filter=self.cfg.vad_filter,
                     word_timestamps=True,

@@ -1,4 +1,4 @@
-"""Script-quality evaluation (spec sections 9.2 and 13).
+"""Script-quality evaluation.
 
 A quality set lists briefs on self-written materials. For each brief the
 pipeline writes, verifies, and edits a script (no audio), and an LLM judge

@@ -15,7 +15,7 @@ def utc_now() -> datetime:
 
 MaterialKind = Literal["pdf", "markdown", "text", "pptx", "docx", "html", "video", "audio", "image"]
 # processing: text is being extracted in the background (speech recognition);
-# review: the extracted text waits for the user to check and confirm it (spec S0);
+# review: the extracted text waits for the user to check and confirm it;
 # ready: usable in sessions; failed: extraction stopped with an error.
 MaterialStatus = Literal["processing", "review", "ready", "failed"]
 
@@ -75,7 +75,7 @@ class SourceLink(BaseModel):
 
 
 class Brief(BaseModel):
-    """Session brief (S1). M1 collects it with a short form."""
+    """Session brief, from the form or the brief dialogue."""
 
     title: str = ""
     focus: str = Field(description="What the session should cover, in the user's words")

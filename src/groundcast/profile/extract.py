@@ -1,4 +1,4 @@
-"""Concept extraction from a material, matched against the global table (spec 8.1, Q13).
+"""Concept extraction from a material, matched against the global table.
 
 The model reads the material's passages in batches together with the
 existing concepts that share the most words with the batch, and returns the

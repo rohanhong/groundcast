@@ -1,4 +1,4 @@
-"""S3 Write and S5 Revise."""
+"""Write and revise."""
 
 from __future__ import annotations
 

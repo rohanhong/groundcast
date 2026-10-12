@@ -1,4 +1,4 @@
-"""Mode B: the owner's installed Claude Code CLI in headless mode.
+"""CLI backend: the owner's installed Claude Code CLI in headless mode.
 
 Each call is a fresh, tool-less, non-persistent session started from an empty
 temporary directory, so no project instructions, settings, MCP servers, or

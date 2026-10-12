@@ -1,4 +1,4 @@
-"""LLMBackend: the only way the pipeline reaches a model (spec section 7)."""
+"""LLMBackend: the only way the pipeline reaches a model."""
 
 from __future__ import annotations
 

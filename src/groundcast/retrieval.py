@@ -1,4 +1,4 @@
-"""BM25 retrieval over chunks (spec section 5: no vector index in v1)."""
+"""BM25 retrieval over chunks (no vector index)."""
 
 from __future__ import annotations
 

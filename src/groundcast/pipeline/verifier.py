@@ -1,8 +1,8 @@
-"""S4 Verify and S7 Re-verify.
+"""Verify and re-verify.
 
 The Verifier sees only each sentence (with its speaker in a two-host script),
 the line before it for reference resolution, and the passages: the ones the
-Writer cited plus the BM25 top-k (spec sections 5 and 6). It never sees the
+Writer cited plus the BM25 top-k. It never sees the
 Writer's reasoning or labels.
 """
 

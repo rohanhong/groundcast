@@ -36,7 +36,7 @@ class ServerSettings(_Section):
     @field_validator("host")
     @classmethod
     def _loopback_only(cls, value: str) -> str:
-        # N1: the app serves the owner only, on the local machine.
+        # The app serves its owner only, on the local machine.
         if value != "localhost" and not ipaddress.ip_address(value).is_loopback:
             raise ValueError(f"server.host must be a loopback address, got {value!r}")
         return value
@@ -80,22 +80,22 @@ class LLMSettings(_Section):
     claude_bin: str = "claude"
     api_key_env: str = "ANTHROPIC_API_KEY"
     api_max_tokens: int = 32000
-    # Mode A maps the CLI-style model aliases below to API model IDs; a full
+    # The API backend maps the CLI-style model aliases below to API model IDs; a full
     # model ID in a *_model setting passes through unchanged.
     api_models: dict[str, str] = Field(
         default_factory=lambda: {"opus": "claude-opus-5-5", "sonnet": "claude-sonnet-5-5", "haiku": "claude-haiku-5-5"}
     )
-    # The Verifier uses a different model tier from the Writer (spec section 7).
+    # The Verifier uses a different model tier from the Writer.
     writer_model: str = "opus"
     writer_effort: str = "high"
     verifier_model: str = "sonnet"
     verifier_effort: str = "medium"
     editor_model: str = "opus"
     editor_effort: str = "medium"
-    # Turns a rough request into a brief through a short dialogue (S1); fast replies matter.
+    # Turns a rough request into a brief through a short dialogue; fast replies matter.
     elicitor_model: str = "sonnet"
     elicitor_effort: str = "low"
-    # Answers the learner's typed questions (S10 text Q&A).
+    # Answers the learner's typed questions.
     tutor_model: str = "sonnet"
     tutor_effort: str = "medium"
     # Extracts concepts from materials and matches them to the concept table.
@@ -163,8 +163,8 @@ class OCRSettings(_Section):
 
 class PipelineSettings(_Section):
     # Spoken words per minute of finished audio at tts.speed 1.0, pauses
-    # included; sets the Writer's length target. Measured on 2026-10-11 with
-    # Kokoro voice af_heart: 504 words gave 241 s. Each session's log reports
+    # included; sets the Writer's length target. Measured with Kokoro voice
+    # af_heart: 504 words gave 241 s. Each session's log reports
     # its own pace, so this can be re-calibrated for another voice.
     words_per_minute: int = 125
     # Once a voice has spoken pace_min_words in rendered sessions, its measured
@@ -207,7 +207,7 @@ class TTSSettings(_Section):
         ]
     )
     speed: float = Field(default=1.0, gt=0.25, le=4.0)
-    # Voice direction (S8): a segment with at least dense_numbers numbers per
+    # Voice direction: a segment with at least dense_numbers numbers per
     # 100 words is read dense_slowdown slower; a closing recap recap_speedup faster.
     adapt_pace: bool = True
     dense_numbers: float = Field(default=4.0, gt=0)
@@ -275,7 +275,7 @@ class QuizSettings(_Section):
 
 
 class SuggestSettings(_Section):
-    """Inferred preferences and ranked suggestions at session start (spec 8.2)."""
+    """Inferred preferences and ranked suggestions at session start."""
 
     infer: bool = True  # learn brief defaults from past sessions; the learner can switch it off
     half_life_days: float = Field(default=30.0, gt=0)  # a session's weight halves this often
@@ -291,8 +291,8 @@ class SuggestSettings(_Section):
 
 
 class EvaluationSettings(_Section):
-    # Pass thresholds for `groundcast eval`, on the means over all runs (spec
-    # section 13). Set on 2026-10-11 from the M1 baseline on evals/seeded/.
+    # Pass thresholds for `groundcast eval`, on the means over all runs,
+    # set from the Verifier's measured rates on evals/seeded/.
     min_detection_rate: float = Field(default=0.95, ge=0.0, le=1.0)
     max_false_flag_rate: float = Field(default=0.08, ge=0.0, le=1.0)
     # Seeded errors carrying this tag must also reach min_hard_detection_rate.

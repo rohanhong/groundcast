@@ -1,1 +1,1 @@
-"""Pipeline stages S3 to S7."""
+"""Pipeline stages: write, verify, revise, edit, re-verify."""

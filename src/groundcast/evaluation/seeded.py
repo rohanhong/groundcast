@@ -1,4 +1,4 @@
-"""Seeded-error test for the Verifier (spec section 13).
+"""Seeded-error test for the Verifier.
 
 An evaluation set is a JSON file listing self-written materials and script
 sentences with the label the Verifier should give. Each item locates the chunk

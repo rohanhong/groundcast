@@ -1,8 +1,8 @@
-"""S1 Elicit: turn a rough request into a session brief through a short dialogue.
+"""Elicit: turn a rough request into a session brief through a short dialogue.
 
 The Elicitor sees the conversation so far, the learner's materials (name,
 size, and a short outline), and the brief of the last finished session (the
-"same as last time" suggestion of spec section 4). Each turn it replies with
+"same as last time" suggestion). Each turn it replies with
 at most one question and its best brief so far; after a set number of
 questions it must propose. The brief is a proposal: the learner reviews and
 confirms it in the form before any session starts, and the form stays usable

@@ -1,4 +1,4 @@
-"""Web quizzes on a finished session (S10).
+"""Web quizzes on a finished session.
 
 The quiz writer asks multiple-choice questions about what the session taught.
 For every option it also writes the sentence that would be true if that

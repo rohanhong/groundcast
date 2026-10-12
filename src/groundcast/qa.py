@@ -1,8 +1,8 @@
-"""S10 text Q&A: answers to the learner's typed questions, from their materials.
+"""Text Q&A: answers to the learner's typed questions, from their materials.
 
 Answers are written live, so they cannot go through the revise loop of the
 script; instead each sentence is checked by the Verifier and shown with a
-warning when it fails (spec section 11a). The Tutor sees the BM25 top-k
+warning when it fails. The Tutor sees the BM25 top-k
 passages of the session's materials for the question, plus the last few
 exchanges so that follow-up questions make sense; earlier answers are never
 sources.

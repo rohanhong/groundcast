@@ -1,11 +1,10 @@
-"""S0 Ingest: materials -> text chunks with stable IDs.
+"""Ingest: materials -> text chunks with stable IDs.
 
 Text formats are extracted at once. Video and audio go through speech
 recognition, and images and PDF pages without a text layer through text
 recognition (OCR). Both are slow: the file is stored first (status
 processing), recognised by recognise_material, and then waits for the user
-to check and correct the text (status review) before any session may use it
-(spec S0).
+to check and correct the text (status review) before any session may use it.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Where a chunk is, in words and as a link (M3: page, slide, or timestamp).
+"""Where a chunk is, in words and as a link (page, slide, or timestamp).
 
 A PDF opens at its page (#page=N) and a recording at its moment (#t=S),
 since browsers support both. Other files cannot be opened at a place, so

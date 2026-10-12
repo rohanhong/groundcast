@@ -1,4 +1,4 @@
-"""Data directory layout (spec section 15a).
+"""Data directory layout.
 
 <data_dir>/
   materials/<id>.<ext>        original files

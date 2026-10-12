@@ -1,4 +1,4 @@
-"""SQLite access for the profile, and the append-only event log (spec 8.1).
+"""SQLite access for the profile, and the append-only event log.
 
 Each call opens its own connection, so the web service's worker threads and
 the session runner can share the file; SQLite serialises the writes.

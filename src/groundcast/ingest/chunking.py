@@ -1,4 +1,4 @@
-"""Chunking rules (spec section 5).
+"""Chunking rules.
 
 A chunk is one paragraph or text block, split further when longer than the
 word limit, and never spans a page, slide, or transcript passage. Short

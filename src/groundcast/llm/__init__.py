@@ -1,4 +1,4 @@
-"""LLM backends behind one interface (spec section 7)."""
+"""LLM backends behind one interface."""
 
 from __future__ import annotations
 

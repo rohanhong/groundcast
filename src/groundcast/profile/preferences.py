@@ -1,4 +1,4 @@
-"""Explicit preferences (spec 8.1, 8.3).
+"""Explicit preferences.
 
 The learner sets them; an unset preference falls back to the configured
 default. A value given in a session's brief wins over a preference, and a
@@ -28,7 +28,7 @@ class Preferences(BaseModel):
     voice: str | None = None
     second_voice: str | None = None
     speed: float | None = Field(default=None, gt=0.25, le=4.0)
-    adapt_pace: bool | None = None  # slower for dense segments, faster for the recap (S8)
+    adapt_pace: bool | None = None  # slower for dense segments, faster for the recap
     minutes: int | None = Field(default=None, ge=MIN_MINUTES, le=MAX_MINUTES)
     format: ScriptFormat | None = None
     recall_prompts: bool | None = None

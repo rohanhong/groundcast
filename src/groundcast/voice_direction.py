@@ -1,4 +1,4 @@
-"""S8 Voice direction: speech settings per segment, from explicit rules (spec 10.3).
+"""Voice direction: speech settings per segment, from explicit rules.
 
 The base voice and speed come from the preferences. On top of them, a
 segment dense with numbers is read a little slower, and a closing recap a

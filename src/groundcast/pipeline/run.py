@@ -1,4 +1,4 @@
-"""Fixed, code-driven pipeline S3 to S7 (spec sections 5 and 6)."""
+"""Fixed, code-driven pipeline: write, verify, revise, edit, re-verify."""
 
 from __future__ import annotations
 
@@ -125,7 +125,7 @@ class Pipeline:
             items = build_items(pairs, by_id, index, cfg.bm25_top_k, cfg.retrieval_context)
             return verify_items(self.backend, self.roles["verifier"], items, cfg.verify_batch_size)
 
-        # S3 Write
+        # Write
         sources = select_sources(chunks, index, f"{brief.title} {brief.focus}", cfg.writer_max_source_words)
         progress("write", f"Writing a {brief.minutes}-minute script from {len(sources)} passages")
         target = self.pacing.target_words(brief, cfg.recall_questions, self.settings.tts.recall_pause_s)
@@ -151,12 +151,12 @@ class Pipeline:
         if not report.writer_sentences:
             raise ValueError("the Writer returned an empty script")
 
-        # S4 Verify
+        # Verify
         progress("verify", f"Checking {report.writer_sentences} sentences against the materials")
         verdicts = verify(_with_context(script))
         report.first_pass = _count(verdicts)
 
-        # S5 Revise, bounded
+        # Revise, bounded
         for round_no in range(1, cfg.max_revise_rounds + 1):
             failed_ids = {sid for sid, v in verdicts.items() if not v.passed}
             if not failed_ids:
@@ -230,7 +230,7 @@ class Pipeline:
         if not script.sentences():
             raise ValueError("no sentence passed verification")
 
-        # S6 Edit
+        # Edit
         progress("edit", "Editing for fluency")
         edits = edit_script(self.backend, self.roles["editor"], script)
         headings = {h.segment_id: h.heading.strip() for h in edits.headings if h.heading.strip()}
@@ -246,7 +246,7 @@ class Pipeline:
             originals[s.id] = s.text
             s.text = e.text.strip()
 
-        # S7 Re-verify only the changed sentences; a failing edit is reverted.
+        # Re-verify only the changed sentences; a failing edit is reverted.
         if originals:
             progress("reverify", f"Re-checking {len(originals)} edited sentences")
             edited_verdicts = verify(_with_context(script, set(originals)))

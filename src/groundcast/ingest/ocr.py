@@ -1,11 +1,11 @@
-"""Text recognition (OCR) for scans, photos, and handwriting (M5).
+"""Text recognition (OCR) for scans, photos, and handwriting.
 
 Tesseract runs as a separate program on each image, or on each PDF page
 that has no usable text layer (rendered by poppler's pdftoppm). Its word
 boxes are grouped into paragraphs, each with the mean confidence of its
 words. Recognised text is often wrong, handwriting especially, and the
 Verifier would treat it as the truth, so it waits for the user's review
-before any session may use it (spec section 11).
+before any session may use it.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Piper speech synthesis, the fallback engine (spec 10.2a).
+"""Piper speech synthesis, the fallback engine.
 
 Piper is GPL-3.0, so groundcast never imports it: each sentence goes to the
 piper program in its own process, which writes a WAV file. A voice is an

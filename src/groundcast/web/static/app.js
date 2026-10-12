@@ -719,7 +719,7 @@ function setMode(mode) {
 $("tab-chat").addEventListener("click", () => setMode("chat"));
 $("tab-form").addEventListener("click", () => setMode("form"));
 
-// Brief by dialogue (S1): the proposal fills the form, then the usual review step
+// Brief by dialogue: the proposal fills the form, then the usual review step
 
 let chat = [];
 let proposal = null;
@@ -837,7 +837,7 @@ $("brief-confirm").addEventListener("click", async () => {
   try {
     const record = await send("/api/sessions", "POST", pendingBrief);
     if (activeSuggestion) {
-      // Whether the suggestion was taken as it was or edited first (spec 13, personalisation).
+      // Whether the suggestion was taken as it was or edited first.
       await send("/api/suggestions/outcome", "POST", { suggestion: activeSuggestion, brief: pendingBrief }).catch(() => {});
       activeSuggestion = null;
     }
@@ -853,7 +853,7 @@ $("brief-confirm").addEventListener("click", async () => {
   }
 });
 
-// Suggestions (spec 8.2): ranked, each with its reasons; using one fills in the brief
+// Suggestions: ranked, each with its reasons; using one fills in the brief
 
 const SUGGESTION_TAGS = { weak_topics: ["Revise", "warn"], same_as_last: ["Again", "sky"], new_material: ["New", "accent"] };
 
@@ -1446,7 +1446,7 @@ function quizPanel(sessionId) {
     status, empty, scoreBox, body];
 }
 
-// Feedback on a finished session (S11): used by the suggestions
+// Feedback on a finished session: used by the suggestions
 
 function feedbackPanel(sessionId) {
   const name = `rating-${sessionId}`;

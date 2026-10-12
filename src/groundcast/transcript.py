@@ -1,4 +1,4 @@
-"""HTML transcript with source links (S9; spec section 12).
+"""HTML transcript with source links.
 
 The file sits in <data>/sessions/<id>/ and links to materials by relative
 path, so the links work when the file is opened from disk and when the app

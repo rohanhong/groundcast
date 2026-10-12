@@ -1,4 +1,4 @@
-"""S6 Edit: fluency and vividness, with no new factual claims."""
+"""Edit: fluency and vividness, with no new factual claims."""
 
 from __future__ import annotations
 

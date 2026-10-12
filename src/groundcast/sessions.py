@@ -1,4 +1,4 @@
-"""Session lifecycle: brief -> pipeline -> audio and transcript (S3 to S9)."""
+"""Session lifecycle: brief -> pipeline -> audio and transcript."""
 
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ def new_session(store: Store, brief: Brief) -> SessionRecord:
         raise ValueError(f"unknown material IDs: {', '.join(missing)}")
     if not brief.material_ids:
         raise ValueError("the brief selects no materials")
-    # Recognised text is used only after the user has checked it (spec S0).
+    # Recognised text is used only after the user has checked it.
     unready = [m for m in map(store.get_material, brief.material_ids) if m.status != "ready"]
     if unready:
         names = ", ".join(f"{m.filename} ({m.status})" for m in unready)
@@ -261,8 +261,8 @@ def run_session(
 class SessionRunner:
     """Runs sessions and other GPU work one at a time in a background thread.
 
-    Speech recognition, OCR, and speech synthesis share one 8 GB GPU (spec
-    section 11), so they never run at the same time.
+    Speech recognition, OCR, and speech synthesis share one GPU, so they
+    never run at the same time.
     """
 
     def __init__(self, store: Store, settings: Settings) -> None:

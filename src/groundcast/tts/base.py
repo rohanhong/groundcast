@@ -1,4 +1,4 @@
-"""Speech synthesis interface (S9)."""
+"""Speech synthesis interface."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ class Synthesizer(ABC):
         return out
 
     def close(self) -> None:
-        """Release model memory (stages share the GPU; spec section 11)."""
+        """Release model memory (stages share the GPU)."""
 
 
 class SilentSynthesizer(Synthesizer):

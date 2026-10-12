@@ -1,4 +1,4 @@
-"""Explicit feedback on a session (spec 5 S11, 8.1).
+"""Explicit feedback on a session.
 
 After listening, the learner can rate a session, say whether it was too
 short or too long, and leave a comment. One record per session; a change
