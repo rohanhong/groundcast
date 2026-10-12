@@ -522,7 +522,7 @@ input.switch:checked::after { transform: translateX(1.1rem); }
   margin-top: auto; padding-top: .5rem; border-top: 1px solid var(--line);
 }
 .material-actions .btn.sm { padding: .36rem .65rem; }
-.material-actions .spacer { flex: 1; }
+.material-actions .spacer, .concept-actions .spacer { flex: 1; }
 .empty {
   grid-column: 1 / -1; text-align: center; padding: 2.4rem 1rem; border: 1.5px dashed var(--line-strong);
   border-radius: var(--radius); color: var(--ink-2); list-style: none;

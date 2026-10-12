@@ -4,7 +4,10 @@ One table for all materials, so quiz results add up across them. A concept's
 ID is the slug of its name when it was created and never changes; renaming
 changes only the name. Merging moves a concept's sources and quiz results to
 another concept and keeps the merged row, pointing at the one it went into.
-Every change by the learner goes into the event log.
+Removing a concept (through groundcast.trash) marks its row removed: it
+leaves the lists and new quiz answers skip it, and extraction does not find
+it again, by match or by name. The row stays even once the trash is purged,
+so the block lasts. Every change by the learner goes into the event log.
 """
 
 from __future__ import annotations
@@ -44,8 +47,11 @@ SELECT c.id, c.name, c.description, c.created_at,
        (SELECT COUNT(*) FROM quiz_results q WHERE q.concept_id = c.id) AS asked,
        (SELECT COALESCE(SUM(q.right), 0) FROM quiz_results q WHERE q.concept_id = c.id) AS right
 FROM concepts c
-WHERE c.merged_into IS NULL
+WHERE c.merged_into IS NULL AND c.removed_at IS NULL
 """
+
+
+_ACTIVE = "merged_into IS NULL AND removed_at IS NULL"
 
 
 def _concept(row: sqlite3.Row) -> Concept:
@@ -93,6 +99,23 @@ def add_concept(con: sqlite3.Connection, name: str, description: str, source: Ev
     return concept_id
 
 
+def is_removed(con: sqlite3.Connection, concept_id: str) -> bool:
+    row = con.execute("SELECT removed_at FROM concepts WHERE id = ?", (concept_id,)).fetchone()
+    return row is not None and row["removed_at"] is not None
+
+
+def removed_slugs(con: sqlite3.Connection) -> set[str]:
+    """The slugs of removed concepts' names, so extraction can skip a removed concept it finds as new."""
+    rows = con.execute("SELECT name FROM concepts WHERE removed_at IS NOT NULL AND merged_into IS NULL")
+    return {slugify(r["name"]) for r in rows}
+
+
+def set_removed(con: sqlite3.Connection, concept_id: str, removed: bool) -> None:
+    """Mark an active concept removed, or a removed one active again."""
+    con.execute("UPDATE concepts SET removed_at = ? WHERE id = ? AND merged_into IS NULL",
+                (utc_now().isoformat() if removed else None, concept_id))  # fmt: skip
+
+
 def link_sources(con: sqlite3.Connection, concept_id: str, material_id: str, chunk_ids: Iterable[str]) -> None:
     con.executemany(
         "INSERT OR IGNORE INTO concept_sources (concept_id, material_id, chunk_id) VALUES (?, ?, ?)",
@@ -105,7 +128,7 @@ def rename(db: ProfileDB, concept_id: str, name: str) -> None:
     if not name:
         raise ValueError("a concept name cannot be empty")
     with db.connect() as con:
-        row = con.execute("SELECT name FROM concepts WHERE id = ? AND merged_into IS NULL", (concept_id,)).fetchone()
+        row = con.execute(f"SELECT name FROM concepts WHERE id = ? AND {_ACTIVE}", (concept_id,)).fetchone()
         if row is None:
             raise KeyError(concept_id)
         con.execute("UPDATE concepts SET name = ? WHERE id = ?", (name, concept_id))
@@ -119,7 +142,7 @@ def merge(db: ProfileDB, source_id: str, target_id: str) -> None:
     with db.connect() as con:
         names = {}
         for cid in (source_id, target_id):
-            row = con.execute("SELECT name FROM concepts WHERE id = ? AND merged_into IS NULL", (cid,)).fetchone()
+            row = con.execute(f"SELECT name FROM concepts WHERE id = ? AND {_ACTIVE}", (cid,)).fetchone()
             if row is None:
                 raise KeyError(cid)
             names[cid] = row["name"]
@@ -154,7 +177,7 @@ def record_quiz(db: ProfileDB, session_id: str, attempt_id: str, results: Iterab
         rows = []
         for concept_id, question_id, right in results:
             active = resolve(con, concept_id)
-            if active is not None:
+            if active is not None and not is_removed(con, active):
                 rows.append((active, session_id, question_id, attempt_id, int(right), at))
         con.executemany(
             "INSERT INTO quiz_results (concept_id, session_id, question_id, attempt_id, right, at) "

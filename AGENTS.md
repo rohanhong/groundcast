@@ -60,8 +60,8 @@ which every statement is grounded in those materials.
   CLI, Codex CLI, and API backends), `elicit.py` (brief by dialogue), `voice_direction.py` (pace
   per segment), `tts/`, `sessions.py` (export), `qa.py` and `quiz.py`
   (text Q&A and quizzes), `trash.py` (deleted materials, sessions,
-  questions, and quizzes, with their profile rows, until restored or
-  purged), `profile/` (the SQLite profile:
+  questions, quizzes, and concepts, with their profile rows, until
+  restored or purged), `profile/` (the SQLite profile:
   preferences, inferred preferences and ranked suggestions, session
   feedback, concept table, quiz results, event log), `web/` (FastAPI app and
   static UI), `evaluation/`, `install.py` and `install.toml` (`groundcast

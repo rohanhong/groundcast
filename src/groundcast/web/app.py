@@ -604,6 +604,11 @@ def create_app(
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return list_concepts(profile)
 
+    @app.delete("/api/concepts/{concept_id}")
+    def delete_concept(concept_id: str) -> TrashEntry:
+        with trash_change():
+            return _entry(trash.delete_concept(concept_id))
+
     @app.post("/api/concepts/{concept_id}/merge")
     def merge_concept(concept_id: str, body: Merge) -> list[Concept]:
         try:

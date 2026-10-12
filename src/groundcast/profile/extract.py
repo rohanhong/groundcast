@@ -15,7 +15,16 @@ from groundcast.llm import LLMBackend, Role
 from groundcast.models import Chunk, Material, utc_now
 from groundcast.pipeline.common import format_passages, load_prompt
 from groundcast.pipeline.writer import clean_sources
-from groundcast.profile.concepts import Concept, add_concept, link_sources, list_concepts, resolve
+from groundcast.profile.concepts import (
+    Concept,
+    add_concept,
+    is_removed,
+    link_sources,
+    list_concepts,
+    removed_slugs,
+    resolve,
+    slugify,
+)
 from groundcast.profile.db import ProfileDB, log_event
 from groundcast.retrieval import tokenize
 
@@ -72,12 +81,17 @@ def extract_concepts(
         out = backend.complete_structured(role, load_prompt("concepts"), prompt, ConceptsOutput)
         valid = {c.id for c in batch}
         with db.connect() as con:
+            blocked = removed_slugs(con)
             for found in out.concepts[: cfg.max_per_material]:
                 chunk_ids = clean_sources(found.chunk_ids, valid)
                 if not found.name.strip() or not chunk_ids:
                     continue
                 # Any concept in the table counts, shown with this batch or not.
                 concept_id = resolve(con, found.match.strip()) if found.match.strip() else None
+                if (concept_id is not None and is_removed(con, concept_id)) or (
+                    concept_id is None and slugify(found.name) in blocked
+                ):
+                    continue  # the learner removed it
                 if concept_id is None:
                     concept_id = add_concept(con, found.name, found.description, "inference",
                                              reason=f"found in {material.filename}")  # fmt: skip

@@ -310,7 +310,7 @@ class SuggestSettings(_Section):
 
 
 class TrashSettings(_Section):
-    # Deleted materials, sessions, questions, and quizzes are deleted for good this many days later,
+    # Deleted materials, sessions, questions, quizzes, and concepts are deleted for good this many days later,
     # when the service starts; 0 keeps them until the trash is emptied by hand.
     keep_days: float = Field(default=30.0, ge=0)
 

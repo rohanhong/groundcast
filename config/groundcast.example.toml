@@ -238,8 +238,8 @@ length_step = 1.25  # "too short" or "too long" on a session scales its length b
 low_rating = 2  # a session rated this or lower is not suggested first again
 
 [trash]
-# Deleted materials, sessions, questions, and quizzes wait in the trash and
-# are deleted for good this many days later, when the service starts.
+# Deleted materials, sessions, questions, quizzes, and concepts wait in the
+# trash and are deleted for good this many days later, when the service starts.
 keep_days = 30.0  # 0 keeps them until the trash is emptied by hand
 
 [evaluation]

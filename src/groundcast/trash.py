@@ -1,4 +1,4 @@
-"""The trash: deleted materials, sessions, questions, and quizzes, kept until restored or purged.
+"""The trash: deleted materials, sessions, questions, quizzes, and concepts, kept until restored or purged.
 
 <data_dir>/trash/<item id>/
   item.json   TrashItem: what was deleted, when, and the profile rows taken with it
@@ -9,11 +9,13 @@ record first, so it leaves the lists at once), so an interrupted delete still
 leaves an item that restores. Profile rows tied to an item leave the profile
 with it, so concept mastery and suggestions stop counting them, and come back
 on restore: a material's concept links, a session's feedback and quiz
-results, a quiz's results. Restored rows follow concept merges made in the
-meantime. Questions and quizzes live in their session's qa.json and
-quiz.json, so their item keeps the content; the caller serialises calls that
-touch those files. Items older than trash.keep_days are purged when the
-service starts.
+results, a quiz's or a concept's results. Restored rows follow concept
+merges made in the meantime. Questions and quizzes live in their session's
+qa.json and quiz.json, so their item keeps the content; the caller
+serialises calls that touch those files. A concept has no files: its row is
+marked removed (groundcast.profile.concepts), and purging its item keeps the
+row, so extraction never finds it again. Items older than trash.keep_days
+are purged when the service starts.
 """
 
 from __future__ import annotations
@@ -29,7 +31,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from groundcast.models import SessionRecord, SessionStatus, utc_now
-from groundcast.profile.concepts import resolve
+from groundcast.profile.concepts import resolve, set_removed
 from groundcast.profile.db import ProfileDB, log_event
 from groundcast.qa import QAExchange, load_history, save_history
 from groundcast.quiz import Quiz, QuizAttempt, load_quizzes, save_quizzes
@@ -39,7 +41,7 @@ TRASH_DIR = "trash"
 ITEM_FILE = "item.json"
 FILES_DIR = "files"
 
-TrashKind = Literal["material", "session", "question", "quiz"]
+TrashKind = Literal["material", "session", "question", "quiz", "concept"]
 ACTIVE = (SessionStatus.QUEUED, SessionStatus.RUNNING)
 # Profile tables whose rows can go into the trash, with the columns that identify a row.
 ROW_KEYS = {
@@ -59,8 +61,8 @@ class TrashConflict(Exception):
 class TrashItem(BaseModel):
     id: str
     kind: TrashKind
-    subject: str  # the ID of the material, session, exchange, or quiz
-    label: str  # file name, session title, question, or quiz description
+    subject: str  # the ID of the material, session, exchange, quiz, or concept
+    label: str  # file name, session title, question, quiz description, or concept name
     session_id: str = ""  # questions and quizzes: the session they belong to
     session_label: str = ""
     deleted_at: datetime = Field(default_factory=utc_now)
@@ -165,6 +167,20 @@ class Trash:
 
         return self._delete(item, [], wheres if attempt_ids else {}, take_out)
 
+    def delete_concept(self, concept_id: str) -> TrashItem:
+        with self.profile.connect() as con:
+            row = con.execute("SELECT name FROM concepts WHERE id = ? AND merged_into IS NULL AND removed_at IS NULL",
+                              (concept_id,)).fetchone()  # fmt: skip
+        if row is None:
+            raise KeyError(f"no concept {concept_id!r}")
+        item = TrashItem(id=_new_id(), kind="concept", subject=concept_id, label=row["name"])
+
+        def take_out() -> None:
+            with self.profile.connect() as con:
+                set_removed(con, concept_id, True)
+
+        return self._delete(item, [], {"quiz_results": ("concept_id = ?", (concept_id,))}, take_out)
+
     def _delete(self, item: TrashItem, paths: list[Path], wheres: dict[str, Where],
                 take_out: Callable[[], None] | None = None) -> TrashItem:  # fmt: skip
         folder = self._dir(item.id)
@@ -204,6 +220,11 @@ class Trash:
         folder = self._dir(item.id)
         if item.session_id and not (self.store.session_dir(item.session_id) / "session.json").is_file():
             raise TrashConflict(f'Its session "{item.session_label}" is not in the list; restore the session first.')
+        if item.kind == "concept":
+            with self.profile.connect() as con:
+                if con.execute("SELECT 1 FROM concepts WHERE id = ?", (item.subject,)).fetchone() is None:
+                    raise TrashConflict(f'"{item.label}" went with the deleted profile; delete it for good.')
+                set_removed(con, item.subject, False)
         pending = [(folder / FILES_DIR / f, self.store.root / f) for f in item.files]
         pending = [(src, dst) for src, dst in pending if src.exists()]
         if any(dst.exists() for _, dst in pending):
@@ -252,15 +273,23 @@ class Trash:
         gone = [item.id]
         if item.kind == "session":
             gone += [i.id for i in self.items() if i.session_id == item.subject]
+        if item.kind == "concept":
+            # The row stays, marked removed, so extraction keeps skipping it; what hangs on it goes.
+            with self.profile.connect() as con:
+                for table in ("quiz_results", "concept_sources"):
+                    con.execute(f"DELETE FROM {table} WHERE concept_id = ?", (item.subject,))  # noqa: S608
         for i in gone:
             shutil.rmtree(self._dir(i))
         return gone
 
     def empty(self) -> int:
-        count = len(self.items())
+        items = self.items()
+        for item in items:
+            if (self._dir(item.id) / ITEM_FILE).is_file():  # not already gone with its session
+                self.purge(item.id)
         for folder in self.root.iterdir():
             shutil.rmtree(folder)
-        return count
+        return len(items)
 
     def purge_expired(self, keep_days: float, now: datetime | None = None) -> list[str]:
         """Purge items older than keep_days (none when it is 0), and folders a delete left without item.json."""

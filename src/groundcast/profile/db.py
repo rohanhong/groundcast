@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS concepts (
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL,
-    merged_into TEXT REFERENCES concepts(id)  -- set when merged; the row stays for history
+    merged_into TEXT REFERENCES concepts(id),  -- set when merged; the row stays for history
+    removed_at TEXT                -- set when moved to the trash; the row stays so extraction skips it
 );
 CREATE TABLE IF NOT EXISTS concept_sources (
     concept_id TEXT NOT NULL REFERENCES concepts(id),
@@ -104,6 +105,8 @@ class ProfileDB:
         data_dir.mkdir(parents=True, exist_ok=True)
         with self.connect() as con:
             con.executescript(SCHEMA)
+            if "removed_at" not in {r["name"] for r in con.execute("PRAGMA table_info(concepts)")}:
+                con.execute("ALTER TABLE concepts ADD COLUMN removed_at TEXT")  # profiles made before it existed
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:

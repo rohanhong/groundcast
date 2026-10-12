@@ -1,20 +1,27 @@
+import re
+import sqlite3
 from datetime import timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
 from groundcast import trash as trash_module
 from groundcast.config import Settings
+from groundcast.llm import Role, roles
 from groundcast.models import Brief, Chunk, Material, SessionRecord, SessionStatus, utc_now
-from groundcast.profile.concepts import add_concept, link_sources, list_concepts, merge, record_quiz
-from groundcast.profile.db import ProfileDB, list_events
+from groundcast.profile.concepts import add_concept, link_sources, list_concepts, merge, record_quiz, rename
+from groundcast.profile.db import PROFILE_FILE, ProfileDB, list_events
+from groundcast.profile.extract import extract_concepts
 from groundcast.profile.feedback import Feedback, get_feedback, set_feedback
 from groundcast.qa import QAExchange, QAHistory, load_history, save_history
 from groundcast.quiz import Quiz, QuizAttempt, QuizFile, QuizQuestion, load_quizzes, save_quizzes
 from groundcast.storage import Store
 from groundcast.trash import Trash, TrashConflict
 from groundcast.web.app import create_app
+
+from .conftest import FakeBackend
 
 Tides = tuple[Material, list[Chunk]]
 
@@ -257,3 +264,68 @@ def test_the_service_purges_old_items_when_it_starts(settings: Settings, store: 
     with TestClient(create_app(settings, runner=object()), base_url="http://127.0.0.1:8765"):  # type: ignore[arg-type]
         pass
     assert trash.items() == []
+
+
+def test_concept_leaves_with_its_results_and_is_not_found_again(settings: Settings, db: ProfileDB, trash: Trash,
+                                                               tides: Tides) -> None:  # fmt: skip
+    material, chunks = tides
+    cid = _tide_concept(db, material, chunks)
+    record_quiz(db, "s-1", "a1", [(cid, "q1-1", True)])
+    item = trash.delete_concept(cid)
+    assert list_concepts(db) == [] and item.label == "Tide"
+    removed = list_events(db, 1)[0]
+    assert (removed.kind, removed.before) == ("concept.removed", {"label": "Tide", "quiz_results": 1})
+    for change in (lambda: rename(db, cid, "Tides"), lambda: merge(db, cid, cid + "x")):
+        with pytest.raises(KeyError):
+            change()
+    with pytest.raises(KeyError):
+        trash.delete_concept(cid)
+    record_quiz(db, "s-1", "a2", [(cid, "q1-1", False)])  # answers to old questions on it are not recorded
+
+    # Extraction skips it, whether the model matches it or finds it as new under the same name.
+    def found(role: Role, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        first = re.search(r"^\[(\S+)\]", prompt, re.M).group(1)  # type: ignore[union-attr]
+        return {"concepts": [{"name": "Moon pull", "description": "", "chunk_ids": [first], "match": cid},
+                             {"name": "tide", "description": "", "chunk_ids": [first]},
+                             {"name": "Neap tide", "description": "", "chunk_ids": [first]}]}  # fmt: skip
+
+    extract_concepts(FakeBackend({"ConceptsOutput": found}), roles(settings.llm)["concepts"], settings, db,
+                     material, chunks)  # fmt: skip
+    assert [c.name for c in list_concepts(db)] == ["Neap tide"]
+
+    trash.restore(item.id)
+    (tide,) = [c for c in list_concepts(db) if c.id == cid]
+    assert (tide.asked, tide.right) == (1, 1)
+    assert list_events(db, 1)[0].kind == "concept.restored"
+
+
+def test_purged_concept_stays_out(store: Store, db: ProfileDB, trash: Trash, tides: Tides) -> None:
+    material, chunks = tides
+    cid = _tide_concept(db, material, chunks)
+    item = trash.delete_concept(cid)
+    trash.purge(item.id)
+    with db.connect() as con:
+        assert con.execute("SELECT removed_at FROM concepts WHERE id = ?", (cid,)).fetchone()["removed_at"]
+        assert con.execute("SELECT COUNT(*) FROM concept_sources WHERE concept_id = ?", (cid,)).fetchone()[0] == 0
+    assert list_concepts(db) == []
+
+
+def test_older_profiles_gain_the_removed_column(settings: Settings) -> None:
+    settings.data_dir.mkdir(parents=True)
+    with sqlite3.connect(settings.data_dir / PROFILE_FILE) as con:
+        con.execute("CREATE TABLE concepts (id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL "
+                    "DEFAULT '', created_at TEXT NOT NULL, merged_into TEXT REFERENCES concepts(id))")  # fmt: skip
+    con.close()
+    db = ProfileDB(settings.data_dir)
+    with db.connect() as con:
+        assert "removed_at" in {r["name"] for r in con.execute("PRAGMA table_info(concepts)")}
+
+
+def test_concept_api(settings: Settings, db: ProfileDB, tides: Tides) -> None:
+    cid = _tide_concept(db, *tides)
+    with TestClient(create_app(settings, runner=object()), base_url="http://127.0.0.1:8765") as client:  # type: ignore[arg-type]
+        entry = client.delete(f"/api/concepts/{cid}").json()
+        assert entry["kind"] == "concept" and client.get("/api/concepts").json() == []
+        assert client.delete(f"/api/concepts/{cid}").json()["detail"] == f"no concept {cid!r}"
+        client.post(f"/api/trash/{entry['id']}/restore")
+        assert [c["id"] for c in client.get("/api/concepts").json()] == [cid]

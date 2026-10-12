@@ -1917,6 +1917,14 @@ function mastery(c) {
   return (c.right + 1) / (c.asked + 2); // the same estimate the suggestions use (Laplace)
 }
 
+async function deleteConcept(concept) {
+  try {
+    trashed(await api(`/api/concepts/${concept.id}`, { method: "DELETE" }), `"${concept.name}"`);
+  } catch (error) {
+    toast(`Could not delete it: ${error.message}`, "error");
+  }
+}
+
 async function conceptAction(path, body) {
   try {
     state.concepts = await send(path, "POST", body);
@@ -1992,7 +2000,9 @@ function renderConcepts() {
         c.asked ? `${c.right} of ${c.asked} right` : "Not quizzed yet"),
       el("div", { class: "concept-actions" },
         el("button", { class: "linkish", type: "button", onclick: rename }, icon("edit"), "Rename"),
-        merge));
+        merge, el("span", { class: "spacer" }),
+        el("button", { class: "linkish bad", type: "button", title: "Move to the trash; it is not found again",
+          "aria-label": `Move ${c.name} to the trash`, onclick: () => deleteConcept(c) }, icon("trash"))));
   }));
 }
 
@@ -2011,7 +2021,7 @@ const EVENT_NAMES = {
   "suggestion.accepted": "Suggestion taken as it was", "suggestion.edited": "Suggestion changed, then taken",
   "session.feedback": "Feedback saved", "profile.deleted": "Profile deleted", "material.restored": "Material restored",
   "session.removed": "Session removed", "session.restored": "Session restored", "quiz.removed": "Quiz removed",
-  "quiz.restored": "Quiz restored",
+  "quiz.restored": "Quiz restored", "concept.removed": "Concept removed", "concept.restored": "Concept restored",
 };
 const EVENT_SOURCES = { user: "By you", inference: "Inferred", system: "Automatic" };
 const LENGTH_FEEDBACK = { too_short: "too short", right: "about right", too_long: "too long" };
@@ -2055,7 +2065,9 @@ function describeEvent(e) {
     case "session.removed":
     case "session.restored":
     case "quiz.removed":
-    case "quiz.restored": {
+    case "quiz.restored":
+    case "concept.removed":
+    case "concept.restored": {
       const v = e.kind.endsWith(".removed") ? b : a;
       const parts = [v.quiz_results ? plural(v.quiz_results, "quiz answer") : "", v.feedback ? "feedback" : ""];
       const what = parts.filter(Boolean).join(" and ");
@@ -2256,7 +2268,7 @@ $("profile-delete").addEventListener("click", async () => {
 // Trash: deleted items wait here until restored or deleted for good
 
 const TRASH_KINDS = { material: ["library", "Material"], session: ["listen", "Session"], question: ["chat", "Question"],
-  quiz: ["quiz", "Quiz"] };
+  quiz: ["quiz", "Quiz"], concept: ["concepts", "Concept"] };
 
 function trashed(entry, what) {
   // After a move to the trash: say so, with a way back.
@@ -2269,7 +2281,7 @@ async function afterTrashChange(entry) {
   const loads = [loadSuggestions()];
   if (entry.kind === "material") loads.push(loadMaterials(), loadConcepts());
   if (entry.kind === "session") loads.push(loadSessions(), loadConcepts());
-  if (entry.kind === "quiz") loads.push(loadConcepts());
+  if (entry.kind === "quiz" || entry.kind === "concept") loads.push(loadConcepts());
   if ($("trash").open) loads.push(loadTrash());
   if ($("events").open) loads.push(loadEvents());
   await Promise.allSettled(loads);
@@ -2287,10 +2299,12 @@ async function restoreItem(entry) {
 }
 
 async function purgeItem(entry) {
+  const bodies = {
+    session: "Its audio, transcript, questions, and quizzes are deleted, with its questions and quizzes in the trash.",
+    concept: "Its quiz results are deleted. It stays out of the concept table: extraction does not find it again.",
+  };
   const ok = await ask({ title: `Delete "${entry.label}" for good?`, ok: "Delete for good", danger: true,
-    body: entry.kind === "session"
-      ? "Its audio, transcript, questions, and quizzes are deleted, with its questions and quizzes in the trash. This cannot be undone."
-      : "This cannot be undone." });
+    body: `${bodies[entry.kind] || ""} This cannot be undone.`.trim() });
   if (!ok) return;
   try {
     await api(`/api/trash/${entry.id}`, { method: "DELETE" });
@@ -2303,7 +2317,7 @@ async function purgeItem(entry) {
 async function loadTrash() {
   const items = await api("/api/trash");
   const days = state.settings ? state.settings.trash_keep_days : 0;
-  $("trash-note").textContent = "Deleted materials, sessions, questions, and quizzes wait here. " + (days > 0
+  $("trash-note").textContent = "Deleted materials, sessions, questions, quizzes, and concepts wait here. " + (days > 0
     ? `Each is deleted for good ${plural(days, "day")} after it was moved here.` : "They stay until you empty the trash.");
   $("trash-empty").hidden = !items.length;
   if (!items.length) {
