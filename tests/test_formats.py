@@ -47,6 +47,7 @@ def test_pptx_gives_one_unit_per_visible_slide(settings: Settings, store: Store,
     assert material_path(chunks[1], m) == f"materials/{m.id}.view.html#s3-1"
     view = (store.materials_dir / f"{m.id}.view.html").read_text(encoding="utf-8")
     assert 'id="s3-1"' in view and "Slide 3" in view
+    assert '<html lang="en" translate="no">' in view  # the text the sources point at is never machine-translated
 
 
 def test_pptx_notes_can_be_left_out(settings: Settings, store: Store, tmp_path: Path) -> None:

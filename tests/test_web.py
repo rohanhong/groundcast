@@ -51,6 +51,7 @@ def test_page_links_the_favicon_by_the_drawing_digest(settings: Settings) -> Non
             page = client.get(path)
             assert page.headers["cache-control"] == "no-cache"
             assert f'"favicon.svg?v={digest()}"' in page.text and '"favicon.svg"' not in page.text
+            assert '<html lang="en" translate="no">' in page.text and 'content="notranslate"' in page.text
         assert client.get(f"/favicon.svg?v={digest()}").headers["content-type"].startswith("image/svg")
 
 

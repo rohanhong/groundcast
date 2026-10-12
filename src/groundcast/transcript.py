@@ -76,7 +76,8 @@ def render_transcript(
     numbers: dict[str, int] = {}
     parts = [
         "<!doctype html>",
-        '<html lang="en"><head><meta charset="utf-8">',
+        # No machine translation: a translated sentence is no longer the text the sources were checked against.
+        '<html lang="en" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate">',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
         f"<title>{escape(script.title)}</title><style>{_STYLE}</style></head><body>",
         f"<h1>{escape(script.title)}</h1>",
