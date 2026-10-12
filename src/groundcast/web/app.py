@@ -380,14 +380,24 @@ def create_app(
         app.state.runner.submit(record)
         return record
 
+    def titled(record: SessionRecord) -> SessionRecord:
+        # Sessions made before records kept the title take it from their script.
+        script = store.session_dir(record.id) / SCRIPT_FILE
+        if not record.title and script.is_file():
+            try:
+                record.title = read_model(script, Script).title
+            except (OSError, ValueError):
+                pass
+        return record
+
     @app.get("/api/sessions")
     def list_sessions() -> list[SessionRecord]:
-        return store.list_sessions()
+        return [titled(r) for r in store.list_sessions()]
 
     @app.get("/api/sessions/{session_id}")
     def get_session(session_id: str) -> SessionRecord:
         try:
-            return store.get_session(session_id)
+            return titled(store.get_session(session_id))
         except (FileNotFoundError, ValueError) as exc:
             raise _not_found(exc) from exc
 

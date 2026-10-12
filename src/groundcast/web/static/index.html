@@ -34,8 +34,8 @@
     <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6h14M5 10h14M5 14h10M5 18h7"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5A.8.8 0 0 0 8 5.2z" fill="currentColor" stroke="none"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1.2" fill="currentColor" stroke="none"/><rect x="14" y="4.5" width="4" height="15" rx="1.2" fill="currentColor" stroke="none"/></symbol>
-    <symbol id="i-back" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 3.5v5h5"/></symbol>
-    <symbol id="i-forward" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1l2.6 2.6"/><path d="M20.5 3.5v5h-5"/></symbol>
+    <symbol id="i-back15" viewBox="0 0 24 24"><path d="M12 4.1A8.4 8.4 0 1 1 4.73 8.3"/><path d="M8.6 4.1l3.3-2.5v5z" fill="currentColor" stroke-width="1"/><text x="11.8" y="12.5" fill="currentColor" stroke="none" font-size="7.4" font-weight="700" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" letter-spacing="-.2" text-anchor="middle" dominant-baseline="central">15</text></symbol>
+    <symbol id="i-forward30" viewBox="0 0 24 24"><g transform="matrix(-1 0 0 1 24 0)"><path d="M12 4.1A8.4 8.4 0 1 1 4.73 8.3"/><path d="M8.6 4.1l3.3-2.5v5z" fill="currentColor" stroke-width="1"/></g><text x="11.8" y="12.5" fill="currentColor" stroke="none" font-size="7.4" font-weight="700" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" letter-spacing="-.2" text-anchor="middle" dominant-baseline="central">30</text></symbol>
     <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5v14"/><path d="M19 5.5v13L9 12z" fill="currentColor"/></symbol>
     <symbol id="i-next" viewBox="0 0 24 24"><path d="M18 5v14"/><path d="M5 5.5v13L15 12z" fill="currentColor"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
@@ -424,23 +424,23 @@
   <div class="dock" id="dock" hidden>
     <div class="dock-progress" id="dock-progress"><span id="dock-fill"></span></div>
     <div class="dock-inner">
-      <button type="button" class="dock-cover" id="dock-open" title="Show the session">
+      <button type="button" class="dock-cover" id="dock-open" title="Show the session" aria-label="Show the session">
         <svg class="icon"><use href="#i-audio"/></svg></button>
       <div class="dock-text">
         <strong id="dock-title"></strong>
         <span id="dock-chapter" class="muted"></span>
       </div>
       <div class="dock-controls">
-        <button type="button" class="ctl" id="dock-back" title="Back 15 seconds (J)">
-          <svg class="icon"><use href="#i-back"/></svg><span class="ctl-n">15</span></button>
-        <button type="button" class="ctl play" id="dock-play" title="Play or pause (K)">
+        <button type="button" class="ctl" id="dock-back" title="Back 15 seconds (J)" aria-label="Back 15 seconds">
+          <svg class="icon skip-icon"><use href="#i-back15"/></svg></button>
+        <button type="button" class="ctl play" id="dock-play" title="Play or pause (K)" aria-label="Play">
           <svg class="icon"><use href="#i-play"/></svg></button>
-        <button type="button" class="ctl" id="dock-fwd" title="Forward 30 seconds (L)">
-          <svg class="icon"><use href="#i-forward"/></svg><span class="ctl-n">30</span></button>
+        <button type="button" class="ctl" id="dock-fwd" title="Forward 30 seconds (L)" aria-label="Forward 30 seconds">
+          <svg class="icon skip-icon"><use href="#i-forward30"/></svg></button>
       </div>
       <span class="dock-time" id="dock-time"></span>
       <button type="button" class="speed" id="dock-speed" title="Playback speed"></button>
-      <button type="button" class="ctl small" id="dock-close" title="Stop and close the player">
+      <button type="button" class="ctl small" id="dock-close" title="Stop and close the player" aria-label="Close the player">
         <svg class="icon"><use href="#i-x"/></svg></button>
     </div>
   </div>
@@ -461,7 +461,7 @@
   <dialog id="text-dialog" class="sheet" aria-labelledby="text-title">
     <header class="sheet-head">
       <h2 id="text-title"></h2>
-      <button type="button" class="ctl small" data-close title="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+      <button type="button" class="ctl small" data-close title="Close" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
     </header>
     <ol id="text-list" class="passages"></ol>
   </dialog>
@@ -475,7 +475,7 @@
           <span class="tag warn">low confidence</span> and words marked <span class="tag warn">check</span>
           deserve a closer look.</p>
       </div>
-      <button type="button" class="ctl small" data-close title="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+      <button type="button" class="ctl small" data-close title="Close" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
     </header>
     <ol id="review-list" class="review"></ol>
     <footer class="sheet-foot">

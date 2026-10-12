@@ -56,6 +56,18 @@ def test_startup_fails_interrupted_sessions(settings: Settings, store: Store) ->
     assert store.get_session("old-1").status == "failed"
 
 
+def test_older_sessions_take_their_title_from_the_script(settings: Settings, store: Store) -> None:
+    from groundcast.models import Script
+    from groundcast.sessions import SCRIPT_FILE
+    from groundcast.storage import write_model
+
+    store.save_session(SessionRecord(id="old-2", brief=Brief(focus="x", material_ids=["a"]), status="done"))
+    write_model(store.session_dir("old-2") / SCRIPT_FILE, Script(title="How the Moon moves the sea", segments=[]))
+    with local_client(create_app(settings, runner=RecordingRunner())) as client:  # type: ignore[arg-type]
+        assert client.get("/api/sessions").json()[0]["title"] == "How the Moon moves the sea"
+        assert client.get("/api/sessions/old-2").json()["title"] == "How the Moon moves the sea"
+
+
 def test_foreign_host_and_cross_site_requests_refused(settings: Settings) -> None:
     upload = [("files", ("a.txt", b"Tides follow the Moon.", "text/plain"))]
     with local_client(create_app(settings, runner=RecordingRunner())) as client:  # type: ignore[arg-type]

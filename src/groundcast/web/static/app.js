@@ -37,7 +37,7 @@ function fill(node, ...children) {
 }
 
 function append(node, children) {
-  for (const child of children.flat()) {
+  for (const child of children.flat(Infinity)) { // a node never shows as "[object ...]" text
     if (child === null || child === undefined || child === false || child === "") continue;
     node.append(child instanceof Node ? child : document.createTextNode(String(child)));
   }
@@ -122,6 +122,10 @@ function ago(iso) {
 
 function plural(n, word) {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+function dots(parts, cls = "") {
+  return el("span", { class: `dots ${cls}`.trim() }, parts.filter(Boolean).map((p) => el("span", {}, p)));
 }
 
 function cssVar(name) {
@@ -256,11 +260,11 @@ function kindIcon(kind) {
   return el("span", { class: `kind-icon kind-${kind}` }, icon((KINDS[kind] || ["doc"])[0]));
 }
 
-function sizeText(m) {
+function sizeParts(m) {
   const parts = [(KINDS[m.kind] || [null, m.kind])[1]];
   if (m.duration_s) parts.push(`${Math.max(1, Math.round(m.duration_s / 60))} min`);
-  parts.push(plural(m.pages, UNIT_NAMES[m.kind] || "page"), `${m.words.toLocaleString()} words`);
-  return parts.join(" / ");
+  parts.push(plural(m.pages, UNIT_NAMES[m.kind] || "page"), plural(m.words, "word").replace(/^\d+/, m.words.toLocaleString()));
+  return parts;
 }
 
 function materialStatus(m) {
@@ -324,7 +328,7 @@ function renderMaterials() {
       style: `animation-delay: ${Math.min(i, 12) * 25}ms` },
       el("div", { class: "material-top" }, kindIcon(m.kind),
         el("div", {}, el("div", { class: "material-name" }, m.filename),
-          el("div", { class: "material-meta" }, `${sizeText(m)} / added ${ago(m.added_at)}`))),
+          el("div", { class: "material-meta" }, dots([...sizeParts(m), `added ${ago(m.added_at)}`])))),
       el("div", { class: `material-status${m.error ? " error" : ""}` }, materialStatus(m),
         m.error ? el("div", { class: "small" }, m.error) : ""),
       el("div", { class: "material-actions" }, actions));
@@ -359,11 +363,21 @@ async function deleteMaterial(material) {
   }
 }
 
+function passagePlace(material, c) {
+  // As chunk_label in material_view.py: the page, slide, or moment, then the passage number.
+  const kind = c.locator[0];
+  const n = Number(c.locator.slice(1));
+  if (kind === "t") return `At ${clock(n)}`;
+  const where = kind === "s" ? `Slide ${n}` : kind === "p" && (material.kind === "pdf" || material.pages > 1) ? `Page ${n}` : "";
+  return [where, `Passage ${c.index}`].filter(Boolean).join(", ");
+}
+
 async function showText(material) {
   try {
     const chunks = await api(`/api/materials/${material.id}/chunks`);
     $("text-title").textContent = `${material.filename}: ${plural(chunks.length, "passage")}`;
-    fill($("text-list"), ...chunks.map((c) => el("li", {}, el("code", {}, c.id), el("div", {}, c.text))));
+    fill($("text-list"), ...chunks.map((c) => el("li", { title: c.id }, el("span", { class: "where" }, passagePlace(material, c)),
+      el("div", {}, c.text))));
     $("text-dialog").showModal();
   } catch (error) {
     toast(`Could not load the text: ${error.message}`, "error");
@@ -593,7 +607,7 @@ function renderPicker() {
       else state.picked.delete(m.id);
       $("picker-count").textContent = `${state.picked.size} of ${ready.length} selected`;
     });
-    return el("label", { title: `${m.filename} (${sizeText(m)})` }, box,
+    return el("label", { title: `${m.filename} (${sizeParts(m).join(", ")})` }, box,
       el("span", {}, el("span", { class: "tick" }, icon("check")), kindIcon(m.kind), el("span", { class: "name" }, m.filename)));
   }));
   $("picker-count").textContent = `${state.picked.size} of ${ready.length} selected`;
@@ -792,16 +806,18 @@ async function loadSuggestions() {
 const STEPS = [["concepts", "Concepts"], ["write", "Writing"], ["verify", "Checking"], ["edit", "Editing"],
   ["render", "Voicing"]];
 const STAGE_STEP = { concepts: 0, write: 1, trim: 1, verify: 2, revise: 2, edit: 3, reverify: 3, render: 4, done: 5 };
+const STEP_DOING = ["finding concepts", "writing", "checking", "editing", "voicing"];
 let sessionTimer = null;
 
 function sessionTitle(s) {
-  return s.brief.title || s.brief.focus;
+  return s.title || s.brief.title || s.brief.focus;
 }
 
 function stepper(s) {
-  const at = s.status === "queued" ? -1 : (STAGE_STEP[s.stage] ?? 0);
+  // A failure saves the stage as "failed", which no step matches: then no step is marked.
+  const at = s.status === "queued" ? -1 : (STAGE_STEP[s.stage] ?? (s.status === "failed" ? -1 : 0));
   return el("ol", { class: "stepper", "aria-hidden": "true" },
-    STEPS.map((_, i) => el("li", { class: i < at ? "done" : i === at ? "now" : "" })));
+    STEPS.map((_, i) => el("li", { class: i < at ? "done" : i !== at ? "" : s.status === "failed" ? "stopped" : "now" })));
 }
 
 function stageText(s) {
@@ -825,7 +841,7 @@ async function loadSessions() {
       loadConcepts().catch(() => {});
       loadSuggestions().catch(() => {});
     }
-    if (was && was !== s.status && s.status === "failed") toast(`A session failed: ${s.error}`, "error");
+    if (was && was !== s.status && s.status === "failed") toast(`A session failed${s.error ? `: ${s.error}` : "."}`, "error");
   }
   const active = state.sessions.filter((s) => s.status === "queued" || s.status === "running").length;
   $("badge-listen").hidden = !active;
@@ -844,9 +860,8 @@ function renderSessions() {
   }
   fill(list, ...state.sessions.map((s) => {
     const active = s.status === "queued" || s.status === "running";
-    const meta = [el("span", {}, `${s.brief.minutes} min`), el("span", {}, "/"),
-      el("span", {}, LABELS.format[s.brief.format]), el("span", {}, "/"), el("span", {}, ago(s.created_at))];
-    if (s.status === "failed") meta.unshift(el("span", { class: "tag bad" }, "Failed"));
+    const meta = [s.status === "failed" ? el("span", { class: "tag bad" }, "Failed") : "",
+      dots([`${s.brief.minutes} min`, LABELS.format[s.brief.format], ago(s.created_at)])];
     const card = el("button", { type: "button", class: `session-card${player.id === s.id ? " playing" : ""}`,
       "aria-current": String(detail.id === s.id), onclick: () => { location.hash = `#listen/${s.id}`; } },
       el("span", { class: "title" }, sessionTitle(s)), el("span", { class: "meta" }, meta));
@@ -956,15 +971,18 @@ function renderProgress(box, s) {
     const next = stepper(x);
     steps.replaceWith(next);
     steps = next;
-    label.textContent = x.status === "failed" ? "Failed" : stageText(x);
+    const at = STAGE_STEP[x.stage];
+    label.textContent = x.status !== "failed" ? stageText(x) : at < STEPS.length ? `Failed while ${STEP_DOING[at]}` : "Failed";
+    label.classList.toggle("bad", x.status === "failed");
     time.textContent = x.status === "failed" ? "" : `${elapsed(x)} so far`;
     log.textContent = x.log.join("\n");
     log.scrollTop = log.scrollHeight;
-    setStatus(status, x.status === "failed" ? x.error : "", x.status === "failed" ? "error" : "");
+    setStatus(status, x.status === "failed" ? x.error || "No reason was recorded. The progress log shows how far it got."
+      : "", x.status === "failed" ? "error" : "");
   };
   fill(box, 
     el("section", { class: "detail-hero" },
-      el("p", { class: "eyebrow" }, s.status === "failed" ? "Session failed" : "In progress"),
+      el("p", { class: `eyebrow${s.status === "failed" ? " bad" : ""}` }, s.status === "failed" ? "Session failed" : "In progress"),
       el("h2", {}, sessionTitle(s)), heroMeta(s),
       steps, el("div", { class: "stage-line", style: "margin-top: .6rem" }, label, time), status),
     el("section", { class: "card" }, el("h2", { class: "card-title" }, icon("list"), "Progress log"), log));
@@ -989,18 +1007,21 @@ function renderDone(box, s) {
   detail.refs = refs;
 
   const row = el("div", { class: "player-row" },
-    el("span", { class: "time" }, time, " ", chapterNow),
-    el("button", { type: "button", class: "ctl small", title: "Previous chapter", onclick: () => jumpChapter(id, -1) }, icon("prev")),
-    el("button", { type: "button", class: "ctl", title: "Back 15 seconds (J)", onclick: () => skip(id, -15) },
-      icon("back"), el("span", { class: "ctl-n" }, "15")),
-    el("button", { type: "button", class: "ctl", title: "Forward 30 seconds (L)", onclick: () => skip(id, 30) },
-      icon("forward"), el("span", { class: "ctl-n" }, "30")),
-    el("button", { type: "button", class: "ctl small", title: "Next chapter", onclick: () => jumpChapter(id, 1) }, icon("next")),
+    el("span", { class: "time-line" }, time, chapterNow),
+    el("button", { type: "button", class: "ctl small", title: "Previous chapter", "aria-label": "Previous chapter",
+      onclick: () => jumpChapter(id, -1) }, icon("prev")),
+    el("button", { type: "button", class: "ctl", title: "Back 15 seconds (J)", "aria-label": "Back 15 seconds",
+      onclick: () => skip(id, -15) }, icon("back15", "skip-icon")),
+    el("button", { type: "button", class: "ctl", title: "Forward 30 seconds (L)", "aria-label": "Forward 30 seconds",
+      onclick: () => skip(id, 30) }, icon("forward30", "skip-icon")),
+    el("button", { type: "button", class: "ctl small", title: "Next chapter", "aria-label": "Next chapter",
+      onclick: () => jumpChapter(id, 1) }, icon("next")),
     speed,
-    el("a", { class: "ctl small", href: `/data/sessions/${id}/session.mp3`, download: `${id}.mp3`, title: "Download the MP3 (with chapters)" },
+    el("a", { class: "ctl small", href: `/data/sessions/${id}/session.mp3`, download: `${id}.mp3`,
+      title: "Download the MP3 (with chapters)", "aria-label": "Download the MP3" },
       icon("download")),
     el("a", { class: "ctl small", href: `/data/sessions/${id}/transcript.html`, target: "_blank", rel: "noopener",
-      title: "Open the transcript as a page" }, icon("external")));
+      title: "Open the transcript as a page", "aria-label": "Open the transcript as a page" }, icon("external")));
   const title = el("h2", {}, sessionTitle(s));
   const verify = el("section", { class: "card verify-card" }, el("p", { class: "muted small" }, "Loading the check..."));
   const tabsCard = el("section", { class: "card" });
@@ -1072,8 +1093,10 @@ function renderVerification(box, r) {
       fact(failedFirst, "failed the first check"),
       fact(r.revise_rounds, plural(r.revise_rounds, "revision round").replace(/^\d+ /, "")),
       fact(removed, "removed"),
-      fact(`${r.edits_applied}/${r.edits_applied + r.edits_reverted}`, "fluency edits kept"),
-      drafts.length ? fact(`${drafts.at(-1).toLocaleString()}`, `words, target ${r.target_words.toLocaleString()}`) : ""));
+      r.edits_applied + r.edits_reverted
+        ? fact(`${r.edits_applied} of ${r.edits_applied + r.edits_reverted}`, "fluency edits kept")
+        : fact("None", "fluency edits needed"),
+      drafts.length ? fact(drafts.at(-1).toLocaleString(), `words (target ${r.target_words.toLocaleString()})`) : ""));
 }
 
 // Tabs: transcript, questions, quiz, feedback
@@ -1711,7 +1734,7 @@ function bindWave(refs) {
     if (d) {
       const t = f * d;
       const i = chapterAt(refs.view, t);
-      hoverLabel.textContent = clock(t) + (i >= 0 ? `  ${refs.view.segments[i].heading}` : "");
+      fill(hoverLabel, el("b", {}, clock(t)), i >= 0 ? el("span", {}, refs.view.segments[i].heading) : "");
       hoverLabel.style.left = `${f * 100}%`;
       hoverLabel.hidden = false;
     }
@@ -1836,7 +1859,7 @@ function renderConcepts() {
     return el("li", { class: "concept", style: `animation-delay: ${Math.min(i, 16) * 20}ms` },
       el("div", { class: "concept-head" }, name),
       c.description ? el("p", { class: "concept-desc" }, c.description) : "",
-      el("span", { class: "faint small" }, `Found in ${plural(c.chunks, "passage")} of ${plural(c.material_ids.length, "material")}`),
+      el("span", { class: "faint small concept-found" }, `Found in ${plural(c.chunks, "passage")} of ${plural(c.material_ids.length, "material")}`),
       el("div", { class: `mastery ${level}`, title: c.asked ? `Estimated mastery ${Math.round(m * 100)}%` : "" },
         el("span", { class: "meter" }, el("span", { style: `width: ${Math.round(m * 100)}%` })),
         c.asked ? `${c.right} of ${c.asked} right` : "Not quizzed yet"),
@@ -1855,17 +1878,59 @@ async function loadConcepts() {
 }
 
 const EVENT_NAMES = {
-  "preference.set": "Preference changed", "preference.undone": "Preference change undone",
-  "preference.inferred": "Learned from your sessions", "concept.renamed": "Concept renamed",
-  "concept.merged": "Concepts merged", "concept.added": "Concept found", "suggestion.accepted": "Suggestion taken",
-  "suggestion.edited": "Suggestion edited, then taken", "session.feedback": "Feedback saved", "quiz.answered": "Quiz answered",
-  "profile.deleted": "Profile deleted",
+  "preference.set": "Preference changed", "preference.inferred": "Learned from your sessions",
+  "concept.created": "Concept found", "concept.renamed": "Concept renamed", "concept.merged": "Concepts merged",
+  "concepts.extracted": "Concepts looked for", "material.removed": "Material removed",
+  "suggestion.accepted": "Suggestion taken as it was", "suggestion.edited": "Suggestion changed, then taken",
+  "session.feedback": "Feedback saved", "profile.deleted": "Profile deleted",
 };
+const EVENT_SOURCES = { user: "By you", inference: "Inferred", system: "Automatic" };
+const LENGTH_FEEDBACK = { too_short: "too short", right: "about right", too_long: "too long" };
 
-function compact(value) {
-  if (value === null || value === undefined) return "";
-  return typeof value === "object" ? JSON.stringify(value).replace(/[{}"]/g, "").replace(/,/g, ", ").replace(/:/g, ": ")
-    : String(value);
+function humanKey(key) {
+  return PREF_LABELS[key] || key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+}
+
+function describeEvent(e) {
+  // What changed, as { subject, before, after, note }; before and after are shown with an arrow between.
+  const a = e.after || {};
+  const b = e.before || {};
+  const session = () => {
+    const s = state.sessions.find((x) => x.id === e.subject);
+    return s ? sessionTitle(s) : "A session";
+  };
+  const pairs = (values) => Object.entries(values).map(([k, v]) => `${humanKey(k)}: ${shown(k, v)}`).join(", ");
+  switch (e.kind) {
+    case "preference.set":
+      return { subject: humanKey(e.subject), before: shown(e.subject, b.value) || "Default",
+        after: shown(e.subject, a.value) || "Default" };
+    case "preference.inferred":
+      return { subject: humanKey(e.subject), before: shown(e.subject, b.value) || "Not learned yet",
+        after: shown(e.subject, a.value) || "No longer learned" };
+    case "concept.created":
+      return { subject: a.name || e.subject };
+    case "concept.renamed":
+    case "concept.merged":
+      return { before: b.name || e.subject, after: a.name || "" };
+    case "concepts.extracted":
+      return { subject: e.reason, note: a.concepts ? `${plural(a.concepts, "concept")}, ${a.new} new` : "None found",
+        reasonShown: true };
+    case "material.removed": {
+      const m = state.materials.find((x) => x.id === e.subject);
+      return { subject: m ? m.filename : "", note: b.concept_sources ? `${plural(b.concept_sources, "concept link")} removed` : "" };
+    }
+    case "session.feedback": {
+      const parts = [a.rating ? `${a.rating} of 5 stars` : "", a.length ? `length ${LENGTH_FEEDBACK[a.length] || a.length}` : "",
+        a.comment ? `"${a.comment}"` : ""].filter(Boolean);
+      return { subject: session(), note: parts.join(", ") };
+    }
+    case "suggestion.accepted":
+      return { subject: e.reason, reasonShown: true };
+    case "suggestion.edited":
+      return { subject: e.reason, before: pairs(b), after: pairs(a), reasonShown: true };
+    default:
+      return { subject: e.subject === "profile" ? "" : e.subject };
+  }
 }
 
 async function loadEvents() {
@@ -1875,11 +1940,17 @@ async function loadEvents() {
     return;
   }
   fill($("event-list"), ...events.map((e) => {
-    const change = [compact(e.before), compact(e.after)].filter(Boolean).join("  ->  ");
+    const d = describeEvent(e);
+    const change = d.before || d.after
+      ? el("div", { class: "change" }, el("span", {}, d.before || "None"), icon("arrow"), el("span", {}, d.after || "None"))
+      : d.note ? el("div", { class: "change" }, d.note) : "";
+    const reason = d.reasonShown ? "" : e.reason.replace(/^undo of change \d+$/, "undoing an earlier change");
     const item = el("li", { class: e.source },
-      el("div", {}, el("span", { class: "what" }, EVENT_NAMES[e.kind] || e.kind), " ", el("span", { class: "muted" }, e.subject)),
-      change ? el("div", { class: "change" }, change) : "",
-      el("div", { class: "when", title: e.at }, `${ago(e.at)} / ${e.source}${e.reason ? ` / ${e.reason}` : ""}`));
+      el("div", { class: "event-head" }, el("span", { class: "what" }, EVENT_NAMES[e.kind] || humanKey(e.kind)),
+        d.subject ? el("span", { class: "subject" }, d.subject) : ""),
+      change,
+      dots([ago(e.at), EVENT_SOURCES[e.source] || e.source, reason], "when"));
+    item.lastChild.title = new Date(e.at).toLocaleString("en", { dateStyle: "medium", timeStyle: "short" });
     if (e.kind === "preference.set") {
       item.append(el("button", { class: "linkish", type: "button", onclick: async () => {
         try {
@@ -1899,12 +1970,15 @@ $("events").addEventListener("toggle", () => { if ($("events").open) loadEvents(
 
 // What Groundcast has learned (inferred preferences)
 
-const LEARNED_LABELS = { minutes: "Length", format: "Format", recall_prompts: "Recall questions",
-  context: "Listening context", level: "Level" };
+const PREF_LABELS = { voice: "Voice", second_voice: "Second host's voice", speed: "Speed", adapt_pace: "Adapt pace",
+  minutes: "Length", format: "Format", context: "Listening context", level: "Level", quiz_questions: "Quiz questions",
+  recall_prompts: "Recall questions", extract_concepts: "Find concepts in new materials",
+  infer_preferences: "Learn defaults from my sessions" };
 
 function shown(key, value) {
   if (value === null || value === undefined) return "";
   if (key === "minutes") return `${value} minutes`;
+  if (key === "speed") return `${value}x`;
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (LABELS[key]) return LABELS[key][value] || String(value);
   return String(value);
@@ -1913,7 +1987,7 @@ function shown(key, value) {
 function renderLearned(view) {
   const list = $("learned-list");
   const items = (view.inference_on ? view.inferred : []).map((i) => el("li", {},
-    el("span", { class: "k" }, LEARNED_LABELS[i.key]),
+    el("span", { class: "k" }, humanKey(i.key)),
     el("span", { class: "v" }, shown(i.key, i.value)),
     el("span", { class: "meter", title: `Confidence ${i.confidence.toFixed(2)}` },
       el("span", { style: `width: ${Math.round(i.confidence * 100)}%` })),
@@ -1931,7 +2005,7 @@ function renderLearned(view) {
 async function keepLearned(inferred) {
   try {
     showPreferences(await send("/api/preferences", "PUT", { changes: { [inferred.key]: inferred.value } }));
-    toast(`Saved as a preference: ${LEARNED_LABELS[inferred.key]}.`, "ok");
+    toast(`Saved as a preference: ${humanKey(inferred.key)}.`, "ok");
     await loadSuggestions();
   } catch (error) {
     toast(error.message, "error");
@@ -2010,7 +2084,7 @@ $("prefs-form").addEventListener("submit", async (event) => {
   busy(button, true);
   try {
     showPreferences(await send("/api/preferences", "PUT", { changes }));
-    setStatus($("prefs-status"), `Saved: ${Object.keys(changes).map((k) => k.replace(/_/g, " ")).join(", ")}.`, "ok");
+    setStatus($("prefs-status"), `Saved: ${Object.keys(changes).map((k) => humanKey(k).toLowerCase()).join(", ")}.`, "ok");
     loadSettings().catch(() => {});
     loadSuggestions().catch(() => {});
     if ($("events").open) loadEvents();

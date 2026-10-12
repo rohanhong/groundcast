@@ -32,6 +32,8 @@ def test_session_produces_mp3_and_transcript(settings: Settings, store: Store, t
     record = new_session(store, Brief(focus="tides", material_ids=[material.id], minutes=2))
     record = run_session(record, store, settings, backend=scripted_backend())
     assert record.status == SessionStatus.DONE, record.error
+    script = json.loads((store.session_dir(record.id) / SCRIPT_FILE).read_text(encoding="utf-8"))
+    assert store.get_session(record.id).title == script["title"]  # the list shows the Writer's title
     d: Path = store.session_dir(record.id)
     for name in (SCRIPT_FILE, REPORT_FILE, AUDIO_FILE, TRANSCRIPT_FILE):
         assert (d / name).is_file(), name

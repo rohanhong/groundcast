@@ -161,6 +161,7 @@ class SessionStatus(StrEnum):
 class SessionRecord(BaseModel):
     id: str
     brief: Brief
+    title: str = ""  # the script's title, once the Writer has chosen it
     status: SessionStatus = SessionStatus.QUEUED
     stage: str = ""
     log: list[str] = Field(default_factory=list)

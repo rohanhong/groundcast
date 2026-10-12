@@ -211,6 +211,7 @@ def run_session(
         result = pipeline.run(brief, chunks, progress)
         write_model(session_dir / SCRIPT_FILE, result.script)
         write_model(session_dir / REPORT_FILE, result.report)
+        record.title = result.script.title  # saved with the next progress line
 
         tts = settings.tts
         voices = tts.voice if brief.format == "narrator" else f"{tts.voice} and {tts.second_voice}"
