@@ -1,6 +1,6 @@
 # Reference material stays on the local machine; only this file and README.md
 # are tracked. Books, papers, transcripts, and archived pages are copyrighted
-# and must never reach the public repository (spec sections 3 and 15).
+# and must never reach the public repository.
 *
 !.gitignore
 !README.md

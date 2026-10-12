@@ -24,9 +24,11 @@ What does not belong here:
    and the date in `Notes`).
 3. A new source gets the next free ID and a row in the matching table.
 
-## Sources in use (keep)
+## Sources in use
 
-IDs follow the design spec (section 9.1a). Access: free, paywall, or book.
+Tiers: T1 learning research; T2 writing for the ear (broadcast and radio
+guidance); T3 educational podcasts, used for structure only; T4 fact-checking
+and claim-verification research. Access: free, paywall, or book.
 
 | ID | Tier | Source | Access | Used for | Local file |
 |---|---|---|---|---|---|
@@ -44,24 +46,14 @@ IDs follow the design spec (section 9.1a). Access: free, paywall, or book.
 | S19 | T4 | Laban, P. et al. 2022. SummaC. TACL 10, 163-177. doi:10.1162/tacl_a_00453 | free | Sentence-level consistency of script versus notes | `S19-summac.pdf` |
 | S20 | T4 | Thorne, J. et al. 2018. FEVER. NAACL-HLT 2018, 809-819. doi:10.18653/v1/N18-1074 | free | Supported / refuted / not-enough-info labels | `S20-fever.pdf` |
 | S22 | T4 | Manakul, P. et al. 2023. SelfCheckGPT. EMNLP 2023, 9004-9017. doi:10.18653/v1/2023.emnlp-main.557 | free | Checks without a source text (Q&A answers) | `S22-selfcheckgpt.pdf` |
-| S23 | T4 | Tang, L., Laban, P. and Durrett, G. 2024. MiniCheck. EMNLP 2024, 8818-8847. doi:10.18653/v1/2024.emnlp-main.499 | free, models released | Low-cost claim checking against documents (S4 first pass) | `S23-minicheck.pdf` |
+| S23 | T4 | Tang, L., Laban, P. and Durrett, G. 2024. MiniCheck. EMNLP 2024, 8818-8847. doi:10.18653/v1/2024.emnlp-main.499 | free, models released | Low-cost claim checking against documents | `S23-minicheck.pdf` |
 | S18 | T4 | Wei, J. et al. 2024. Long-form factuality in large language models (SAFE). NeurIPS 37, 80756-80827. doi:10.52202/079017-2567 | free | Per-claim checking with search; evidence count versus accuracy | `S18-safe.pdf` |
 | S21 | T4 | Es, S. et al. 2024. RAGAs. EACL 2024 Demos, 150-158. doi:10.18653/v1/2024.eacl-demo.16 | free | Faithfulness of answers to retrieved context (Q&A) | `S21-ragas.pdf` |
 | S24 | T4 | Jacovi, A. et al. 2025. The FACTS Grounding Leaderboard. arXiv:2501.03200 | free | Judging grounding sentence by sentence, never as a whole | `S24-facts-grounding.pdf` |
 | S25 | T1 | Mayer, R.E. 2024. The Past, Present, and Future of the Cognitive Theory of Multimedia Learning. *Educational Psychology Review* 36, article 8. doi:10.1007/s10648-023-09842-1 (open access, CC BY 4.0) | free | Stands in for S1: the fifteen principles of Mayer 2021 | `S25-mayer-2024.pdf` |
 | S26 | T2 | Dahlstrom, M.F. 2014. Using narratives and storytelling to communicate science with nonexpert audiences. *PNAS* 111(Suppl. 4), 13614-13620. doi:10.1073/pnas.1320645111 | free | Stands in for S9: narrative and examples in science communication | `S26-dahlstrom-2014.html` (PubMed Central PMC4183170) |
 
-Order of work (spec 9.2): free sources with text first (S3, S5, S7, S14, S15,
-S17, S19, S20, S22, S23); then the books (S1, S6, S9) and the audio-only
-exemplars (S11, S13).
-
-Status on 2026-10-12: every free source with text has a local copy and a note
-in `docs/distillation/`, and so do S18, S21, and S24, moved here from the
-later list. The books S1, S6, and S9 are not held; S25 (same author as S1)
-and S26 stand in for S1 and S9 with openly published, peer-reviewed text.
-S13 now has official transcripts; S11 has none and stays unread.
-
-## Sources kept for later
+## Other sources (not held)
 
 | ID | Tier | Source | Access |
 |---|---|---|---|
