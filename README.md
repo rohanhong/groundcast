@@ -88,7 +88,9 @@ result as an MP3 you can play in any phone player.
    `nvidia-smi` and recommends the newest build your GPU and driver can run,
    or the CPU build), speech recognition for video and audio, the Piper
    fallback voices, and the API backend. Enter takes each recommendation; at
-   the end it checks the installation.
+   the end it checks the installation, makes a groundcast shortcut on the
+   desktop and in the Start menu (the applications menu on Linux,
+   `~/Applications` on macOS), and offers to start groundcast.
    - Windows: double-click `install.cmd`, or run `.\install.cmd` in a terminal.
    - Linux or macOS: `./install.sh`
 
@@ -96,12 +98,19 @@ result as an MP3 you can play in any phone player.
    to only print the pip commands, or choices such as `--torch cpu --no-asr`.
    Model weights download on first use (Kokoro about 330 MB, the speech
    recognition model about 1.6 GB).
-3. Start the app, then open <http://127.0.0.1:8765/>. It serves the browser UI
-   on `127.0.0.1` only.
-   ```bash
-   conda activate groundcast_env_py312
-   groundcast serve
-   ```
+3. Double-click the groundcast shortcut. No terminal opens: the service
+   starts in the background and groundcast opens in its own window (an Edge
+   or Chrome app window, otherwise a tab in your default browser) at
+   <http://127.0.0.1:8765/>, on `127.0.0.1` only. A second double-click
+   only brings up another window. When every groundcast window is closed
+   and no session or recognition is running, the service stops by itself;
+   "Stop groundcast" in the sidebar stops it at once. Without a console, its
+   output goes to `logs/launcher.log` in the data directory.
+
+   From a terminal, `groundcast launch` does the same, and `groundcast serve`
+   runs the service in the foreground; `groundcast shortcut` makes the
+   shortcuts again (`--remove` removes them). The `[launcher]` settings choose
+   the window and when the service stops.
 
 Inside the environment, `groundcast setup` offers the same choices again (for
 example after a driver update), and `groundcast doctor` checks every part and

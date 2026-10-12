@@ -40,6 +40,39 @@ class ServerSettings(_Section):
         return value
 
 
+class LauncherSettings(_Section):
+    """`groundcast launch`, which the desktop shortcut runs: start the service, open a window, stop when closed."""
+
+    # app: a browser window without tabs or address bar; browser: a tab in the default browser; none: no window.
+    window: Literal["app", "browser", "none"] = "app"
+    # Browsers tried in order for the app window: a path (%VARS% and ~ are expanded) or a program name on PATH.
+    browsers: list[str] = Field(
+        default_factory=lambda: [
+            r"%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe",
+            r"%ProgramFiles%\Microsoft\Edge\Application\msedge.exe",
+            r"%ProgramFiles%\Google\Chrome\Application\chrome.exe",
+            r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe",
+            r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe",
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+            "microsoft-edge",
+            "google-chrome",
+            "google-chrome-stable",
+            "chromium",
+            "chromium-browser",
+        ]
+    )
+    ready_timeout_s: float = Field(default=60.0, gt=0)  # how long the service may take to start
+    # Stop the service once no groundcast page has been open for close_grace_s and no work is running.
+    stop_when_closed: bool = True
+    close_grace_s: float = Field(default=15.0, ge=0)
+    heartbeat_s: float = Field(default=20.0, gt=0)  # how often an open page checks in
+    # A page silent this long counts as closed (a crashed or frozen tab); browsers check hidden tabs once a minute.
+    page_timeout_s: float = Field(default=600.0, gt=0)
+    shortcut_name: str = "groundcast"
+
+
 class LLMSettings(_Section):
     backend: Literal["claude-cli", "anthropic-api"] = "claude-cli"
     claude_bin: str = "claude"
@@ -269,6 +302,7 @@ class Settings(_Section):
     data_dir: Path = Field(default_factory=lambda: Path(platformdirs.user_data_dir(APP_NAME, appauthor=False)))
     model_dir: Path = Field(default_factory=lambda: Path(platformdirs.user_cache_dir(APP_NAME, appauthor=False)) / "models")
     server: ServerSettings = Field(default_factory=ServerSettings)
+    launcher: LauncherSettings = Field(default_factory=LauncherSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
     ingest: IngestSettings = Field(default_factory=IngestSettings)
     asr: ASRSettings = Field(default_factory=ASRSettings)

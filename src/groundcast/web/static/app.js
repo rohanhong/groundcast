@@ -59,7 +59,13 @@ function setIcon(button, name) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(path, options);
+  let response;
+  try {
+    response = await fetch(path, options);
+  } catch (error) {
+    showOffline(); // the service is not answering at all
+    throw error;
+  }
   if (!response.ok) {
     let detail = response.statusText;
     try {
@@ -2058,6 +2064,67 @@ async function loadDoctor() {
 $("doctor").addEventListener("toggle", () => { if ($("doctor").open && !$("doctor-list").childElementCount) loadDoctor(); });
 $("doctor-run").addEventListener("click", loadDoctor);
 
+// Service presence: open pages check in, so the launcher can stop the service once all are closed
+
+const PAGE_ID = (crypto.randomUUID && crypto.randomUUID()) || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+let presenceTimer = null;
+let offlineTimer = null;
+let stopped = false;
+
+function checkIn(open) {
+  const body = JSON.stringify({ page: PAGE_ID, open });
+  if (!open && navigator.sendBeacon) {
+    navigator.sendBeacon("/api/presence", new Blob([body], { type: "application/json" }));
+    return;
+  }
+  fetch("/api/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true })
+    .catch(() => showOffline());
+}
+
+function startPresence() {
+  clearInterval(presenceTimer);
+  checkIn(true);
+  const seconds = state.settings ? state.settings.heartbeat_s : 20;
+  presenceTimer = setInterval(() => checkIn(true), seconds * 1000);
+}
+
+window.addEventListener("pagehide", () => checkIn(false));
+window.addEventListener("pageshow", (event) => { if (event.persisted) startPresence(); });
+
+function showOffline(title = null, body = null) {
+  if (!$("offline").hidden) return;
+  if (title) $("offline-title").textContent = title;
+  if (body) $("offline-body").textContent = body;
+  $("offline").hidden = false;
+  clearInterval(presenceTimer);
+  clearTimeout(sessionTimer);
+  clearTimeout(materialTimer);
+  audio.pause();
+  clearInterval(offlineTimer);
+  offlineTimer = setInterval(async () => {
+    try {
+      const r = await fetch("/api/health", { cache: "no-store" });
+      if (r.ok) location.reload(); // back: start over with fresh data
+    } catch (_) { /* still not running */ }
+  }, 3000);
+}
+
+$("app-stop").addEventListener("click", async () => {
+  const running = state.sessions.filter((s) => s.status === "queued" || s.status === "running").length;
+  const ok = await ask({ title: "Stop groundcast?", ok: "Stop", danger: running > 0,
+    body: running ? `${plural(running, "session")} still being made will be cut short and marked as failed.`
+      : "The service stops on this computer. Start it again from the groundcast shortcut." });
+  if (!ok) return;
+  try {
+    await api("/api/shutdown", { method: "POST" });
+    stopped = true;
+    showOffline("groundcast has stopped", "You can close this window. To start it again, use the groundcast shortcut "
+      + "on your desktop or in the Start menu.");
+  } catch (error) {
+    if (!stopped) toast(error.message, "error");
+  }
+});
+
 // Start
 
 async function init() {
@@ -2072,6 +2139,7 @@ async function init() {
     $("settings-line").textContent = `Could not reach the local service: ${failed.reason.message}`;
     toast(`Could not reach the local service: ${failed.reason.message}`, "error");
   }
+  if (!failed) startPresence();
   renderConcepts(); // the settings carry the threshold for weak concepts
   await loadSuggestions().catch(() => {}); // after the preferences have set the form's defaults
   route();

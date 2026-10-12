@@ -96,7 +96,7 @@ def test_the_plan_installs_only_what_is_missing() -> None:
 
 def _args(**kw: object) -> argparse.Namespace:
     base = {"yes": False, "dry_run": False, "torch": None, "asr": None, "piper": None, "api": None, "config": None,
-            "claude_bin": "claude", "backend": "claude-cli"}  # fmt: skip
+            "claude_bin": "claude", "backend": "claude-cli", "shortcut": None}  # fmt: skip
     return argparse.Namespace(**{**base, **kw})
 
 
@@ -119,7 +119,8 @@ def test_dry_run_prints_the_commands_and_installs_nothing() -> None:
 
 
 def test_interactive_setup_asks_then_runs_pip_and_the_doctor() -> None:
-    answers = iter(["", "n", "y", "n", ""])  # recommended build; no ASR; Piper; no API; run
+    # Recommended build; no ASR; Piper; no API; run; shortcuts; do not start now.
+    answers = iter(["", "n", "y", "n", "", "", "n"])
     ran: list[list[str]] = []
 
     def run(args: list[str], **kw: object) -> subprocess.CompletedProcess[str]:
@@ -135,7 +136,25 @@ def test_interactive_setup_asks_then_runs_pip_and_the_doctor() -> None:
     if expected:
         assert any(f"torch==2.14.1+{expected}" in a for a in pip)
     assert any("piper-tts" in a for a in pip) and not any(any("faster-whisper" in x for x in a) for a in pip)
-    assert ran[-1][-1] == "doctor"
+    assert [a[-1] for a in ran[-2:]] == ["doctor", "shortcut"]
+
+
+def test_setup_ends_with_shortcuts_and_can_start_groundcast() -> None:
+    from groundcast.install import finish
+
+    ran: list[list[str]] = []
+    started: list[list[str]] = []
+
+    def run(args: list[str], **kw: object) -> subprocess.CompletedProcess[str]:
+        ran.append(args)
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    answers = iter(["", "y"])
+    assert finish(_args(), lambda line: None, lambda prompt: next(answers), run, True, start=started.append) == 0
+    assert ran[0][-1] == "shortcut" and started[0][-3:] == ["-m", "groundcast", "launch"]
+    ran.clear()
+    assert finish(_args(shortcut=False), lambda line: None, lambda prompt: "", run, False, start=started.append) == 0
+    assert ran == [] and len(started) == 1  # --no-shortcut, and nothing starts without being asked
 
 
 def test_an_unknown_build_is_refused() -> None:

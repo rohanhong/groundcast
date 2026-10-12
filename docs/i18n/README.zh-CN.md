@@ -50,16 +50,14 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    git clone https://github.com/rohanhong/groundcast.git
    cd groundcast
    ```
-2. 运行安装程序。它会创建 conda 环境（Python 3.12、ffmpeg、poppler、用于扫描件的 Tesseract，并以可编辑模式安装 groundcast 本身），然后询问要添加哪些部分：语音合成所用的 PyTorch 版本（它读取 `nvidia-smi`，推荐你的显卡和驱动能运行的最新版本，没有可用显卡时推荐 CPU 版）、视频和音频的语音识别、Piper 备用语音，以及 API 后端。按回车即采用推荐项；最后它会检查安装结果。
+2. 运行安装程序。它会创建 conda 环境（Python 3.12、ffmpeg、poppler、用于扫描件的 Tesseract，并以可编辑模式安装 groundcast 本身），然后询问要添加哪些部分：语音合成所用的 PyTorch 版本（它读取 `nvidia-smi`，推荐你的显卡和驱动能运行的最新版本，没有可用显卡时推荐 CPU 版）、视频和音频的语音识别、Piper 备用语音，以及 API 后端。按回车即采用推荐项；最后它会检查安装结果，在桌面和开始菜单（Linux 上是应用程序菜单，macOS 上是 `~/Applications`）创建 groundcast 快捷方式，并询问是否立即启动 groundcast。
    - Windows：双击 `install.cmd`，或在终端中运行 `.\install.cmd`。
    - Linux 或 macOS：`./install.sh`
 
    加上 `--yes` 可不经询问采用全部推荐项，加上 `--dry-run` 只打印 pip 命令，也可直接指定选择，例如 `--torch cpu --no-asr`。模型权重在首次使用时下载（Kokoro 约 330 MB，语音识别模型约 1.6 GB）。
-3. 启动应用，然后打开 <http://127.0.0.1:8765/>。浏览器界面只在 `127.0.0.1` 上提供服务。
-   ```bash
-   conda activate groundcast_env_py312
-   groundcast serve
-   ```
+3. 双击 groundcast 快捷方式。不会打开终端：服务在后台启动，groundcast 在自己的窗口中打开（Edge 或 Chrome 的应用窗口，没有时使用默认浏览器的标签页），地址是 <http://127.0.0.1:8765/>，只在 `127.0.0.1` 上提供服务。再次双击只会再打开一个窗口。所有 groundcast 窗口都关闭、且没有正在生成的会话或正在进行的识别时，服务会自行停止；侧栏中的“Stop groundcast”可以立即停止它。由于没有控制台，它的输出写入数据目录中的 `logs/launcher.log`。
+
+   在终端里，`groundcast launch` 的效果相同，`groundcast serve` 在前台运行服务；`groundcast shortcut` 会重新创建快捷方式（加 `--remove` 则删除）。`[launcher]` 设置决定使用哪种窗口以及服务何时停止。
 
 在环境中，`groundcast setup` 会再次给出同样的选择（例如在更新驱动之后），`groundcast doctor` 会检查每个部分，并为缺失的部分打印修复命令；应用的偏好设置里也能看到同样的检查。
 

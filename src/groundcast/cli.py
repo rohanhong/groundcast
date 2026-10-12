@@ -45,14 +45,32 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 
 def cmd_serve(args: argparse.Namespace) -> int:
-    import uvicorn
-
+    from groundcast.launcher import make_server, server_url
     from groundcast.web.app import create_app
 
     settings = _settings(args)
     print(f"Data directory: {settings.data_dir}")
-    print(f"Open http://{settings.server.host}:{settings.server.port}/")
-    uvicorn.run(create_app(settings), host=settings.server.host, port=settings.server.port, log_level="info")
+    print(f"Open {server_url(settings)}")
+    make_server(settings, create_app(settings)).run()
+    return 0
+
+
+def cmd_launch(args: argparse.Namespace) -> int:
+    from groundcast.launcher import launch
+
+    return launch(_settings(args), window=args.window)
+
+
+def cmd_shortcut(args: argparse.Namespace) -> int:
+    from groundcast.shortcuts import make_shortcuts
+
+    try:
+        paths = make_shortcuts(_settings(args), desktop=args.desktop, remove=args.remove, config=args.config)
+    except OSError as exc:
+        print(exc)
+        return 1
+    verb = "Removed" if args.remove else "Made"
+    print("\n".join(f"{verb} {p}" for p in paths) or "No shortcuts to remove.")
     return 0
 
 
@@ -377,6 +395,15 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("paths", help="show the config file, data, and model paths").set_defaults(func=cmd_paths)
     sub.add_parser("serve", help="run the local web app").set_defaults(func=cmd_serve)
 
+    p = sub.add_parser("launch", help="start the app if needed and open its window; what the shortcut runs")
+    p.add_argument("--window", choices=["app", "browser", "none"], help="override launcher.window")
+    p.set_defaults(func=cmd_launch)
+
+    p = sub.add_parser("shortcut", help="make desktop and menu shortcuts that start groundcast")
+    p.add_argument("--no-desktop", dest="desktop", action="store_false", help="only the Start or applications menu")
+    p.add_argument("--remove", action="store_true", help="remove the shortcuts instead")
+    p.set_defaults(func=cmd_shortcut)
+
     p = sub.add_parser("setup", help="install the optional parts: PyTorch build, speech recognition, Piper, API")
     p.add_argument("--yes", "-y", action="store_true", help="take every recommendation without asking")
     p.add_argument("--dry-run", action="store_true", help="show the pip commands without running them")
@@ -384,6 +411,8 @@ def build_parser() -> argparse.ArgumentParser:
     for key, what in (("asr", "speech recognition for video and audio"), ("piper", "the Piper fallback voices"),
                       ("api", "the Anthropic API backend")):  # fmt: skip
         p.add_argument(f"--{key}", action=argparse.BooleanOptionalAction, help=f"add {what} (or not)")
+    p.add_argument("--shortcut", action=argparse.BooleanOptionalAction,
+                   help="make desktop and menu shortcuts at the end (or not)")
     p.set_defaults(func=cmd_setup)
 
     sub.add_parser("doctor", help="check the installation and show how to fix what is missing").set_defaults(

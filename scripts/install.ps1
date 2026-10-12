@@ -54,8 +54,7 @@ try {
 }
 if ($status -eq 0) {
     Write-Host ""
-    Write-Host "Done. To start groundcast:"
-    Write-Host "  conda activate $name"
-    Write-Host "  groundcast serve"
+    Write-Host "Done. Start groundcast with the groundcast shortcut on the desktop or in the Start menu."
+    Write-Host "From a terminal: conda activate $name, then groundcast launch"
 }
 exit $status

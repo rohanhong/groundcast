@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import logging
 import shutil
+import os
 import tempfile
 import threading
+import time
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from importlib import resources
@@ -16,7 +18,7 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from groundcast.config import Settings, config_file_path
 from groundcast.doctor import Check, run_checks
@@ -102,6 +104,49 @@ def local_request_problem(
     return None
 
 
+class PageCheckIn(BaseModel):
+    page: str = Field(min_length=1, max_length=64)  # a random ID per open page
+    open: bool = True
+
+
+class Presence:
+    """Which groundcast pages are open, from their check-ins; the launcher stops the service when none are."""
+
+    def __init__(self, page_timeout_s: float, clock: Callable[[], float] = time.monotonic) -> None:
+        self.page_timeout_s = page_timeout_s
+        self.clock = clock
+        self.ever_open = False
+        self._pages: dict[str, float] = {}
+        self._empty_since: float = clock()
+        self._lock = threading.Lock()
+
+    def check_in(self, page: str, is_open: bool) -> None:
+        with self._lock:
+            self._prune()
+            if is_open:
+                self._pages[page] = self.clock()
+                self.ever_open = True
+            elif self._pages.pop(page, None) is not None and not self._pages:
+                self._empty_since = self.clock()
+
+    def _prune(self) -> None:
+        """Drop pages that stopped checking in; they count as closed when they were last seen."""
+        if not self._pages:
+            return
+        live = {p: t for p, t in self._pages.items() if self.clock() - t < self.page_timeout_s}
+        if not live:
+            self._empty_since = max(self._pages.values())
+        self._pages = live
+
+    def closed_for(self) -> float | None:
+        """Seconds since the last page closed, or None while a page is open or before any was."""
+        with self._lock:
+            self._prune()
+            if self._pages or not self.ever_open:
+                return None
+            return self.clock() - self._empty_since
+
+
 class Question(BaseModel):
     question: str
 
@@ -169,6 +214,9 @@ def create_app(
         yield
 
     app = FastAPI(title="groundcast", lifespan=lifespan)
+    app.state.presence = Presence(settings.launcher.page_timeout_s)
+    # Set by whoever runs the server (groundcast serve or launch) to stop it from the UI.
+    app.state.request_shutdown = None
     allowed_hosts = LOOPBACK_NAMES | {settings.server.host}
 
     @app.middleware("http")
@@ -206,7 +254,26 @@ def create_app(
             "review_below": current.asr.review_below,
             "ocr_review_below": current.ocr.review_below,
             "weak_mastery": current.suggest.weak_mastery,
+            "heartbeat_s": settings.launcher.heartbeat_s,
         }
+
+    @app.get("/api/health")
+    def health() -> dict[str, object]:
+        """Lets the launcher tell a running groundcast from another program on the port."""
+        return {"app": "groundcast", "pid": os.getpid(), "can_stop": app.state.request_shutdown is not None}
+
+    @app.post("/api/presence")
+    def check_in(body: PageCheckIn) -> dict[str, bool]:
+        app.state.presence.check_in(body.page, body.open)
+        return {"ok": True}
+
+    @app.post("/api/shutdown")
+    def shutdown() -> dict[str, bool]:
+        stop = app.state.request_shutdown
+        if stop is None:
+            raise HTTPException(status_code=409, detail="This server cannot be stopped from here.")
+        threading.Timer(0.3, stop).start()  # after this response has gone out
+        return {"stopping": True}
 
     @app.get("/api/doctor")
     def get_doctor() -> list[Check]:

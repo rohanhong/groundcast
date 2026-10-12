@@ -41,6 +41,6 @@ else
 fi
 "$conda" run --no-capture-output -n "$name" groundcast setup "$@"
 echo
-echo "Done. To start groundcast:"
+echo "Done. Start groundcast from its shortcut in the applications menu, or run:"
 echo "  conda activate $name"
-echo "  groundcast serve"
+echo "  groundcast launch"

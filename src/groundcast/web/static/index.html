@@ -72,6 +72,7 @@
     <symbol id="i-follow" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10M4 18h7"/><path d="M18 14v6M15.5 17.5L18 20l2.5-2.5"/></symbol>
     <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.7-6.5-11a6.5 6.5 0 0 1 13 0c0 5.3-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3.5v8"/><path d="M7.2 6.6a7.5 7.5 0 1 0 9.6 0"/></symbol>
   </svg>
 
   <a class="skip" href="#main">Skip to content</a>
@@ -121,6 +122,8 @@
       </nav>
       <div class="sidebar-foot">
         <p class="settings-line" id="settings-line"></p>
+        <button type="button" class="btn ghost sm stop-app" id="app-stop" title="Stop the groundcast service on this computer">
+          <svg class="icon"><use href="#i-power"/></svg>Stop groundcast</button>
         <div class="theme-switch" role="radiogroup" aria-label="Colour theme">
           <button type="button" role="radio" data-theme-choice="auto" title="Follow the system">
             <svg class="icon"><use href="#i-auto"/></svg><span class="sr">System</span></button>
@@ -457,6 +460,25 @@
     </div>
   </div>
   <audio id="audio" preload="metadata"></audio>
+
+  <div class="offline" id="offline" role="alert" hidden>
+    <div class="offline-card">
+      <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
+        <!-- its own gradient: the sidebar's is hidden on phones, and a hidden gradient does not paint -->
+        <defs><linearGradient id="logo-grad-offline" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" style="stop-color: var(--brand-1)"/><stop offset="1" style="stop-color: var(--brand-2)"/>
+        </linearGradient></defs>
+        <rect width="40" height="40" rx="11" fill="url(#logo-grad-offline)"/>
+        <g fill="#fff"><rect x="9" y="17" width="3" height="11" rx="1.5"/><rect x="14.5" y="11" width="3" height="17" rx="1.5"/>
+          <rect x="20" y="14" width="3" height="14" rx="1.5"/><rect x="25.5" y="19" width="3" height="9" rx="1.5"/>
+          <rect x="8" y="30" width="22" height="2.4" rx="1.2" opacity=".75"/></g>
+      </svg>
+      <h2 id="offline-title">groundcast is not running</h2>
+      <p class="muted" id="offline-body">Start it from the groundcast shortcut on your desktop or in the Start menu.
+        This page reconnects by itself.</p>
+      <p class="muted small"><span class="spinner"></span> Waiting for groundcast...</p>
+    </div>
+  </div>
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 

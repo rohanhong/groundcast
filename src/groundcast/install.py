@@ -371,6 +371,8 @@ def run_setup(
             out(f"  # {step.what}")
             out(f"  {shlex.join(['python', '-m', 'pip', *step.args])}")
     if args.dry_run:
+        if getattr(args, "shortcut", None) is not False:
+            out("Shortcuts: `groundcast shortcut` would make the desktop and menu shortcuts.")
         out("Dry run: nothing was installed. `groundcast doctor` checks the installation.")
         return 0
     if plan and interactive and not ask_yes("Run these commands?", True, ask, out):
@@ -384,4 +386,43 @@ def run_setup(
             return result.returncode
     out("\n== Checking the installation")
     config = ["--config", args.config] if args.config else []
-    return run([sys.executable, "-m", "groundcast.cli", *config, "doctor"]).returncode
+    status = run([sys.executable, "-m", "groundcast.cli", *config, "doctor"]).returncode
+    if status:
+        return status
+    return finish(args, out, ask, run, interactive)
+
+
+def start_detached(command: list[str]) -> None:
+    """Start groundcast apart from this terminal, so closing the terminal does not stop it."""
+    quiet = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+    if sys.platform == "win32":
+        flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
+        subprocess.Popen(command, creationflags=flags, close_fds=True, **quiet)
+    else:
+        subprocess.Popen(command, start_new_session=True, **quiet)
+
+
+def finish(
+    args: argparse.Namespace,
+    out: Callable[[str], None],
+    ask: Callable[[str], str],
+    run: Runner,
+    interactive: bool,
+    start: Callable[[list[str]], None] = start_detached,
+) -> int:
+    """Offer the shortcuts that start groundcast without a terminal, then offer to start it now."""
+    from groundcast.shortcuts import launch_command
+
+    config = ["--config", args.config] if args.config else []
+    want = getattr(args, "shortcut", None)
+    if want is None:
+        question = "Make desktop and menu shortcuts that start groundcast?"
+        want = ask_yes(question, True, ask, out) if interactive else True
+    if want:
+        out("\n== Making shortcuts")
+        if run([sys.executable, "-m", "groundcast.cli", *config, "shortcut"]).returncode:
+            out("The shortcuts were not made; `groundcast shortcut` tries again.")
+    if interactive and ask_yes("Start groundcast now?", True, ask, out):
+        start(launch_command(args.config))
+        out("groundcast is starting; its window opens in a moment.")
+    return 0

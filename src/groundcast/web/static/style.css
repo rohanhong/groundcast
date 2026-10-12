@@ -810,6 +810,21 @@ dialog.narrow .sheet-foot { border: 0; padding: 0; }
 .checks code { font-size: .76rem; padding: .2rem .45rem; border-radius: 6px; background: var(--surface-3); overflow-wrap: anywhere; justify-self: start; }
 .danger-zone { border-color: color-mix(in srgb, var(--bad) 22%, var(--line)); }
 
+/* Stop button and the not-running screen */
+.stop-app { align-self: flex-start; color: var(--ink-2); }
+.offline {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 1rem;
+  background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(8px);
+  animation: view-in .25s ease-out;
+}
+.offline-card {
+  max-width: 26rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: .7rem;
+  padding: 2rem 1.8rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-3);
+}
+.offline-card .logo { width: 56px; height: 56px; }
+.offline-card h2 { font-family: var(--serif); font-size: 1.4rem; font-weight: 600; }
+.offline-card .spinner { vertical-align: -.1em; margin-right: .3rem; }
+
 /* Player dock */
 .dock {
   position: fixed; z-index: 40; left: var(--sidebar); right: 0; bottom: 0;
@@ -865,7 +880,7 @@ dialog.narrow .sheet-foot { border: 0; padding: 0; }
     background: var(--surface);
     backdrop-filter: none; /* a filter would make the bar the containing block of the fixed theme switch */
   }
-  .brand, .sidebar-foot .settings-line { display: none; }
+  .brand, .sidebar-foot .settings-line, .stop-app { display: none; }
   .nav { flex-direction: row; flex: 1; gap: 0; }
   .nav a { flex: 1; flex-direction: column; gap: .15rem; padding: .5rem .2rem; font-size: .66rem; border-radius: 0; position: relative; }
   .nav a span:nth-child(2) { flex: none; }

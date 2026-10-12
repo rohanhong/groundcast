@@ -15,6 +15,32 @@
 host = "127.0.0.1"  # loopback only
 port = 8765
 
+[launcher]
+# `groundcast launch`, which the desktop shortcut runs.
+window = "app"  # app: a window without tabs or address bar; browser: a tab in the default browser; none
+# Browsers tried in order for the app window: a path (%VARS% and ~ are expanded) or a program name on PATH.
+browsers = [
+  '%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe',
+  '%ProgramFiles%\Microsoft\Edge\Application\msedge.exe',
+  '%ProgramFiles%\Google\Chrome\Application\chrome.exe',
+  '%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe',
+  '%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe',
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
+  "microsoft-edge",
+  "google-chrome",
+  "google-chrome-stable",
+  "chromium",
+  "chromium-browser",
+]
+ready_timeout_s = 60.0
+stop_when_closed = true  # stop once no page has been open for close_grace_s and no work is running
+close_grace_s = 15.0
+heartbeat_s = 20.0  # how often an open page checks in
+page_timeout_s = 600.0  # a page silent this long counts as closed (a crashed or frozen tab)
+shortcut_name = "groundcast"
+
 [llm]
 backend = "claude-cli"  # or "anthropic-api" (needs the "api" extra)
 claude_bin = "claude"

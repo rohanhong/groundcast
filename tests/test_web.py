@@ -100,3 +100,37 @@ def test_ui_script_uses_only_ids_the_page_defines() -> None:
     icons = set(re.findall(r'<symbol id="i-([\w-]+)"', page))
     named = set(re.findall(r'\bicon\("([\w-]+)"', script)) | set(re.findall(r'href="#i-([\w-]+)"', page))
     assert named <= icons, sorted(named - icons)
+
+
+def test_presence_health_and_shutdown(settings: Settings) -> None:
+    from groundcast.web.app import Presence
+
+    now = [100.0]
+    presence = Presence(page_timeout_s=60, clock=lambda: now[0])
+    assert presence.closed_for() is None  # no page yet: never counts as closed
+    presence.check_in("a", True)
+    presence.check_in("b", True)
+    presence.check_in("a", False)
+    assert presence.closed_for() is None  # b is still open
+    now[0] = 130.0
+    presence.check_in("b", False)
+    now[0] = 140.0
+    assert presence.closed_for() == 10.0
+    presence.check_in("c", True)
+    now[0] = 260.0  # c went silent: a crashed tab counts as closed after the timeout
+    assert presence.closed_for() is not None
+
+    app = create_app(settings, runner=object())  # type: ignore[arg-type]
+    with TestClient(app, base_url="http://127.0.0.1:8765") as client:
+        assert client.get("/api/health").json()["app"] == "groundcast"
+        assert client.post("/api/presence", json={"page": "p1"}).status_code == 200
+        assert app.state.presence.closed_for() is None
+        assert client.post("/api/presence", json={"page": ""}).status_code == 422
+        assert client.post("/api/shutdown").status_code == 409  # nothing that can stop it
+        stopped = []
+        app.state.request_shutdown = lambda: stopped.append(True)
+        assert client.post("/api/shutdown").json() == {"stopping": True}
+    import time
+
+    time.sleep(0.5)
+    assert stopped == [True]
