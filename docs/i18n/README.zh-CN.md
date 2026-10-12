@@ -30,7 +30,7 @@
 Groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学习资料（PDF、幻灯片、笔记、网页、视频）变成播客式的学习音频，适合通勤、运动或考前复习时收听。一条固定的 LLM 角色流水线先撰写脚本，再逐条核对每个事实陈述是否有资料依据，最后才润色文风；本地语音合成把结果渲染成 MP3，可在任意手机播放器中收听。
 
 > [!NOTE]
-> 第 1 版：五个里程碑均已实现；少数检查还需要实际使用才能完成，例如手机播放器中的章节，以及你自己的手写稿能识别得多好。可以添加 PDF（带文字层或扫描件）、PowerPoint、Word、Markdown 或纯文本文件，按网址添加网页，也可以添加笔记照片、视频和音频；识别出的语音和扫描文字经你核对后才会使用。用自己的话描述想要的会话，再确认它提出的简报，就能得到经过核对、带章节标记的 MP3（单人旁白或双主持人），以及一份文稿，其中的链接会在对应的页码、幻灯片或时间点打开每个来源。会话完成后，打字提问的回答和选择题测验都来自你的资料。会话结尾还可以加入回忆提问，每题后留出停顿。资料中的概念汇总到一张概念表里，附带你在每个概念上的测验结果，可以重命名与合并。偏好设置决定默认的声音、语速和简报，档案的每次改动都有记录，并可导出。开始会话时，排序的建议会说明为何适合你；Groundcast 从你过去的会话和反馈中推断出的内容都会展示给你，从不悄悄使用。
+> 可以添加 PDF（带文字层或扫描件）、PowerPoint、Word、Markdown 或纯文本文件，按网址添加网页，也可以添加笔记照片、视频和音频；识别出的语音和扫描文字经你核对后才会使用。用自己的话描述想要的会话，再确认它提出的简报，就能得到经过核对、带章节标记的 MP3（单人旁白或双主持人），以及一份文稿，其中的链接会在对应的页码、幻灯片或时间点打开每个来源。会话完成后，打字提问的回答和选择题测验都来自你的资料。会话结尾还可以加入回忆提问，每题后留出停顿。资料中的概念汇总到一张概念表里，附带你在每个概念上的测验结果，可以重命名与合并。偏好设置决定默认的声音、语速和简报，档案的每次改动都有记录，并可导出。开始会话时，排序的建议会说明为何适合你；Groundcast 从你过去的会话和反馈中推断出的内容都会展示给你，从不悄悄使用。
 
 ## ✨ 亮点
 
@@ -93,18 +93,6 @@ Groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
 
 同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`（网页用 `--url <网址>`；用 `groundcast review <material id>` 核对识别出的语音或扫描文字），再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好；用 `groundcast feedback <session id> --rating 4 --length too_long` 为会话打分；用 `groundcast suggest` 查看排序的建议。运行 `groundcast --help` 查看全部命令。
 
-## 🗺️ 路线图
-
-五个里程碑全部完成即为 v1；每个阶段完成后都可单独使用。
-
-| 阶段 | 新增内容 |
-|---|---|
-| M1 | 带文字层的 PDF、Markdown、纯文本；简要设置表单；经由 Claude 的 Writer、Verifier、Editor；Kokoro 单人旁白；MP3 与 HTML 文稿 |
-| M2 | 对话式设置；双主持人；章节；文字问答；测验；离线回忆提问；偏好与变更日志 |
-| M3 | PPTX、DOCX、网页；通过本地语音识别处理视频 |
-| M4 | 基于已学习偏好的排序建议；按评分细则迭代提示词；本地声明核查器评估 |
-| M5 | 通过本地 OCR 处理扫描件与手写稿，使用前须经你确认 |
-
 ## ⚙️ 配置
 
 - **数据目录**：资料、文本片段、个人档案与会话都存放在仓库之外，默认位于操作系统的用户数据目录，可用 `GROUNDCAST_DATA_DIR` 覆盖。
@@ -117,13 +105,13 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 
 | 组件 | 用途 | 代码 / 权重许可证 | Groundcast 的运行方式 |
 |---|---|---|---|
-| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | 语音合成（M1） | Apache-2.0 / Apache-2.0 | Python 包；其进程内加载 espeak-ng 的部分已被屏蔽 |
+| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | 语音合成 | Apache-2.0 / Apache-2.0 | Python 包；其进程内加载 espeak-ng 的部分已被屏蔽 |
 | [spaCy `en_core_web_sm`](https://github.com/explosion/spacy-models) | 为 Kokoro 的发音做英语文本分析 | MIT / MIT | Python 包 |
 | [Piper](https://github.com/OHF-Voice/piper1-gpl) | 备用语音合成（`tts.engine = "piper"`；见示例配置） | GPL-3.0 / 按音色而定 | 仅作为独立进程（`pip install piper-tts`） |
 | espeak-ng | 可选的发音回退，用于 Kokoro 不认识的词 | GPL | 仅作为独立程序（`tts.espeak_bin`） |
 | ffmpeg、poppler | 音频编码、PDF 文本提取 | LGPL 构建、GPL | 独立程序（conda-forge） |
-| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 与 [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | 视频与音频的语音识别（M3） | MIT / MIT | Python 包（`asr` 附加依赖） |
-| [Tesseract](https://github.com/tesseract-ocr/tesseract) 及其英语数据 | 扫描件与手写稿的文字识别（M5） | Apache-2.0 / Apache-2.0 | 独立程序（conda-forge） |
+| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 与 [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | 视频与音频的语音识别 | MIT / MIT | Python 包（`asr` 附加依赖） |
+| [Tesseract](https://github.com/tesseract-ocr/tesseract) 及其英语数据 | 扫描件与手写稿的文字识别 | Apache-2.0 / Apache-2.0 | 独立程序（conda-forge） |
 
 ## ⚠️ 负责任地使用
 

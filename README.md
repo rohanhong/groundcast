@@ -35,9 +35,7 @@ materials, and only then polishes the style; local text-to-speech renders the
 result as an MP3 you can play in any phone player.
 
 > [!NOTE]
-> Version 1: all five milestones are built; a few checks still need real use,
-> such as chapters in your phone player and how well your own handwriting is
-> read. Add PDF (with a text layer or scanned), PowerPoint, Word, Markdown, or
+> Add PDF (with a text layer or scanned), PowerPoint, Word, Markdown, or
 > text files, web pages by address, photos of notes, or video and audio;
 > recognised speech and scanned text are checked by you before use. Describe a
 > session in your own words and confirm the brief it proposes; you get a
@@ -164,19 +162,6 @@ list the concept table with `groundcast concepts`; set preferences with
 `groundcast suggest`. Run `groundcast --help` for every
 command.
 
-## 🗺️ Roadmap
-
-v1 is complete when all five milestones are done; each stage stays usable on
-its own.
-
-| Stage | Adds |
-|---|---|
-| M1 | Text-layer PDF, Markdown, text; brief form; Writer, Verifier, Editor through Claude; Kokoro single narrator; MP3 plus HTML transcript |
-| M2 | Dialogue set-up; two hosts; chapters; text Q&A; quizzes; offline recall prompts; preferences and event log |
-| M3 | PPTX, DOCX, web pages; video through local speech recognition |
-| M4 | Ranked suggestions from learned preferences; rubric-driven prompt tuning; local claim-checker evaluation |
-| M5 | Scans and handwriting through local OCR, confirmed by you before use |
-
 ## ⚙️ Configuration
 
 - **Data directory**: materials, chunks, the profile, and sessions live
@@ -198,13 +183,13 @@ own licence; weights are downloaded, never committed.
 
 | Component | Used for | Code / weights licence | How Groundcast runs it |
 |---|---|---|---|
-| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | Speech synthesis (M1) | Apache-2.0 / Apache-2.0 | Python package; its in-process espeak-ng loader is blocked |
+| [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | Speech synthesis | Apache-2.0 / Apache-2.0 | Python package; its in-process espeak-ng loader is blocked |
 | [spaCy `en_core_web_sm`](https://github.com/explosion/spacy-models) | English text analysis for Kokoro's pronunciation | MIT / MIT | Python package |
 | [Piper](https://github.com/OHF-Voice/piper1-gpl) | Fallback speech synthesis (`tts.engine = "piper"`; see the example config) | GPL-3.0 / per voice | Separate process only (`pip install piper-tts`) |
 | espeak-ng | Optional pronunciation fallback for words Kokoro does not know | GPL | Separate program only (`tts.espeak_bin`) |
 | ffmpeg, poppler | Audio encoding, PDF text | LGPL build, GPL | Separate programs (conda-forge) |
-| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) with [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | Speech recognition for video and audio (M3) | MIT / MIT | Python package (the `asr` extra) |
-| [Tesseract](https://github.com/tesseract-ocr/tesseract) with its English data | Text recognition for scans and handwriting (M5) | Apache-2.0 / Apache-2.0 | Separate program (conda-forge) |
+| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) with [Whisper large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | Speech recognition for video and audio | MIT / MIT | Python package (the `asr` extra) |
+| [Tesseract](https://github.com/tesseract-ocr/tesseract) with its English data | Text recognition for scans and handwriting | Apache-2.0 / Apache-2.0 | Separate program (conda-forge) |
 
 ## ⚠️ Responsible Use
 
