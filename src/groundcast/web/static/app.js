@@ -142,6 +142,58 @@ function setStatus(node, text, kind = "") {
   node.className = `status ${kind}`.trim();
 }
 
+// Menus: a button that opens a list of choices in the page's own style
+
+let openMenu = null; // closes the menu that is open
+
+function menuButton({ text, label, heading, items, onPick }) {
+  if (!items.length) return "";
+  const button = el("button", { type: "button", class: "linkish menu-button", "aria-haspopup": "menu",
+    "aria-expanded": "false", "aria-label": label }, icon("merge"), text, icon("chev", "chev-down"));
+  const wrap = el("div", { class: "menu-wrap" }, button);
+  const close = (focus = false) => {
+    wrap.querySelector(".menu")?.remove();
+    wrap.parentElement?.closest("li, .card")?.classList.remove("has-menu");
+    button.setAttribute("aria-expanded", "false");
+    if (openMenu === close) openMenu = null;
+    if (focus) button.focus();
+  };
+  const open = () => {
+    if (openMenu) openMenu();
+    const options = items.map(([value, name]) => el("button", { type: "button", role: "menuitem", class: "menu-item",
+      tabindex: "-1", title: name, onclick: () => { close(true); onPick(value); } }, name));
+    const menu = el("div", { class: "menu", role: "menu", "aria-label": label },
+      heading ? el("div", { class: "menu-head" }, heading) : "", options);
+    menu.addEventListener("keydown", (event) => {
+      const i = options.indexOf(document.activeElement);
+      const to = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: options.length - 1 }[event.key];
+      if (to !== undefined) {
+        event.preventDefault();
+        options[(to + options.length) % options.length].focus();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        close(true);
+      } else if (event.key === "Tab") {
+        close();
+      }
+    });
+    wrap.parentElement?.closest("li, .card")?.classList.add("has-menu"); // above the cards after it
+    wrap.append(menu);
+    // Open upwards when the space below, above the player dock, is too short.
+    const below = window.innerHeight - (parseFloat(cssVar("--dock-h")) || 0) - button.getBoundingClientRect().bottom;
+    menu.classList.toggle("up", below < menu.offsetHeight + 16);
+    button.setAttribute("aria-expanded", "true");
+    openMenu = close;
+    options[0].focus({ preventScroll: true });
+  };
+  button.addEventListener("click", () => (openMenu === close ? close() : open()));
+  return wrap;
+}
+
+document.addEventListener("pointerdown", (event) => {
+  if (openMenu && !event.target.closest(".menu-wrap")) openMenu();
+});
+
 // Toasts and dialogs
 
 function toast(message, kind = "info", action = null) {
@@ -235,14 +287,36 @@ function route() {
 
 window.addEventListener("hashchange", route);
 
-// Settings line
+// Settings line, and readable names for configured IDs
+
+const LLM_NAMES = { "claude-cli": "Claude Code", "anthropic-api": "Anthropic API" };
+const ENGINE_NAMES = { kokoro: "Kokoro", piper: "Piper", silent: "Silent (no audio)" };
+const VOICE_ACCENTS = { a: "American", b: "British", e: "Spanish", f: "French", h: "Hindi", i: "Italian", j: "Japanese",
+  p: "Brazilian", z: "Mandarin" };
+const PIPER_LANGS = { en_US: "US English", en_GB: "British English" };
+
+function voiceName(id) {
+  // Kokoro IDs are accent, gender, and name ("af_heart"); Piper's are language, name, and quality
+  // ("en_US-lessac-medium"). Anything else shows as it is.
+  if (!id) return "";
+  const capital = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+  const kokoro = /^([a-z])([fm])_([a-z]+)$/.exec(id);
+  if (kokoro) {
+    return `${capital(kokoro[3])} (${[VOICE_ACCENTS[kokoro[1]], kokoro[2] === "f" ? "female" : "male"].filter(Boolean).join(", ")})`;
+  }
+  const piper = /^([a-z]{2,3}_[A-Z]{2})-([^-]+)-([a-z_]+)$/.exec(id);
+  if (piper) return `${piper[2].split("_").map(capital).join(" ")} (${PIPER_LANGS[piper[1]] || piper[1]}, ${piper[3].replace(/_/g, " ")})`;
+  return id;
+}
 
 async function loadSettings() {
   state.settings = await api("/api/settings");
   const s = state.settings;
-  fill($("settings-line"), 
-    el("b", {}, "LLM "), s.llm_backend, el("br"),
-    el("b", {}, "Voice "), `${s.voice} at ${s.speed}x (${s.tts_engine})`);
+  fill($("settings-line"),
+    el("b", {}, "LLM "), LLM_NAMES[s.llm_backend] || s.llm_backend, el("br"),
+    el("b", {}, "Voice "), `${voiceName(s.voice)}, ${s.speed}x`, el("br"),
+    el("b", {}, "Speech "), ENGINE_NAMES[s.tts_engine] || s.tts_engine);
+  $("settings-line").title = `${s.llm_backend}, ${s.voice}, ${s.tts_engine}`;
   updateMinutes();
 }
 
@@ -980,7 +1054,7 @@ function renderProgress(box, s) {
     setStatus(status, x.status === "failed" ? x.error || "No reason was recorded. The progress log shows how far it got."
       : "", x.status === "failed" ? "error" : "");
   };
-  fill(box, 
+  fill(box,
     el("section", { class: "detail-hero" },
       el("p", { class: `eyebrow${s.status === "failed" ? " bad" : ""}` }, s.status === "failed" ? "Session failed" : "In progress"),
       el("h2", {}, sessionTitle(s)), heroMeta(s),
@@ -1025,7 +1099,7 @@ function renderDone(box, s) {
   const title = el("h2", {}, sessionTitle(s));
   const verify = el("section", { class: "card verify-card" }, el("p", { class: "muted small" }, "Loading the check..."));
   const tabsCard = el("section", { class: "card" });
-  fill(box, 
+  fill(box,
     el("section", { class: "detail-hero" },
       el("p", { class: "eyebrow" }, "Session"), title,
       heroMeta(s, [el("span", { class: "tag" }, "AI-generated audio")]),
@@ -1080,7 +1154,7 @@ function renderVerification(box, r) {
   const legend = el("div", { class: "legend" }, LABEL_ORDER.filter(([k]) => final[k] || first[k]).map(([k, l]) =>
     el("span", {}, el("i", { class: `l-${k}` }), l)));
   const fact = (value, label) => el("div", { class: "fact" }, el("b", {}, value), el("span", {}, label));
-  fill(box, 
+  fill(box,
     el("div", { class: "verify-head" },
       el("h2", { class: "card-title", style: "margin: 0" }, icon("shield"), "Checked against your materials"),
       el("span", { class: "score" }, total ? `${passing} of ${total}` : "-")),
@@ -1319,7 +1393,7 @@ function renderQuiz(sessionId, quiz, scoreBox) {
           label.classList.toggle("wrong", m === res.chosen && !res.right);
         });
         const verdict = res.right ? "Right." : res.chosen === null ? "Skipped." : "Not quite.";
-        fill(b.feedback, 
+        fill(b.feedback,
           el("p", {}, el("span", { class: `verdict ${res.right ? "ok" : "bad"}` }, verdict), " ", res.explanation),
           res.sources.length ? el("ol", { class: "sources" }, res.sources.map((s) => el("li", {},
             el("a", { href: `/data/${s.path}`, target: "_blank", rel: "noopener" }, s.label)))) : "");
@@ -1806,7 +1880,7 @@ function renderConcepts() {
   const weak = quizzed.filter((c) => mastery(c) < weakBelow);
   const average = quizzed.length ? quizzed.reduce((a, c) => a + c.right / c.asked, 0) / quizzed.length : null;
   const stat = (value, label) => el("div", { class: "stat" }, el("b", {}, value), el("span", {}, label));
-  fill($("concept-stats"), 
+  fill($("concept-stats"),
     stat(String(all.length), "concepts found"),
     stat(String(quizzed.length), "quizzed so far"),
     stat(average === null ? "-" : `${Math.round(average * 100)}%`, "answered right, on average"),
@@ -1828,16 +1902,15 @@ function renderConcepts() {
     const m = mastery(c);
     const level = !c.asked ? "none" : m < weakBelow ? "weak" : m < (1 + weakBelow) / 2 ? "mid" : "good";
     const name = el("div", { class: "concept-name" }, c.name);
-    const target = el("select", { "aria-label": `Merge ${c.name} into another concept` },
-      el("option", { value: "" }, "Merge into..."),
-      all.filter((o) => o.id !== c.id).map((o) => el("option", { value: o.id }, o.name)));
-    target.addEventListener("change", async () => {
-      const into = all.find((o) => o.id === target.value);
-      const ok = into && await ask({ title: `Merge "${c.name}" into "${into.name}"?`, ok: "Merge",
-        body: "Its passages and quiz results move there. The change goes into the log." });
-      if (ok) conceptAction(`/api/concepts/${c.id}/merge`, { into: into.id });
-      else target.value = "";
-    });
+    const merge = menuButton({ text: "Merge into", label: `Merge ${c.name} into another concept`,
+      heading: `Merge "${c.name}" into`,
+      items: all.filter((o) => o.id !== c.id).sort((a, b) => a.name.localeCompare(b.name)).map((o) => [o.id, o.name]),
+      onPick: async (id) => {
+        const into = all.find((o) => o.id === id);
+        const ok = await ask({ title: `Merge "${c.name}" into "${into.name}"?`, ok: "Merge",
+          body: "Its passages and quiz results move there. The change goes into the log." });
+        if (ok) conceptAction(`/api/concepts/${c.id}/merge`, { into: into.id });
+      } });
     const rename = () => {
       const input = el("input", { type: "text", value: c.name, "aria-label": "New name" });
       let finished = false;
@@ -1865,7 +1938,7 @@ function renderConcepts() {
         c.asked ? `${c.right} of ${c.asked} right` : "Not quizzed yet"),
       el("div", { class: "concept-actions" },
         el("button", { class: "linkish", type: "button", onclick: rename }, icon("edit"), "Rename"),
-        target));
+        merge));
   }));
 }
 
@@ -1979,6 +2052,7 @@ function shown(key, value) {
   if (value === null || value === undefined) return "";
   if (key === "minutes") return `${value} minutes`;
   if (key === "speed") return `${value}x`;
+  if (key === "voice" || key === "second_voice") return voiceName(value);
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (LABELS[key]) return LABELS[key][value] || String(value);
   return String(value);
@@ -2040,8 +2114,8 @@ function showPreferences(view) {
   state.prefs = view;
   const defaults = Object.keys(view.defaults || {}).length ? view.defaults : view.effective;
   for (const key of ["voice", "second_voice"]) {
-    fill($(`pref-${key}`), el("option", { value: "" }, `Default (${defaults[key]})`),
-      view.voice_choices.map((v) => el("option", { value: v }, v)));
+    fill($(`pref-${key}`), el("option", { value: "" }, `Default: ${voiceName(defaults[key])}`),
+      view.voice_choices.map((v) => el("option", { value: v, title: v }, voiceName(v))));
   }
   for (const key of PREF_KEYS) {
     const value = view.preferences[key];
@@ -2049,7 +2123,7 @@ function showPreferences(view) {
     if (seg) {
       const choices = BOOL_KEYS.has(key) ? [["true", "Yes"], ["false", "No"]] : SEG_CHOICES[key];
       const name = `pref-${key}`;
-      fill(seg, 
+      fill(seg,
         el("label", {}, el("input", { type: "radio", name, value: "" }),
           el("span", {}, "Default", el("small", {}, `(${shown(key, defaults[key])})`))),
         choices.map(([v, l]) => el("label", {}, el("input", { type: "radio", name, value: v }), el("span", {}, l))));
@@ -2057,7 +2131,7 @@ function showPreferences(view) {
     } else {
       const input = $(`pref-${key}`);
       input.value = value === null ? "" : String(value);
-      if (input.tagName === "INPUT") input.placeholder = `Default (${defaults[key]})`;
+      if (input.tagName === "INPUT") input.placeholder = `Default (${shown(key, defaults[key])})`;
     }
   }
   // The brief form starts from the effective defaults; a brief can still change them.

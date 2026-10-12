@@ -289,13 +289,17 @@ input[type=text], input[type=url], input[type=search], input[type=number], texta
 }
 textarea { resize: vertical; min-height: 4.5rem; line-height: 1.5; }
 input:focus, textarea:focus, select:focus {
-  outline: none; border-color: var(--accent); background: var(--surface);
+  outline: none; border-color: var(--accent); background-color: var(--surface);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 input::placeholder, textarea::placeholder { color: var(--ink-3); }
-select { appearance: none; padding-right: 2rem; cursor: pointer;
-  background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%), linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
-  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
+select {
+  appearance: none; padding-right: 2.2rem; cursor: pointer; text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a9198' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right .7rem center; background-size: .95rem; background-repeat: no-repeat;
+}
+/* The open list is drawn by the system; these colours keep it in the page's theme. */
+select option { background-color: var(--surface); color: var(--ink); }
 .field { display: flex; flex-direction: column; gap: .4rem; margin: 0 0 1.25rem; border: 0; padding: 0; min-width: 0; }
 .field > .label, legend.label { font-weight: 600; font-size: .9rem; padding: 0; margin-bottom: .1rem; }
 .label em { font-weight: 400; color: var(--ink-3); font-style: normal; margin-left: .3rem; font-size: .85em; }
@@ -306,6 +310,24 @@ select { appearance: none; padding-right: 2rem; cursor: pointer;
 .input-icon input { padding-left: 2.3rem; }
 .form-actions { display: flex; justify-content: flex-end; gap: .6rem; flex-wrap: wrap; margin-top: .5rem; }
 .form-actions.start { justify-content: flex-start; }
+
+/* Menus */
+.menu-wrap { position: relative; margin-left: auto; }
+.menu-button .chev-down { width: .85rem; height: .85rem; transform: rotate(90deg); transition: transform .15s; }
+.menu-button[aria-expanded="true"] { background: var(--accent-soft); }
+.menu-button[aria-expanded="true"] .chev-down { transform: rotate(-90deg); }
+.menu {
+  position: absolute; z-index: 30; right: 0; top: calc(100% + 6px); width: max-content; min-width: 13rem; max-width: 18rem;
+  max-height: 17rem; overflow: auto; padding: .35rem; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-3); animation: menu-in .14s ease-out;
+}
+.menu.up { top: auto; bottom: calc(100% + 6px); }
+.menu-head { padding: .4rem .65rem .35rem; font-size: .74rem; font-weight: 650; color: var(--ink-3); overflow-wrap: anywhere; }
+.menu-item {
+  display: block; width: 100%; text-align: left; border: 0; background: none; font: inherit; font-size: .88rem; color: var(--ink);
+  padding: .5rem .65rem; border-radius: 8px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.menu-item:hover, .menu-item:focus { background: var(--accent-soft); color: var(--accent-text); outline: none; }
 
 /* Range slider */
 .slider-row { display: flex; align-items: center; gap: 1rem; }
@@ -797,7 +819,7 @@ dialog.narrow .sheet-foot { border: 0; padding: 0; }
 .mastery.mid { --m-color: var(--amber); }
 .mastery.none .meter > span { width: 0 !important; }
 .concept-actions { display: flex; gap: .2rem; align-items: center; padding-top: .45rem; border-top: 1px solid var(--line); }
-.concept-actions select { width: auto; margin-left: auto; padding: .3rem 1.8rem .3rem .6rem; font-size: .82rem; border-radius: 8px; }
+.concept.has-menu { position: relative; z-index: 20; }
 
 /* Preferences */
 .prefs .card { margin-bottom: 1rem; }
@@ -897,6 +919,7 @@ dialog.narrow .sheet-foot { border: 0; padding: 0; }
 @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @keyframes eq { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.6); } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
