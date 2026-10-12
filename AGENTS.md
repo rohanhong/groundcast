@@ -5,7 +5,7 @@ file is the single source of instructions; edit it, never an adapter file.
 
 ## Project
 
-groundcast: a local web app (browser UI plus a local Python service) that
+Groundcast: a local web app (browser UI plus a local Python service) that
 turns the owner's own study materials into podcast-style audio sessions, in
 which every statement is grounded in those materials.
 
@@ -64,8 +64,12 @@ which every statement is grounded in those materials.
   feedback, concept table, quiz results, event log), `web/` (FastAPI app and
   static UI), `evaluation/`, `install.py` and `install.toml` (`groundcast
   setup`), `doctor.py` (`groundcast doctor`), `launcher.py` (`groundcast
-  launch`), `shortcuts.py` and `icon.py` (`groundcast shortcut`; the icon is
-  drawn in code, so no binary image is tracked).
+  launch`), `shortcuts.py` and `icon.py` (`groundcast shortcut`). `icon.py`
+  holds the one drawing of the icon (a G of sound waves whose crossbar is the
+  ground line): `web/static/favicon.svg` and the README banners in
+  `.github/assets/` are its output, and the shortcut icons are rendered from
+  it, so no binary image is tracked. After changing the drawing, regenerate
+  those files (a test compares them).
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
   the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are
   added to the Writer prompt for two-host sessions and recall prompts.
@@ -82,6 +86,9 @@ which every statement is grounded in those materials.
 
 ## Conventions
 
+- The product name is Groundcast (capital G) in prose, the UI, window
+  titles, and shortcuts; `groundcast` stays for the command, the Python
+  package, file and folder names, and identifiers such as the data directory.
 - Commits and branching follow `.gitmessage` (see its `Workflow:` and
   `Adopted:` lines).
 - Use the git-* skills for git operations. `.gitmessage` is normative for

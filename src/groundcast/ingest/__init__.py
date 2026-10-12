@@ -224,7 +224,7 @@ def ingest_url(url: str, store: Store, settings: Settings) -> Material:
     fetched = fetch(url.strip(), cfg.fetch_timeout_s, cfg.fetch_max_bytes, cfg.user_agent)
     suffix = FETCHED_SUFFIX.get(fetched.content_type)
     if suffix is None:
-        raise ExtractionError(f"{url} is {fetched.content_type}; groundcast reads web pages, PDF, and text")
+        raise ExtractionError(f"{url} is {fetched.content_type}; Groundcast reads web pages, PDF, and text")
     title = ""
     if suffix == ".html":
         title = page_title(parse_html(decode_html(fetched.data, fetched.charset)))

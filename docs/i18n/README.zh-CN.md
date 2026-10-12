@@ -3,10 +3,10 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../.github/assets/banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="../../.github/assets/banner-light.svg">
-  <img alt="groundcast" src="../../.github/assets/banner-light.svg" width="380">
+  <img alt="Groundcast" src="../../.github/assets/banner-light.svg" width="440">
 </picture>
 
-<h1>🎧 groundcast</h1>
+<h1>🎧 Groundcast</h1>
 
 <p><b>把你自己的学习资料变成播客式音频，每一句陈述都有资料依据。</b></p>
 
@@ -27,10 +27,10 @@
 
 </div>
 
-groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学习资料（PDF、幻灯片、笔记、网页、视频）变成播客式的学习音频，适合通勤、运动或考前复习时收听。一条固定的 LLM 角色流水线先撰写脚本，再逐条核对每个事实陈述是否有资料依据，最后才润色文风；本地语音合成把结果渲染成 MP3，可在任意手机播放器中收听。
+Groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学习资料（PDF、幻灯片、笔记、网页、视频）变成播客式的学习音频，适合通勤、运动或考前复习时收听。一条固定的 LLM 角色流水线先撰写脚本，再逐条核对每个事实陈述是否有资料依据，最后才润色文风；本地语音合成把结果渲染成 MP3，可在任意手机播放器中收听。
 
 > [!NOTE]
-> 第 1 版：五个里程碑均已实现；少数检查还需要实际使用才能完成，例如手机播放器中的章节，以及你自己的手写稿能识别得多好。可以添加 PDF（带文字层或扫描件）、PowerPoint、Word、Markdown 或纯文本文件，按网址添加网页，也可以添加笔记照片、视频和音频；识别出的语音和扫描文字经你核对后才会使用。用自己的话描述想要的会话，再确认它提出的简报，就能得到经过核对、带章节标记的 MP3（单人旁白或双主持人），以及一份文稿，其中的链接会在对应的页码、幻灯片或时间点打开每个来源。会话完成后，打字提问的回答和选择题测验都来自你的资料。会话结尾还可以加入回忆提问，每题后留出停顿。资料中的概念汇总到一张概念表里，附带你在每个概念上的测验结果，可以重命名与合并。偏好设置决定默认的声音、语速和简报，档案的每次改动都有记录，并可导出。开始会话时，排序的建议会说明为何适合你；groundcast 从你过去的会话和反馈中推断出的内容都会展示给你，从不悄悄使用。
+> 第 1 版：五个里程碑均已实现；少数检查还需要实际使用才能完成，例如手机播放器中的章节，以及你自己的手写稿能识别得多好。可以添加 PDF（带文字层或扫描件）、PowerPoint、Word、Markdown 或纯文本文件，按网址添加网页，也可以添加笔记照片、视频和音频；识别出的语音和扫描文字经你核对后才会使用。用自己的话描述想要的会话，再确认它提出的简报，就能得到经过核对、带章节标记的 MP3（单人旁白或双主持人），以及一份文稿，其中的链接会在对应的页码、幻灯片或时间点打开每个来源。会话完成后，打字提问的回答和选择题测验都来自你的资料。会话结尾还可以加入回忆提问，每题后留出停顿。资料中的概念汇总到一张概念表里，附带你在每个概念上的测验结果，可以重命名与合并。偏好设置决定默认的声音、语速和简报，档案的每次改动都有记录，并可导出。开始会话时，排序的建议会说明为何适合你；Groundcast 从你过去的会话和反馈中推断出的内容都会展示给你，从不悄悄使用。
 
 ## ✨ 亮点
 
@@ -50,12 +50,12 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    git clone https://github.com/rohanhong/groundcast.git
    cd groundcast
    ```
-2. 运行安装程序。它会创建 conda 环境（Python 3.12、ffmpeg、poppler、用于扫描件的 Tesseract，并以可编辑模式安装 groundcast 本身），然后询问要添加哪些部分：语音合成所用的 PyTorch 版本（它读取 `nvidia-smi`，推荐你的显卡和驱动能运行的最新版本，没有可用显卡时推荐 CPU 版）、视频和音频的语音识别、Piper 备用语音，以及 API 后端。按回车即采用推荐项；最后它会检查安装结果，在桌面和开始菜单（Linux 上是应用程序菜单，macOS 上是 `~/Applications`）创建 groundcast 快捷方式，并询问是否立即启动 groundcast。
+2. 运行安装程序。它会创建 conda 环境（Python 3.12、ffmpeg、poppler、用于扫描件的 Tesseract，并以可编辑模式安装 Groundcast 本身），然后询问要添加哪些部分：语音合成所用的 PyTorch 版本（它读取 `nvidia-smi`，推荐你的显卡和驱动能运行的最新版本，没有可用显卡时推荐 CPU 版）、视频和音频的语音识别、Piper 备用语音，以及 API 后端。按回车即采用推荐项；最后它会检查安装结果，在桌面和开始菜单（Linux 上是应用程序菜单，macOS 上是 `~/Applications`）创建 Groundcast 快捷方式，并询问是否立即启动 Groundcast。
    - Windows：双击 `install.cmd`，或在终端中运行 `.\install.cmd`。
    - Linux 或 macOS：`./install.sh`
 
    加上 `--yes` 可不经询问采用全部推荐项，加上 `--dry-run` 只打印 pip 命令，也可直接指定选择，例如 `--torch cpu --no-asr`。模型权重在首次使用时下载（Kokoro 约 330 MB，语音识别模型约 1.6 GB）。
-3. 双击 groundcast 快捷方式。不会打开终端：服务在后台启动，groundcast 在自己的窗口中打开（Edge 或 Chrome 的应用窗口，没有时使用默认浏览器的标签页），地址是 <http://127.0.0.1:8765/>，只在 `127.0.0.1` 上提供服务。再次双击会把已打开的窗口切到最前面，没有窗口时才打开一个。所有 groundcast 窗口都关闭、且没有正在生成的会话或正在进行的识别时，服务会自行停止；侧栏中的“Quit groundcast”会关闭窗口并立即停止服务。由于没有控制台，它的输出写入数据目录中的 `logs/launcher.log`。
+3. 双击 Groundcast 快捷方式。不会打开终端：服务在后台启动，Groundcast 在自己的窗口中打开（Edge 或 Chrome 的应用窗口，没有时使用默认浏览器的标签页），地址是 <http://127.0.0.1:8765/>，只在 `127.0.0.1` 上提供服务。再次双击会把已打开的窗口切到最前面，没有窗口时才打开一个。所有 Groundcast 窗口都关闭、且没有正在生成的会话或正在进行的识别时，服务会自行停止；侧栏中的“Quit Groundcast”会关闭窗口并立即停止服务。由于没有控制台，它的输出写入数据目录中的 `logs/launcher.log`。
 
    在终端里，`groundcast launch` 的效果相同，`groundcast serve` 在前台运行服务；`groundcast shortcut` 会重新创建快捷方式（加 `--remove` 则删除）。`[launcher]` 设置决定使用哪种窗口以及服务何时停止。
 
@@ -77,7 +77,7 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    ```bash
    pip install "torch==2.14.1+cu130" --index-url https://download.pytorch.org/whl/cu130
    ```
-   在默认设置 `tts.device = "auto"` 下，groundcast 随后会自动使用 GPU。
+   在默认设置 `tts.device = "auto"` 下，Groundcast 随后会自动使用 GPU。
 3. 可选：为视频和音频安装语音识别（faster-whisper）：
    ```bash
    pip install -e ".[asr]"
@@ -115,7 +115,7 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
 
 MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可证；权重在安装时下载，从不提交。
 
-| 组件 | 用途 | 代码 / 权重许可证 | groundcast 的运行方式 |
+| 组件 | 用途 | 代码 / 权重许可证 | Groundcast 的运行方式 |
 |---|---|---|---|
 | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | 语音合成（M1） | Apache-2.0 / Apache-2.0 | Python 包；其进程内加载 espeak-ng 的部分已被屏蔽 |
 | [spaCy `en_core_web_sm`](https://github.com/explosion/spacy-models) | 为 Kokoro 的发音做英语文本分析 | MIT / MIT | Python 包 |
@@ -129,7 +129,7 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 
 - **订阅模式**只会启动你自己安装的 CLI。遵守所用提供方的条款是你自己的责任；不支持多人共用一个订阅。
 - **数据归你所有**：资料、提取的文本、个人档案、脚本与音频都留在数据目录中。请勿传播由课程资料生成的音频。
-- **合成语音**：每个音频文件都会声明其为 AI 生成，groundcast 从不克隆真实人物的声音。
+- **合成语音**：每个音频文件都会声明其为 AI 生成，Groundcast 从不克隆真实人物的声音。
 - **局限**：LLM 核对能减少错误但无法完全消除，也无法发现资料本身就存在的错误。
 
 ## 📚 文档
@@ -147,7 +147,7 @@ MIT 只覆盖本仓库的代码。下列各模型与程序保留各自的许可�
 
 ## 🤝 参与贡献
 
-欢迎提交 issue 和拉取请求。groundcast 是个人项目，范围以维护者的设计为准；动手前请先阅读[贡献指南](CONTRIBUTING.zh-CN.md)。
+欢迎提交 issue 和拉取请求。Groundcast 是个人项目，范围以维护者的设计为准；动手前请先阅读[贡献指南](CONTRIBUTING.zh-CN.md)。
 
 ## 🔗 相关资源
 

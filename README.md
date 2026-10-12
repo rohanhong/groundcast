@@ -3,10 +3,10 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset=".github/assets/banner-light.svg">
-  <img alt="groundcast" src=".github/assets/banner-light.svg" width="380">
+  <img alt="Groundcast" src=".github/assets/banner-light.svg" width="440">
 </picture>
 
-<h1>🎧 groundcast</h1>
+<h1>🎧 Groundcast</h1>
 
 <p><b>Turn your own study materials into podcast-style audio sessions, with every statement grounded in those materials.</b></p>
 
@@ -27,7 +27,7 @@
 
 </div>
 
-groundcast is a personal, local web app that turns the study materials you
+Groundcast is a personal, local web app that turns the study materials you
 already have (PDFs, slides, notes, web pages, videos) into a podcast-style
 session for a commute, a workout, or revision before an exam. A fixed pipeline
 of LLM roles writes the script, checks every factual claim against your
@@ -49,7 +49,7 @@ result as an MP3 you can play in any phone player.
 > results on each, which you can rename and merge. Preferences set your
 > default voice, speed, and brief, and every change to the profile is logged
 > and can be exported. At session start, ranked suggestions say why they fit
-> you; what groundcast infers from your past sessions and your feedback is
+> you; what Groundcast infers from your past sessions and your feedback is
 > shown to you and never used silently.
 
 ## ✨ Highlights
@@ -83,14 +83,14 @@ result as an MP3 you can play in any phone player.
    cd groundcast
    ```
 2. Run the installer. It creates the conda environment (Python 3.12, ffmpeg,
-   poppler, Tesseract for scans, and groundcast itself in editable mode), then
+   poppler, Tesseract for scans, and Groundcast itself in editable mode), then
    asks which parts to add: the PyTorch build for speech synthesis (it reads
    `nvidia-smi` and recommends the newest build your GPU and driver can run,
    or the CPU build), speech recognition for video and audio, the Piper
    fallback voices, and the API backend. Enter takes each recommendation; at
-   the end it checks the installation, makes a groundcast shortcut on the
+   the end it checks the installation, makes a Groundcast shortcut on the
    desktop and in the Start menu (the applications menu on Linux,
-   `~/Applications` on macOS), and offers to start groundcast.
+   `~/Applications` on macOS), and offers to start Groundcast.
    - Windows: double-click `install.cmd`, or run `.\install.cmd` in a terminal.
    - Linux or macOS: `./install.sh`
 
@@ -98,13 +98,13 @@ result as an MP3 you can play in any phone player.
    to only print the pip commands, or choices such as `--torch cpu --no-asr`.
    Model weights download on first use (Kokoro about 330 MB, the speech
    recognition model about 1.6 GB).
-3. Double-click the groundcast shortcut. No terminal opens: the service
-   starts in the background and groundcast opens in its own window (an Edge
+3. Double-click the Groundcast shortcut. No terminal opens: the service
+   starts in the background and Groundcast opens in its own window (an Edge
    or Chrome app window, otherwise a tab in your default browser) at
    <http://127.0.0.1:8765/>, on `127.0.0.1` only. A second double-click
-   brings the open window to the front, or opens one. When every groundcast window is closed
+   brings the open window to the front, or opens one. When every Groundcast window is closed
    and no session or recognition is running, the service stops by itself;
-   "Quit groundcast" in the sidebar closes the window and stops the service at once. Without a console, its
+   "Quit Groundcast" in the sidebar closes the window and stops the service at once. Without a console, its
    output goes to `logs/launcher.log` in the data directory.
 
    From a terminal, `groundcast launch` does the same, and `groundcast serve`
@@ -136,7 +136,7 @@ in its preferences.
    ```bash
    pip install "torch==2.14.1+cu130" --index-url https://download.pytorch.org/whl/cu130
    ```
-   With `tts.device = "auto"` (the default), groundcast then uses the GPU.
+   With `tts.device = "auto"` (the default), Groundcast then uses the GPU.
 3. Optional: add speech recognition for video and audio (faster-whisper):
    ```bash
    pip install -e ".[asr]"
@@ -196,7 +196,7 @@ its own.
 MIT covers only this repository's code. Each model and program below keeps its
 own licence; weights are downloaded, never committed.
 
-| Component | Used for | Code / weights licence | How groundcast runs it |
+| Component | Used for | Code / weights licence | How Groundcast runs it |
 |---|---|---|---|
 | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | Speech synthesis (M1) | Apache-2.0 / Apache-2.0 | Python package; its in-process espeak-ng loader is blocked |
 | [spaCy `en_core_web_sm`](https://github.com/explosion/spacy-models) | English text analysis for Kokoro's pronunciation | MIT / MIT | Python package |
@@ -215,7 +215,7 @@ own licence; weights are downloaded, never committed.
   and audio stay in the data directory. Do not redistribute audio built from
   course materials.
 - **Synthetic voices**: every audio file states that it is AI-generated, and
-  groundcast never clones real people's voices.
+  Groundcast never clones real people's voices.
 - **Limits**: LLM verification reduces errors but cannot remove them, and it
   cannot catch errors already in your materials.
 
@@ -234,7 +234,7 @@ own licence; weights are downloaded, never committed.
 
 ## 🤝 Contributing
 
-Issues and pull requests are welcome. groundcast is a personal project, so its
+Issues and pull requests are welcome. Groundcast is a personal project, so its
 scope follows the owner's design; read the [Contributing guide](CONTRIBUTING.md)
 first.
 

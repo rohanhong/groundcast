@@ -40,7 +40,7 @@ stop_when_closed = true  # stop once no page has been open for close_grace_s and
 close_grace_s = 15.0
 heartbeat_s = 20.0  # how often an open page checks in
 page_timeout_s = 600.0  # a page silent this long counts as closed (a crashed or frozen tab)
-shortcut_name = "groundcast"
+shortcut_name = "Groundcast"
 
 [llm]
 backend = "claude-cli"  # or "anthropic-api" (needs the "api" extra)

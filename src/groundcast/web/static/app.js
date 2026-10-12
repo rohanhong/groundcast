@@ -1,6 +1,6 @@
 "use strict";
 
-// groundcast web UI: plain DOM code, no build step. Views are switched by the URL hash
+// Groundcast web UI: plain DOM code, no build step. Views are switched by the URL hash
 // (#library, #create, #listen/<session id>, #concepts, #profile); one audio element plays
 // sessions across views.
 
@@ -221,7 +221,7 @@ function route() {
       if (link.dataset.view === view) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     }
-    document.title = `${VIEWS[view]} | groundcast`;
+    document.title = `${VIEWS[view]} | Groundcast`;
     if (currentView !== null) window.scrollTo({ top: 0 });
     currentView = view;
   }
@@ -1392,7 +1392,7 @@ function feedbackPanel(sessionId) {
     comment.value = f.comment;
   }).catch(() => {});
   return [el("p", { class: "muted small", style: "margin-bottom: 1rem" },
-    "Tell groundcast how it went; the length and rating shape what it suggests next."), form];
+    "Tell Groundcast how it went; the length and rating shape what it suggests next."), form];
 }
 
 // Player: one audio element, a dock that follows you across views, and the detail waveform
@@ -1444,7 +1444,7 @@ async function playSession(id, at = null) {
       $("dock-title").textContent = view.title;
       renderDockTicks(view);
       if ("mediaSession" in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({ title: view.title, artist: "groundcast", album: "Study sessions" });
+        navigator.mediaSession.metadata = new MediaMetadata({ title: view.title, artist: "Groundcast", album: "Study sessions" });
       }
     }).catch(() => {});
     renderSessions();
@@ -1897,7 +1897,7 @@ async function loadEvents() {
 
 $("events").addEventListener("toggle", () => { if ($("events").open) loadEvents().catch(() => {}); });
 
-// What groundcast has learned (inferred preferences)
+// What Groundcast has learned (inferred preferences)
 
 const LEARNED_LABELS = { minutes: "Length", format: "Format", recall_prompts: "Recall questions",
   context: "Listening context", level: "Level" };
@@ -2122,16 +2122,16 @@ function showOffline(title = null, body = null, waiting = true) {
 
 $("app-stop").addEventListener("click", async () => {
   const running = state.sessions.filter((s) => s.status === "queued" || s.status === "running").length;
-  const ok = await ask({ title: "Quit groundcast?", ok: "Quit", danger: running > 0,
+  const ok = await ask({ title: "Quit Groundcast?", ok: "Quit", danger: running > 0,
     body: running ? `${plural(running, "session")} still being made will be cut short and marked as failed.`
-      : "The window closes and the service stops. Start it again from the groundcast shortcut." });
+      : "The window closes and the service stops. Start it again from the Groundcast shortcut." });
   if (!ok) return;
   stopMedia();
   checkIn(false);
   try {
     await api("/api/shutdown", { method: "POST" });
     stopped = true;
-    showOffline("groundcast has stopped", "You can close this window. To start it again, use the groundcast shortcut "
+    showOffline("Groundcast has stopped", "You can close this window. To start it again, use the Groundcast shortcut "
       + "on your desktop or in the Start menu.", false);
     window.close(); // where the browser allows it; the launcher also closes app windows
   } catch (error) {

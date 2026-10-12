@@ -232,7 +232,7 @@ def run_session(
                 session_dir / AUDIO_FILE,
                 settings.audio.ffmpeg_bin,
                 settings.audio.mp3_bitrate,
-                {"title": result.script.title, "artist": "groundcast", "comment": settings.tts.disclaimer},
+                {"title": result.script.title, "artist": "Groundcast", "comment": settings.tts.disclaimer},
                 chapters,
             )
         finally:

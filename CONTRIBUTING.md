@@ -2,7 +2,7 @@
 
 <p><b>English</b> | <a href="docs/i18n/CONTRIBUTING.zh-CN.md">简体中文</a></p>
 
-Thanks for your interest in groundcast. It is a personal project whose code is
+Thanks for your interest in Groundcast. It is a personal project whose code is
 public and whose scope follows the owner's design; this guide covers how to
 propose a change and what a change must satisfy before it is merged.
 

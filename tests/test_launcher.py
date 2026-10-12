@@ -90,6 +90,26 @@ def test_health_tells_groundcast_from_other_programs(settings: Settings) -> None
     assert isinstance(server, uvicorn.Server) and not thread.is_alive()
 
 
+def test_generated_images_match_the_drawing() -> None:
+    from groundcast.icon import banner, svg
+
+    root = Path(__file__).resolve().parent.parent
+    assert (root / "src/groundcast/web/static/favicon.svg").read_text(encoding="utf-8") == svg()
+    tagline = "Study audio, grounded in your materials"
+    for name, ink, muted in (("light", "#1a1c1e", "#5f666c"), ("dark", "#e9ecee", "#a8b0b7")):
+        committed = (root / f".github/assets/banner-{name}.svg").read_text(encoding="utf-8")
+        assert committed == banner("Groundcast", tagline, ink, muted), f"regenerate banner-{name}.svg"
+
+
+def test_icon_files_carry_the_drawing_digest(tmp_path: Path) -> None:
+    from groundcast.icon import write_icons
+
+    (tmp_path / "groundcast.ico").write_bytes(b"old drawing")
+    files = write_icons(tmp_path)
+    assert files["ico"].name.startswith("groundcast-") and not (tmp_path / "groundcast.ico").exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == sorted(p.name for p in files.values())
+
+
 def test_icons_are_valid_files() -> None:
     data = png(32)
     assert data[:8] == b"\x89PNG\r\n\x1a\n" and struct.unpack(">II", data[16:24]) == (32, 32)

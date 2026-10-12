@@ -213,7 +213,7 @@ def create_app(
             queue_recognition(material.id)
         yield
 
-    app = FastAPI(title="groundcast", lifespan=lifespan)
+    app = FastAPI(title="Groundcast", lifespan=lifespan)
     app.state.presence = Presence(settings.launcher.page_timeout_s)
     # Set by whoever runs the server (groundcast serve or launch) to stop it from the UI.
     app.state.request_shutdown = None

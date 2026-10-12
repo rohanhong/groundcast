@@ -72,7 +72,7 @@ class LauncherSettings(_Section):
     heartbeat_s: float = Field(default=20.0, gt=0)  # how often an open page checks in
     # A page silent this long counts as closed (a crashed or frozen tab); browsers check hidden tabs once a minute.
     page_timeout_s: float = Field(default=600.0, gt=0)
-    shortcut_name: str = "groundcast"
+    shortcut_name: str = "Groundcast"
 
 
 class LLMSettings(_Section):

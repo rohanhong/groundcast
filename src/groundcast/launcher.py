@@ -36,7 +36,8 @@ log = logging.getLogger(__name__)
 
 LOG_FILE = "launcher.log"
 WATCH_INTERVAL_S = 2.0
-WINDOW_TITLE_SUFFIX = "| groundcast"  # app.js titles every view "<view> | groundcast"
+PRODUCT = "Groundcast"  # the name people read; `groundcast` stays the command
+WINDOW_TITLE_SUFFIX = "| Groundcast"  # app.js titles every view "<view> | Groundcast"
 BUSY_HEALTH_TIMEOUT_S = 5.0  # a running groundcast may be slow to answer while it voices a session
 # Folders `conda activate` puts on PATH, relative to the environment.
 CONDA_DIRS_WINDOWS = ("", "Library/mingw-w64/bin", "Library/usr/bin", "Library/bin", "Scripts", "bin")
@@ -244,7 +245,7 @@ def tell(message: str, error: bool = False) -> None:
             import ctypes
 
             box = ctypes.windll.user32.MessageBoxW  # type: ignore[attr-defined]
-            box(None, message, "groundcast", 0x10 if error else 0x40)  # error or information icon
+            box(None, message, PRODUCT, 0x10 if error else 0x40)  # error or information icon
         except (AttributeError, OSError):
             pass
 
@@ -268,7 +269,7 @@ def launch(settings: Settings, window: str | None = None) -> int:
             else:
                 log.info("groundcast already runs at %s; opening %s", url, open_window(settings, url))
             return 0
-        tell(f"Another program uses {url}. Close it, or set another port in the groundcast settings "
+        tell(f"Another program uses {url}. Close it, or set another port in the Groundcast settings "
              f"(server.port).", error=True)  # fmt: skip
         return 1
 
@@ -284,7 +285,7 @@ def launch(settings: Settings, window: str | None = None) -> int:
         while not server.started:
             if server.should_exit or time.monotonic() > deadline:
                 if not server.should_exit:
-                    tell(f"groundcast did not start within {cfg.ready_timeout_s:g} s; see {LOG_FILE}.", error=True)
+                    tell(f"Groundcast did not start within {cfg.ready_timeout_s:g} s; see {LOG_FILE}.", error=True)
                     server.should_exit = True
                 return
             time.sleep(0.1)
@@ -301,7 +302,7 @@ def launch(settings: Settings, window: str | None = None) -> int:
     try:
         server.run()
     except SystemExit as exc:  # uvicorn exits when it cannot bind the port
-        tell(f"groundcast could not start the service at {url} (exit status {exc.code}).", error=True)
+        tell(f"Groundcast could not start the service at {url} (exit status {exc.code}).", error=True)
         return 1
     finally:
         if stream is not None:
