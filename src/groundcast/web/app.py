@@ -9,8 +9,8 @@ import os
 import tempfile
 import threading
 import time
-from collections.abc import Awaitable, Callable
-from contextlib import asynccontextmanager
+from collections.abc import Awaitable, Callable, Iterator
+from contextlib import asynccontextmanager, contextmanager
 from importlib import resources
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -35,7 +35,7 @@ from groundcast.ingest.asr import Transcriber
 from groundcast.elicit import ChatTurn, ElicitResult, elicit, outline
 from groundcast.llm import LLMBackend, make_backend, roles
 from groundcast.models import Brief, Chunk, Material, Script, SessionRecord, SessionStatus
-from groundcast.profile.concepts import Concept, forget_material, list_concepts, merge, record_quiz, rename
+from groundcast.profile.concepts import Concept, list_concepts, merge, record_quiz, rename
 from groundcast.profile.db import Event, ProfileDB, list_events
 from groundcast.profile.preferences import (
     BRIEF_KEYS,
@@ -66,6 +66,7 @@ from groundcast.sessions import (
 from groundcast.storage import read_model
 from groundcast.storage import Store
 from groundcast.transcript import TranscriptView, transcript_view
+from groundcast.trash import Trash, TrashConflict, TrashEntry, TrashItem
 
 
 log = logging.getLogger(__name__)
@@ -194,7 +195,8 @@ def create_app(
 ) -> FastAPI:
     store = Store(settings.data_dir)
     profile = ProfileDB(settings.data_dir)
-    # One question or quiz at a time keeps each session's qa.json and quiz.json consistent.
+    trash = Trash(store, profile)
+    # One question, quiz, or trash change at a time keeps each session's qa.json and quiz.json consistent.
     files_lock = threading.Lock()
 
     def queue_recognition(material_id: str) -> None:
@@ -209,6 +211,7 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         fail_interrupted(store)
+        trash.purge_expired(settings.trash.keep_days)
         app.state.runner = runner or SessionRunner(store, settings)
         for material in interrupted_recognitions(store):
             queue_recognition(material.id)
@@ -256,6 +259,7 @@ def create_app(
             "ocr_review_below": current.ocr.review_below,
             "weak_mastery": current.suggest.weak_mastery,
             "heartbeat_s": settings.launcher.heartbeat_s,
+            "trash_keep_days": settings.trash.keep_days,
         }
 
     @app.get("/api/health")
@@ -339,14 +343,28 @@ def create_app(
         except (FileNotFoundError, ValueError) as exc:
             raise _not_found(exc) from exc
 
+    @contextmanager
+    def trash_change() -> Iterator[None]:
+        """Serialise a change to the trash and turn its errors into HTTP answers."""
+        with files_lock:
+            try:
+                yield
+            except (FileNotFoundError, KeyError, ValueError) as exc:
+                detail = exc.args[0] if isinstance(exc, KeyError) else exc  # a KeyError's str() adds quotes
+                raise HTTPException(status_code=404, detail=str(detail)) from exc
+            except TrashConflict as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            except PermissionError as exc:  # Windows: a file is open, such as an MP3 being played
+                raise HTTPException(status_code=409, detail=f"A file of it is in use; try again. ({exc})") from exc
+
+    def _entry(item: TrashItem) -> TrashEntry:
+        return trash.entry(item, settings.trash.keep_days)
+
+    # A delete answers with the trash entry, so the UI can offer to restore it.
     @app.delete("/api/materials/{material_id}")
-    def delete_material(material_id: str) -> dict[str, str]:
-        try:
-            store.delete_material(material_id)
-        except (FileNotFoundError, ValueError) as exc:
-            raise _not_found(exc) from exc
-        forget_material(profile, material_id)
-        return {"deleted": material_id}
+    def delete_material(material_id: str) -> TrashEntry:
+        with trash_change():
+            return _entry(trash.delete_material(material_id))
 
     @app.post("/api/elicit")
     def elicit_brief(body: Conversation) -> ElicitResult:
@@ -401,6 +419,11 @@ def create_app(
             return titled(store.get_session(session_id))
         except (FileNotFoundError, ValueError) as exc:
             raise _not_found(exc) from exc
+
+    @app.delete("/api/sessions/{session_id}")
+    def delete_session(session_id: str) -> TrashEntry:
+        with trash_change():
+            return _entry(trash.delete_session(titled(store.get_session(session_id))))
 
     @app.get("/api/sessions/{session_id}/report")
     def get_report(session_id: str) -> dict[str, object]:
@@ -489,6 +512,11 @@ def create_app(
             save_history(store, session_id, history)
         return exchange
 
+    @app.delete("/api/sessions/{session_id}/questions/{exchange_id}")
+    def delete_question(session_id: str, exchange_id: str) -> TrashEntry:
+        with trash_change():
+            return _entry(trash.delete_question(titled(store.get_session(session_id)), exchange_id))
+
     @app.get("/api/sessions/{session_id}/quizzes")
     def list_quizzes(session_id: str) -> list[QuizView]:
         try:
@@ -537,6 +565,30 @@ def create_app(
         ]
         record_quiz(profile, session_id, result.attempt.id, answered)
         return result
+
+    @app.delete("/api/sessions/{session_id}/quizzes/{quiz_id}")
+    def delete_quiz(session_id: str, quiz_id: str) -> TrashEntry:
+        with trash_change():
+            return _entry(trash.delete_quiz(titled(store.get_session(session_id)), quiz_id))
+
+    @app.get("/api/trash")
+    def list_trash() -> list[TrashEntry]:
+        return [_entry(i) for i in trash.items()]
+
+    @app.post("/api/trash/{item_id}/restore")
+    def restore_trash(item_id: str) -> TrashEntry:
+        with trash_change():
+            return _entry(trash.restore(item_id))
+
+    @app.delete("/api/trash/{item_id}")
+    def purge_trash(item_id: str) -> dict[str, list[str]]:
+        with trash_change():
+            return {"deleted": trash.purge(item_id)}
+
+    @app.delete("/api/trash")
+    def empty_trash() -> dict[str, int]:
+        with trash_change():
+            return {"deleted": trash.empty()}
 
     @app.get("/api/concepts")
     def get_concepts() -> list[Concept]:

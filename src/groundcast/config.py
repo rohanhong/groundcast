@@ -309,6 +309,12 @@ class SuggestSettings(_Section):
     low_rating: int = Field(default=2, ge=1, le=5)
 
 
+class TrashSettings(_Section):
+    # Deleted materials, sessions, questions, and quizzes are deleted for good this many days later,
+    # when the service starts; 0 keeps them until the trash is emptied by hand.
+    keep_days: float = Field(default=30.0, ge=0)
+
+
 class EvaluationSettings(_Section):
     # Pass thresholds for `groundcast eval`, on the means over all runs,
     # set from the Verifier's measured rates on evals/seeded/.
@@ -336,6 +342,7 @@ class Settings(_Section):
     qa: QASettings = Field(default_factory=QASettings)
     quiz: QuizSettings = Field(default_factory=QuizSettings)
     suggest: SuggestSettings = Field(default_factory=SuggestSettings)
+    trash: TrashSettings = Field(default_factory=TrashSettings)
     evaluation: EvaluationSettings = Field(default_factory=EvaluationSettings)
 
 

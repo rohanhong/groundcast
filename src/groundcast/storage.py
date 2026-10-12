@@ -6,6 +6,7 @@
   materials/<id>.view.html    extracted text with an anchor per page, slide, or passage
   chunks/<id>.json            list of Chunk records
   sessions/<session id>/      brief, script JSON, verification report, MP3, transcript, Q&A, quizzes
+  trash/<item id>/            deleted items until they are restored or purged (groundcast.trash)
   profile.sqlite3             concept table, quiz results, event log (groundcast.profile)
 """
 
@@ -35,7 +36,7 @@ _REPLACE_ATTEMPTS = 20
 _REPLACE_DELAY_S = 0.05
 
 
-def _replace(src: str, dst: Path) -> None:
+def _replace(src: str | Path, dst: Path) -> None:
     for attempt in range(1, _REPLACE_ATTEMPTS + 1):
         try:
             os.replace(src, dst)
@@ -56,6 +57,12 @@ def write_text_atomic(path: Path, text: str) -> None:
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
+
+
+def move_path(src: Path, dst: Path) -> None:
+    """Move a file or folder within the data directory; dst must not exist."""
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    _replace(src, dst)
 
 
 def write_model(path: Path, model: BaseModel) -> None:
@@ -116,12 +123,14 @@ class Store:
         raw = (self.chunks_dir / f"{check_id(material_id)}.json").read_text(encoding="utf-8")
         return TypeAdapter(list[Chunk]).validate_json(raw)
 
-    def delete_material(self, material_id: str) -> None:
-        material = self.get_material(material_id)
-        self.material_path(material).unlink(missing_ok=True)
-        (self.materials_dir / view_name(material)).unlink(missing_ok=True)
-        (self.chunks_dir / f"{material.id}.json").unlink(missing_ok=True)
-        (self.materials_dir / f"{material.id}.json").unlink(missing_ok=True)
+    def material_files(self, material: Material) -> list[Path]:
+        """Every file of a material, its record first."""
+        return [
+            self.materials_dir / f"{check_id(material.id)}.json",
+            self.material_path(material),
+            self.materials_dir / view_name(material),
+            self.chunks_dir / f"{material.id}.json",
+        ]
 
     # Sessions
 

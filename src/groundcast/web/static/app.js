@@ -396,8 +396,8 @@ function renderMaterials() {
     actions.push(el("a", { class: "linkish", href: m.source_url || `/data/materials/${m.stored_name}`, target: "_blank",
       rel: "noopener" }, icon("external"), m.source_url ? "Open page" : "Open file"));
     actions.push(el("span", { class: "spacer" }));
-    actions.push(el("button", { class: "linkish bad", type: "button", title: "Remove", "aria-label": `Remove ${m.filename}`,
-      onclick: () => deleteMaterial(m) }, icon("trash")));
+    actions.push(el("button", { class: "linkish bad", type: "button", title: "Move to the trash",
+      "aria-label": `Move ${m.filename} to the trash`, onclick: () => deleteMaterial(m) }, icon("trash")));
     return el("li", { class: `material${m.status === "review" || m.status === "failed" ? " needs" : ""}`,
       style: `animation-delay: ${Math.min(i, 12) * 25}ms` },
       el("div", { class: "material-top" }, kindIcon(m.kind),
@@ -424,16 +424,12 @@ async function retryMaterial(material) {
 }
 
 async function deleteMaterial(material) {
-  const ok = await ask({ title: `Remove ${material.filename}?`, ok: "Remove", danger: true,
-    body: "The file and its extracted text leave the data directory. Sessions made from it keep their audio." });
-  if (!ok) return;
   try {
-    await api(`/api/materials/${material.id}`, { method: "DELETE" });
+    const entry = await api(`/api/materials/${material.id}`, { method: "DELETE" });
     state.picked.delete(material.id);
-    toast(`Removed ${material.filename}.`, "ok");
-    await loadMaterials();
+    trashed(entry, material.filename);
   } catch (error) {
-    toast(`Could not remove it: ${error.message}`, "error");
+    toast(`Could not delete it: ${error.message}`, "error");
   }
 }
 
@@ -1023,6 +1019,26 @@ function showDetail(id, refresh = false) {
   if (!refresh && window.innerWidth <= 1100) box.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+async function deleteSession(s) {
+  try {
+    if (player.id === s.id) $("dock-close").click(); // the playing MP3 would keep its folder open
+    const entry = await api(`/api/sessions/${s.id}`, { method: "DELETE" });
+    transcripts.delete(s.id);
+    peaks.delete(s.id);
+    if (detail.id === s.id) detail.id = null; // the list shows the next one
+    trashed(entry, `"${sessionTitle(s)}"`);
+  } catch (error) {
+    toast(`Could not delete it: ${error.message}`, "error");
+  }
+}
+
+function rerenderDetail(id) {
+  // After a question or quiz comes back from the trash.
+  if (detail.id !== id) return;
+  detail.status = null;
+  showDetail(id);
+}
+
 function heroMeta(s, extra = []) {
   const b = s.brief;
   return el("div", { class: "detail-meta" },
@@ -1058,7 +1074,9 @@ function renderProgress(box, s) {
     el("section", { class: "detail-hero" },
       el("p", { class: `eyebrow${s.status === "failed" ? " bad" : ""}` }, s.status === "failed" ? "Session failed" : "In progress"),
       el("h2", {}, sessionTitle(s)), heroMeta(s),
-      steps, el("div", { class: "stage-line", style: "margin-top: .6rem" }, label, time), status),
+      steps, el("div", { class: "stage-line", style: "margin-top: .6rem" }, label, time), status,
+      s.status === "failed" ? el("div", { class: "form-actions start" }, el("button", { type: "button",
+        class: "btn ghost sm", onclick: () => deleteSession(s) }, icon("trash"), "Move to the trash")) : ""),
     el("section", { class: "card" }, el("h2", { class: "card-title" }, icon("list"), "Progress log"), log));
   detail.refs = { progress: (x) => { if (detail.id === x.id) update(x); } };
   update(s);
@@ -1095,7 +1113,9 @@ function renderDone(box, s) {
       title: "Download the MP3 (with chapters)", "aria-label": "Download the MP3" },
       icon("download")),
     el("a", { class: "ctl small", href: `/data/sessions/${id}/transcript.html`, target: "_blank", rel: "noopener",
-      title: "Open the transcript as a page", "aria-label": "Open the transcript as a page" }, icon("external")));
+      title: "Open the transcript as a page", "aria-label": "Open the transcript as a page" }, icon("external")),
+    el("button", { type: "button", class: "ctl small", title: "Move the session to the trash",
+      "aria-label": "Move the session to the trash", onclick: () => deleteSession(s) }, icon("trash")));
   const title = el("h2", {}, sessionTitle(s));
   const verify = el("section", { class: "card verify-card" }, el("p", { class: "muted small" }, "Loading the check..."));
   const tabsCard = el("section", { class: "card" });
@@ -1269,7 +1289,7 @@ function transcriptPanel(view, refs) {
 
 // Questions about a finished session (text Q&A)
 
-function renderExchange(x) {
+function renderExchange(x, sessionId, onRemoved) {
   const numbers = new Map(x.sources.map((s, i) => [s.chunk_id, i + 1]));
   const answer = el("p");
   for (const s of x.sentences) {
@@ -1282,14 +1302,30 @@ function renderExchange(x) {
     }
     answer.append(" ");
   }
-  return [
+  const remove = el("button", { type: "button", class: "linkish bad qa-delete", title: "Move this question to the trash",
+    "aria-label": "Move this question to the trash" }, icon("trash"));
+  const nodes = [
     el("div", { class: "qa-q" }, x.question),
     el("div", { class: "qa-a" },
       x.covered ? "" : el("span", { class: "tag warn not-covered" }, "Not covered by your materials"),
       answer,
       x.sources.length ? el("ol", { class: "sources" }, x.sources.map((s) => el("li", {},
-        el("a", { href: `/data/${s.path}`, target: "_blank", rel: "noopener" }, s.label)))) : ""),
+        el("a", { href: `/data/${s.path}`, target: "_blank", rel: "noopener" }, s.label)))) : "",
+      remove),
   ];
+  remove.addEventListener("click", async () => {
+    busy(remove, true);
+    try {
+      const entry = await api(`/api/sessions/${sessionId}/questions/${x.id}`, { method: "DELETE" });
+      for (const node of nodes) node.remove();
+      onRemoved();
+      trashed(entry, "The question");
+    } catch (error) {
+      busy(remove, false);
+      toast(`Could not delete it: ${error.message}`, "error");
+    }
+  });
+  return nodes;
 }
 
 function askPanel(sessionId) {
@@ -1314,7 +1350,7 @@ function askPanel(sessionId) {
       const x = await send(`/api/sessions/${sessionId}/questions`, "POST", { question });
       pending.remove();
       typing.remove();
-      log.append(...renderExchange(x));
+      log.append(...renderExchange(x, sessionId, removed));
       input.value = "";
       setStatus(status, "");
     } catch (error) {
@@ -1326,8 +1362,9 @@ function askPanel(sessionId) {
       busy(button, false);
     }
   });
+  const removed = () => { empty.hidden = log.childElementCount > 0; };
   api(`/api/sessions/${sessionId}/questions`).then((xs) => {
-    log.prepend(...xs.flatMap(renderExchange));
+    log.prepend(...xs.flatMap((x) => renderExchange(x, sessionId, removed)));
     empty.hidden = xs.length > 0;
   }).catch((error) => setStatus(status, `Could not load earlier questions: ${error.message}`, "error"));
   return [empty, log, form, status];
@@ -1420,16 +1457,23 @@ function quizPanel(sessionId) {
   const scoreBox = el("div", { class: "score-row", hidden: true, style: "margin-bottom: 1rem" });
   const status = el("p", { class: "status", role: "status" });
   const button = el("button", { type: "button", class: "btn ghost" }, icon("sparkle"), "New quiz");
+  const remove = el("button", { type: "button", class: "btn ghost", hidden: true,
+    title: "Move this quiz and its results to the trash" }, icon("trash"), "Delete quiz");
   const empty = el("div", { class: "empty-state" }, icon("quiz"),
     el("p", {}, "Multiple-choice questions on this session, each checked against your materials."));
+  let shownQuiz = null;
+  const show = (quiz) => { // the newest quiz, or none
+    shownQuiz = quiz;
+    empty.hidden = Boolean(quiz);
+    remove.hidden = !quiz;
+    scoreBox.hidden = true;
+    fill(body, quiz ? renderQuiz(sessionId, quiz, scoreBox) : "");
+  };
   button.addEventListener("click", async () => {
     busy(button, true);
     setStatus(status, "Writing questions and checking them against your materials...");
     try {
-      const quiz = await api(`/api/sessions/${sessionId}/quizzes`, { method: "POST" });
-      empty.hidden = true;
-      scoreBox.hidden = true;
-      fill(body, renderQuiz(sessionId, quiz, scoreBox));
+      show(await api(`/api/sessions/${sessionId}/quizzes`, { method: "POST" }));
       setStatus(status, "");
     } catch (error) {
       setStatus(status, `Could not write a quiz: ${error.message}`, "error");
@@ -1437,13 +1481,23 @@ function quizPanel(sessionId) {
       busy(button, false);
     }
   });
+  remove.addEventListener("click", async () => {
+    busy(remove, true);
+    try {
+      const entry = await api(`/api/sessions/${sessionId}/quizzes/${shownQuiz.id}`, { method: "DELETE" });
+      show((await api(`/api/sessions/${sessionId}/quizzes`)).at(-1) || null);
+      trashed(entry, "The quiz");
+    } catch (error) {
+      toast(`Could not delete it: ${error.message}`, "error");
+    } finally {
+      busy(remove, false);
+    }
+  });
   api(`/api/sessions/${sessionId}/quizzes`).then((quizzes) => {
-    if (!quizzes.length) return;
-    empty.hidden = true;
-    fill(body, renderQuiz(sessionId, quizzes.at(-1), scoreBox));
+    if (quizzes.length) show(quizzes.at(-1));
   }).catch((error) => setStatus(status, `Could not load quizzes: ${error.message}`, "error"));
-  return [el("div", { class: "quiz-head" }, el("p", { class: "muted small" }, "Answers are explained with their sources."), button),
-    status, empty, scoreBox, body];
+  return [el("div", { class: "quiz-head" }, el("p", { class: "muted small" }, "Answers are explained with their sources."),
+    el("div", { class: "form-actions" }, remove, button)), status, empty, scoreBox, body];
 }
 
 // Feedback on a finished session: used by the suggestions
@@ -1955,7 +2009,9 @@ const EVENT_NAMES = {
   "concept.created": "Concept found", "concept.renamed": "Concept renamed", "concept.merged": "Concepts merged",
   "concepts.extracted": "Concepts looked for", "material.removed": "Material removed",
   "suggestion.accepted": "Suggestion taken as it was", "suggestion.edited": "Suggestion changed, then taken",
-  "session.feedback": "Feedback saved", "profile.deleted": "Profile deleted",
+  "session.feedback": "Feedback saved", "profile.deleted": "Profile deleted", "material.restored": "Material restored",
+  "session.removed": "Session removed", "session.restored": "Session restored", "quiz.removed": "Quiz removed",
+  "quiz.restored": "Quiz restored",
 };
 const EVENT_SOURCES = { user: "By you", inference: "Inferred", system: "Automatic" };
 const LENGTH_FEEDBACK = { too_short: "too short", right: "about right", too_long: "too long" };
@@ -1988,9 +2044,22 @@ function describeEvent(e) {
     case "concepts.extracted":
       return { subject: e.reason, note: a.concepts ? `${plural(a.concepts, "concept")}, ${a.new} new` : "None found",
         reasonShown: true };
-    case "material.removed": {
+    case "material.removed":
+    case "material.restored": {
+      // A move to the trash takes the rows out of the profile; a restore puts them back.
+      const v = e.kind === "material.removed" ? b : a;
       const m = state.materials.find((x) => x.id === e.subject);
-      return { subject: m ? m.filename : "", note: b.concept_sources ? `${plural(b.concept_sources, "concept link")} removed` : "" };
+      return { subject: v.label || (m ? m.filename : ""),
+        note: v.concept_sources ? `${plural(v.concept_sources, "concept link")} ${e.kind.split(".")[1]}` : "" };
+    }
+    case "session.removed":
+    case "session.restored":
+    case "quiz.removed":
+    case "quiz.restored": {
+      const v = e.kind.endsWith(".removed") ? b : a;
+      const parts = [v.quiz_results ? plural(v.quiz_results, "quiz answer") : "", v.feedback ? "feedback" : ""];
+      const what = parts.filter(Boolean).join(" and ");
+      return { subject: v.label || "", note: what ? `${what} ${e.kind.split(".")[1]}` : "" };
     }
     case "session.feedback": {
       const parts = [a.rating ? `${a.rating} of 5 stars` : "", a.length ? `length ${LENGTH_FEEDBACK[a.length] || a.length}` : "",
@@ -2179,6 +2248,97 @@ $("profile-delete").addEventListener("click", async () => {
     await Promise.all([loadConcepts(), loadSuggestions(), loadSettings()]);
     if ($("events").open) loadEvents();
     toast("The profile is deleted.", "ok");
+  } catch (error) {
+    toast(error.message, "error");
+  }
+});
+
+// Trash: deleted items wait here until restored or deleted for good
+
+const TRASH_KINDS = { material: ["library", "Material"], session: ["listen", "Session"], question: ["chat", "Question"],
+  quiz: ["quiz", "Quiz"] };
+
+function trashed(entry, what) {
+  // After a move to the trash: say so, with a way back.
+  toast(`${what} moved to the trash.`, "ok", { label: "Undo", run: () => restoreItem(entry) });
+  afterTrashChange(entry);
+}
+
+async function afterTrashChange(entry) {
+  // What a move to or from the trash changes elsewhere: lists, mastery, suggestions, the log.
+  const loads = [loadSuggestions()];
+  if (entry.kind === "material") loads.push(loadMaterials(), loadConcepts());
+  if (entry.kind === "session") loads.push(loadSessions(), loadConcepts());
+  if (entry.kind === "quiz") loads.push(loadConcepts());
+  if ($("trash").open) loads.push(loadTrash());
+  if ($("events").open) loads.push(loadEvents());
+  await Promise.allSettled(loads);
+}
+
+async function restoreItem(entry) {
+  try {
+    await api(`/api/trash/${entry.id}/restore`, { method: "POST" });
+    toast(`Restored: ${entry.label}`, "ok");
+    if (entry.session_id) rerenderDetail(entry.session_id);
+    await afterTrashChange(entry);
+  } catch (error) {
+    toast(`Could not restore it: ${error.message}`, "error");
+  }
+}
+
+async function purgeItem(entry) {
+  const ok = await ask({ title: `Delete "${entry.label}" for good?`, ok: "Delete for good", danger: true,
+    body: entry.kind === "session"
+      ? "Its audio, transcript, questions, and quizzes are deleted, with its questions and quizzes in the trash. This cannot be undone."
+      : "This cannot be undone." });
+  if (!ok) return;
+  try {
+    await api(`/api/trash/${entry.id}`, { method: "DELETE" });
+    await loadTrash();
+  } catch (error) {
+    toast(`Could not delete it: ${error.message}`, "error");
+  }
+}
+
+async function loadTrash() {
+  const items = await api("/api/trash");
+  const days = state.settings ? state.settings.trash_keep_days : 0;
+  $("trash-note").textContent = "Deleted materials, sessions, questions, and quizzes wait here. " + (days > 0
+    ? `Each is deleted for good ${plural(days, "day")} after it was moved here.` : "They stay until you empty the trash.");
+  $("trash-empty").hidden = !items.length;
+  if (!items.length) {
+    fill($("trash-list"), el("li", { class: "note" }, "The trash is empty."));
+    return;
+  }
+  fill($("trash-list"), ...items.map((t) => {
+    const [name, kind] = TRASH_KINDS[t.kind];
+    const meta = [kind, t.session_label ? `from "${t.session_label}"` : "", `moved here ${ago(t.deleted_at)}`];
+    const item = el("li", {},
+      el("span", { class: "st" }, icon(name)),
+      el("div", {}, el("div", { class: "name" }, t.label), dots(meta, "muted small")),
+      el("div", { class: "acts" },
+        el("button", { class: "linkish", type: "button", onclick: () => restoreItem(t) }, icon("history"), "Restore"),
+        el("button", { class: "linkish bad", type: "button", title: "Delete for good",
+          "aria-label": `Delete ${t.label} for good`, onclick: () => purgeItem(t) }, icon("trash"))));
+    if (t.purge_at) {
+      item.title = `Deleted for good on ${new Date(t.purge_at).toLocaleDateString("en", { dateStyle: "medium" })}`;
+    }
+    return item;
+  }));
+}
+
+$("trash").addEventListener("toggle", () => {
+  if ($("trash").open) loadTrash().catch((error) => toast(`Could not load the trash: ${error.message}`, "error"));
+});
+
+$("trash-empty").addEventListener("click", async () => {
+  const ok = await ask({ title: "Empty the trash?", ok: "Empty the trash", danger: true,
+    body: "Everything in it is deleted for good. This cannot be undone." });
+  if (!ok) return;
+  try {
+    const r = await api("/api/trash", { method: "DELETE" });
+    toast(`${plural(r.deleted, "item")} deleted for good.`, "ok");
+    await loadTrash();
   } catch (error) {
     toast(error.message, "error");
   }

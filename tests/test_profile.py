@@ -9,7 +9,6 @@ from groundcast.llm import Role, roles
 from groundcast.models import Brief, Chunk, Material, SessionStatus
 from groundcast.profile.concepts import (
     add_concept,
-    forget_material,
     link_sources,
     list_concepts,
     merge,
@@ -80,14 +79,6 @@ def test_merging_into_a_concept_redirects_earlier_merges(db: ProfileDB) -> None:
     merge(db, b, c)
     with db.connect() as con:
         assert resolve(con, a) == c
-
-
-def test_forgetting_a_material_keeps_concepts(db: ProfileDB) -> None:
-    cid = _concept(db, "Tide")
-    forget_material(db, "m1")
-    (c,) = list_concepts(db)
-    assert c.id == cid and c.chunks == 0
-    assert list_events(db, 1)[0].kind == "material.removed"
 
 
 def test_extraction_matches_existing_concepts(settings: Settings, db: ProfileDB, tides: Tides) -> None:

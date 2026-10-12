@@ -147,14 +147,6 @@ def is_extracted(db: ProfileDB, material_id: str) -> bool:
         return con.execute("SELECT 1 FROM extractions WHERE material_id = ?", (material_id,)).fetchone() is not None
 
 
-def forget_material(db: ProfileDB, material_id: str) -> None:
-    """Drop a deleted material's passages; its concepts and quiz results stay."""
-    with db.connect() as con:
-        removed = con.execute("DELETE FROM concept_sources WHERE material_id = ?", (material_id,)).rowcount
-        con.execute("DELETE FROM extractions WHERE material_id = ?", (material_id,))
-        log_event(con, "material.removed", material_id, "user", before={"concept_sources": removed})
-
-
 def record_quiz(db: ProfileDB, session_id: str, attempt_id: str, results: Iterable[tuple[str, str, bool]]) -> None:
     """results: (concept ID, question ID, answered right) for every answered question and concept."""
     at = utc_now().isoformat()

@@ -755,6 +755,8 @@ dialog.narrow .sheet-foot { border: 0; padding: 0; }
 .qa-a { align-self: flex-start; max-width: 92%; background: var(--surface-2); border: 1px solid var(--line); padding: .8rem 1rem; border-radius: 16px 16px 16px 5px; }
 .qa-a p { margin: 0; line-height: 1.6; }
 .qa-a .unverified { text-decoration: underline wavy var(--amber); text-underline-offset: 3px; }
+.qa-a .qa-delete { display: flex; margin: .3rem 0 -.3rem auto; opacity: .55; }
+.qa-a .qa-delete:hover, .qa-a .qa-delete:focus-visible { opacity: 1; }
 .qa-a .not-covered { display: inline-flex; margin-bottom: .4rem; }
 .empty-state { text-align: center; padding: 1.6rem 1rem; color: var(--ink-2); }
 .empty-state .icon { width: 2rem; height: 2rem; color: var(--ink-3); }
@@ -866,6 +868,12 @@ dialog.narrow .sheet-foot { border: 0; padding: 0; }
 .checks .name { font-weight: 650; font-size: .9rem; }
 .checks .detail-text { font-size: .82rem; color: var(--ink-2); overflow-wrap: anywhere; }
 .checks code { font-size: .76rem; padding: .2rem .45rem; border-radius: 6px; background: var(--surface-3); overflow-wrap: anywhere; justify-self: start; }
+.trash-list li { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+.trash-list li.note { display: block; color: var(--ink-2); font-size: .9rem; }
+.trash-list .st { grid-row: auto; background: var(--surface-3); color: var(--ink-2); }
+.trash-list .name { overflow-wrap: anywhere; }
+.trash-list .acts { display: flex; align-items: center; gap: .2rem; }
+@media (max-width: 560px) { .trash-list .acts { grid-column: 2; } }
 .danger-zone { border-color: color-mix(in srgb, var(--bad) 22%, var(--line)); }
 
 /* Stop button and the not-running screen */
