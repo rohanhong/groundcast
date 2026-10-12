@@ -52,14 +52,14 @@ which every statement is grounded in those materials.
 
 ## Code layout
 
-- `src/groundcast/`: `ingest/` (S0: PDF, Office, web pages; speech
+- `src/groundcast/`: `ingest/` (PDF, Office, web pages; speech
   recognition for video and audio and OCR for scans and images, whose text
   waits for the user's review), `material_view.py` (source labels, links,
-  and the per-material text view), `pipeline/` (S3 to S7: writer, verifier,
+  and the per-material text view), `pipeline/` (writer, verifier,
   editor, run), `llm/` (the `LLMBackend` interface and its CLI and API
-  backends), `elicit.py` (S1, brief by dialogue), `voice_direction.py` (S8,
-  pace per segment), `tts/`, `sessions.py` (S9 export), `qa.py` and
-  `quiz.py` (S10 text Q&A and quizzes), `profile/` (the SQLite profile:
+  backends), `elicit.py` (brief by dialogue), `voice_direction.py` (pace
+  per segment), `tts/`, `sessions.py` (export), `qa.py` and `quiz.py`
+  (text Q&A and quizzes), `profile/` (the SQLite profile:
   preferences, inferred preferences and ranked suggestions, session
   feedback, concept table, quiz results, event log), `web/` (FastAPI app and
   static UI), `evaluation/`, `install.py` and `install.toml` (`groundcast
@@ -79,8 +79,7 @@ which every statement is grounded in those materials.
   the scripted pipeline run, and shared fixtures live in `tests/conftest.py`.
 - Every setting is a field in `src/groundcast/config.py`; add new ones there
   and to `config/groundcast.example.toml` (a test keeps the two in step).
-- The design spec is kept outside version control; tests and eval materials
-  must be self-written or openly licensed.
+- Tests and eval materials must be self-written or openly licensed.
 - `references/` holds the distillation sources (books, papers, transcripts)
   on the local machine only; git tracks just its README register. Rules
   distilled from them, in our own words with source IDs, go in

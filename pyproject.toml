@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Mode A LLM backend (API key).
+# API LLM backend (API key).
 api = ["anthropic>=0.40"]
 # Kokoro-82M speech synthesis; pulls in PyTorch (CPU build from PyPI; the
 # README shows how to switch to a CUDA build).
