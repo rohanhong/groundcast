@@ -79,14 +79,41 @@ result as an MP3 you can play in any phone player.
    git clone https://github.com/rohanhong/groundcast.git
    cd groundcast
    ```
-2. Create and activate the environment (Python 3.12, ffmpeg, poppler,
-   Tesseract for scans, and groundcast itself in editable mode):
+2. Run the installer. It creates the conda environment (Python 3.12, ffmpeg,
+   poppler, Tesseract for scans, and groundcast itself in editable mode), then
+   asks which parts to add: the PyTorch build for speech synthesis (it reads
+   `nvidia-smi` and recommends the newest build your GPU and driver can run,
+   or the CPU build), speech recognition for video and audio, the Piper
+   fallback voices, and the API backend. Enter takes each recommendation; at
+   the end it checks the installation.
+   - Windows: double-click `install.cmd`, or run `.\install.cmd` in a terminal.
+   - Linux or macOS: `./install.sh`
+
+   Add `--yes` to take every recommendation without questions, `--dry-run`
+   to only print the pip commands, or choices such as `--torch cpu --no-asr`.
+   Model weights download on first use (Kokoro about 330 MB, the speech
+   recognition model about 1.6 GB).
+3. Start the app, then open <http://127.0.0.1:8765/>. It serves the browser UI
+   on `127.0.0.1` only.
+   ```bash
+   conda activate groundcast_env_py312
+   groundcast serve
+   ```
+
+Inside the environment, `groundcast setup` offers the same choices again (for
+example after a driver update), and `groundcast doctor` checks every part and
+prints the command that fixes anything missing; the app shows the same check
+in its preferences.
+
+<details>
+<summary>Manual installation</summary>
+
+1. Create and activate the environment:
    ```bash
    conda env create -f environment.yml
    conda activate groundcast_env_py312
    ```
-3. Add speech synthesis (Kokoro-82M with a CPU build of PyTorch; the model
-   weights, about 330 MB, download on first use):
+2. Add speech synthesis (Kokoro-82M with a CPU build of PyTorch):
    ```bash
    pip install -e ".[tts]"
    ```
@@ -98,8 +125,7 @@ result as an MP3 you can play in any phone player.
    pip install "torch==2.14.1+cu130" --index-url https://download.pytorch.org/whl/cu130
    ```
    With `tts.device = "auto"` (the default), groundcast then uses the GPU.
-4. Optional: add speech recognition for video and audio (faster-whisper; the
-   default model, about 1.6 GB, downloads on first use):
+3. Optional: add speech recognition for video and audio (faster-whisper):
    ```bash
    pip install -e ".[asr]"
    ```
@@ -109,11 +135,10 @@ result as an MP3 you can play in any phone player.
    pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12>=9,<10"
    ```
    On Linux, also add their `lib` folders to `LD_LIBRARY_PATH`.
-5. Start the app, then open <http://127.0.0.1:8765/>. It serves the browser UI
-   on `127.0.0.1` only.
-   ```bash
-   groundcast serve
-   ```
+4. Optional: the Piper fallback voices (`pip install piper-tts`) and the API
+   backend (`pip install -e ".[api]"`).
+
+</details>
 
 The same pipeline runs from the command line: `groundcast ingest <files>`
 (or `--url <address>` for a web page; check recognised speech or scanned

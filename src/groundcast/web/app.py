@@ -18,7 +18,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from groundcast.config import Settings
+from groundcast.config import Settings, config_file_path
+from groundcast.doctor import Check, run_checks
 from groundcast.ingest import (
     ExtractionError,
     ingest_file,
@@ -196,6 +197,11 @@ def create_app(
             "review_below": current.asr.review_below,
             "ocr_review_below": current.ocr.review_below,
         }
+
+    @app.get("/api/doctor")
+    def get_doctor() -> list[Check]:
+        """The installation check of `groundcast doctor`; it takes a few seconds (it loads PyTorch elsewhere)."""
+        return run_checks(settings, config_file_path())
 
     @app.get("/api/materials")
     def list_materials() -> list[Material]:

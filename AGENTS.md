@@ -11,6 +11,13 @@ which every statement is grounded in those materials.
 
 ## Commands
 
+- Install for a user in one step: `install.cmd` (Windows) or `./install.sh`
+  (creates or updates the environment, then runs `groundcast setup` in it).
+- Choose the optional parts (PyTorch build from `nvidia-smi`, speech
+  recognition, Piper, API backend; the choices live in
+  `src/groundcast/install.toml`): `groundcast setup` (`--yes`, `--dry-run`,
+  `--torch <build>|keep`, `--[no-]asr`, `--[no-]piper`, `--[no-]api`).
+  Check the installation: `groundcast doctor` (also `GET /api/doctor`).
 - Create the environment: `conda env create -f environment.yml`
 - Activate it: `conda activate groundcast_env_py312`
 - Apply edits to `environment.yml`: `conda env update -f environment.yml`
@@ -50,7 +57,8 @@ which every statement is grounded in those materials.
   `quiz.py` (S10 text Q&A and quizzes), `profile/` (the SQLite profile:
   preferences, inferred preferences and ranked suggestions, session
   feedback, concept table, quiz results, event log), `web/` (FastAPI app and
-  static UI), `evaluation/`.
+  static UI), `evaluation/`, `install.py` and `install.toml` (`groundcast
+  setup`), `doctor.py` (`groundcast doctor`).
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
   the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are
   added to the Writer prompt for two-host sessions and recall prompts.

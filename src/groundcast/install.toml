@@ -1,0 +1,75 @@
+# Choices offered by `groundcast setup` (src/groundcast/install.py).
+#
+# PyTorch builds: each was checked to exist for the pinned version, Python
+# 3.12, win_amd64 and manylinux x86_64, at
+# https://download.pytorch.org/whl/<name>/torch/ (2026-10-12). A CUDA build
+# runs when the driver supports at least its CUDA version (the "CUDA Version"
+# that nvidia-smi prints) and the GPU's compute capability is at least
+# min_compute_capability (CUDA 13 dropped GPUs older than Turing, 7.5).
+# Setup recommends the newest build the GPU and driver can run.
+
+nvidia_smi = "nvidia-smi"
+
+[torch]
+version = "2.14.1"
+
+[[torch.builds]]
+name = "cu132"
+label = "CUDA 13.2"
+cuda = "13.2"
+min_compute_capability = "7.5"
+index_url = "https://download.pytorch.org/whl/cu132"
+platforms = ["win32", "linux"]
+
+[[torch.builds]]
+name = "cu130"
+label = "CUDA 13.0"
+cuda = "13.0"
+min_compute_capability = "7.5"
+index_url = "https://download.pytorch.org/whl/cu130"
+platforms = ["win32", "linux"]
+
+[[torch.builds]]
+name = "cu126"
+label = "CUDA 12.6"
+cuda = "12.6"
+min_compute_capability = "5.0"
+index_url = "https://download.pytorch.org/whl/cu126"
+platforms = ["win32", "linux"]
+
+[[torch.builds]]
+name = "cpu"
+label = "CPU only"
+index_url = "https://download.pytorch.org/whl/cpu"
+platforms = ["win32", "linux"]
+
+[[torch.builds]]
+name = "pypi"
+label = "PyPI build (Apple silicon GPU or CPU)"
+index_url = ""
+platforms = ["darwin"]
+
+# Optional parts. extra names a pyproject.toml extra; packages are installed
+# as listed. gpu_packages are added when an NVIDIA GPU whose driver supports
+# at least gpu_min_cuda is found.
+[components.tts]
+label = "Speech synthesis (Kokoro-82M); required"
+extra = "tts"
+required = true
+
+[components.asr]
+label = "Speech recognition for video and audio (faster-whisper; its model, about 1.6 GB, downloads on first use)"
+extra = "asr"
+gpu_packages = ["nvidia-cublas-cu12", "nvidia-cudnn-cu12>=9,<10"]
+gpu_min_cuda = "12.0"
+recommended = true
+
+[components.piper]
+label = "Piper fallback voices (GPL; groundcast only runs the program)"
+packages = ["piper-tts"]
+recommended = false
+
+[components.api]
+label = "Anthropic API backend (an API key instead of the Claude Code CLI)"
+extra = "api"
+recommended = false

@@ -41,7 +41,7 @@ groundcast = "groundcast.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-groundcast = ["prompts/*.md", "web/static/*"]
+groundcast = ["prompts/*.md", "web/static/*", "install.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

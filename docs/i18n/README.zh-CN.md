@@ -50,12 +50,28 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    git clone https://github.com/rohanhong/groundcast.git
    cd groundcast
    ```
-2. 创建并激活环境（Python 3.12、ffmpeg、poppler、用于扫描件的 Tesseract，并以可编辑模式安装 groundcast 本身）：
+2. 运行安装程序。它会创建 conda 环境（Python 3.12、ffmpeg、poppler、用于扫描件的 Tesseract，并以可编辑模式安装 groundcast 本身），然后询问要添加哪些部分：语音合成所用的 PyTorch 版本（它读取 `nvidia-smi`，推荐你的显卡和驱动能运行的最新版本，没有可用显卡时推荐 CPU 版）、视频和音频的语音识别、Piper 备用语音，以及 API 后端。按回车即采用推荐项；最后它会检查安装结果。
+   - Windows：双击 `install.cmd`，或在终端中运行 `.\install.cmd`。
+   - Linux 或 macOS：`./install.sh`
+
+   加上 `--yes` 可不经询问采用全部推荐项，加上 `--dry-run` 只打印 pip 命令，也可直接指定选择，例如 `--torch cpu --no-asr`。模型权重在首次使用时下载（Kokoro 约 330 MB，语音识别模型约 1.6 GB）。
+3. 启动应用，然后打开 <http://127.0.0.1:8765/>。浏览器界面只在 `127.0.0.1` 上提供服务。
+   ```bash
+   conda activate groundcast_env_py312
+   groundcast serve
+   ```
+
+在环境中，`groundcast setup` 会再次给出同样的选择（例如在更新驱动之后），`groundcast doctor` 会检查每个部分，并为缺失的部分打印修复命令；应用的偏好设置里也能看到同样的检查。
+
+<details>
+<summary>手动安装</summary>
+
+1. 创建并激活环境：
    ```bash
    conda env create -f environment.yml
    conda activate groundcast_env_py312
    ```
-3. 安装语音合成（Kokoro-82M 与 CPU 版 PyTorch；约 330 MB 的模型权重在首次使用时下载）：
+2. 安装语音合成（Kokoro-82M 与 CPU 版 PyTorch）：
    ```bash
    pip install -e ".[tts]"
    ```
@@ -64,7 +80,7 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    pip install "torch==2.14.1+cu130" --index-url https://download.pytorch.org/whl/cu130
    ```
    在默认设置 `tts.device = "auto"` 下，groundcast 随后会自动使用 GPU。
-4. 可选：为视频和音频安装语音识别（faster-whisper；默认模型约 1.6 GB，首次使用时下载）：
+3. 可选：为视频和音频安装语音识别（faster-whisper）：
    ```bash
    pip install -e ".[asr]"
    ```
@@ -73,10 +89,9 @@ groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
    pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12>=9,<10"
    ```
    在 Linux 上，还需把它们的 `lib` 目录加入 `LD_LIBRARY_PATH`。
-5. 启动应用，然后打开 <http://127.0.0.1:8765/>。浏览器界面只在 `127.0.0.1` 上提供服务。
-   ```bash
-   groundcast serve
-   ```
+4. 可选：Piper 备用语音（`pip install piper-tts`）与 API 后端（`pip install -e ".[api]"`）。
+
+</details>
 
 同一条流水线也可以在命令行运行：先 `groundcast ingest <files>`（网页用 `--url <网址>`；用 `groundcast review <material id>` 核对识别出的语音或扫描文字），再 `groundcast session -m <material id> --focus "<要讲的内容>"`（加上 `--format two_hosts` 即为双主持人，加上 `--recall` 则在结尾加入回忆提问）。用 `groundcast ask <session id> "<问题>"` 就已完成的会话提问，或用 `groundcast quiz <session id>` 打印一套经过核查的测验；用 `groundcast concepts` 查看概念表；用 `groundcast prefs --set speed=1.1` 设置偏好；用 `groundcast feedback <session id> --rating 4 --length too_long` 为会话打分；用 `groundcast suggest` 查看排序的建议。运行 `groundcast --help` 查看全部命令。
 

@@ -8,7 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from groundcast.config import CONFIG_ENV, default_config_path, load_settings
+from groundcast.config import config_file_path, load_settings
 
 
 def _settings(args: argparse.Namespace):  # type: ignore[no-untyped-def]
@@ -16,13 +16,31 @@ def _settings(args: argparse.Namespace):  # type: ignore[no-untyped-def]
 
 
 def cmd_paths(args: argparse.Namespace) -> int:
-    import os
-
     settings = _settings(args)
-    config = Path(args.config or os.environ.get(CONFIG_ENV) or default_config_path())
+    config = config_file_path(args.config)
     print(f"config file : {config} ({'found' if config.is_file() else 'not found; defaults apply'})")
     print(f"data dir    : {settings.data_dir}")
     print(f"model dir   : {settings.model_dir}")
+    return 0
+
+
+def cmd_setup(args: argparse.Namespace) -> int:
+    from groundcast.install import run_setup
+
+    settings = _settings(args)
+    args.claude_bin, args.backend = settings.llm.claude_bin, settings.llm.backend
+    return run_setup(args, out=lambda line: print(line, flush=True))
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    from groundcast.doctor import failed, format_checks, run_checks
+
+    checks = run_checks(_settings(args), config_file_path(args.config))
+    print(format_checks(checks))
+    if failed(checks):
+        print("Some required parts are missing; run the fix shown for each.")
+        return 1
+    print("Ready: run `groundcast serve`.")
     return 0
 
 
@@ -358,6 +376,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("paths", help="show the config file, data, and model paths").set_defaults(func=cmd_paths)
     sub.add_parser("serve", help="run the local web app").set_defaults(func=cmd_serve)
+
+    p = sub.add_parser("setup", help="install the optional parts: PyTorch build, speech recognition, Piper, API")
+    p.add_argument("--yes", "-y", action="store_true", help="take every recommendation without asking")
+    p.add_argument("--dry-run", action="store_true", help="show the pip commands without running them")
+    p.add_argument("--torch", metavar="BUILD", help="PyTorch build from install.toml (for example cu130 or cpu), or keep")
+    for key, what in (("asr", "speech recognition for video and audio"), ("piper", "the Piper fallback voices"),
+                      ("api", "the Anthropic API backend")):  # fmt: skip
+        p.add_argument(f"--{key}", action=argparse.BooleanOptionalAction, help=f"add {what} (or not)")
+    p.set_defaults(func=cmd_setup)
+
+    sub.add_parser("doctor", help="check the installation and show how to fix what is missing").set_defaults(
+        func=cmd_doctor)
 
     p = sub.add_parser("ingest", help="add material files or web pages to the data directory")
     p.add_argument("files", nargs="*", help="PDF, PowerPoint, Word, Markdown, text, HTML, video, or audio files")

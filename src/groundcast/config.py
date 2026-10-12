@@ -288,6 +288,11 @@ def default_config_path() -> Path:
     return Path(platformdirs.user_config_dir(APP_NAME, appauthor=False)) / "config.toml"
 
 
+def config_file_path(explicit: str | Path | None = None) -> Path:
+    """The settings file in use: an explicit path, else GROUNDCAST_CONFIG, else the per-user file."""
+    return Path(explicit or os.environ.get(CONFIG_ENV) or default_config_path())
+
+
 def _env_overrides(environ: dict[str, str]) -> dict[str, Any]:
     """Collect GROUNDCAST_* variables that name a known setting."""
     overrides: dict[str, Any] = {}
