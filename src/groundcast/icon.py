@@ -7,11 +7,11 @@ rings and an amber bar on a teal rounded square. Icons of SMALL_MAX pixels
 and below drop the inner ring and grow the source, so the G stays legible at
 16 px. All shapes are defined once below, in a unit box (0 to 1, y down);
 `svg()` writes them as vector shapes and `render()` samples them several
-times per pixel, so the two outputs match without any binary image in the
+times per pixel, so the two outputs match without any binary icon in the
 repository. The wordmark is the product name set in Fraunces, kept as
 outlines in groundcast.wordmark, so it looks the same on every machine.
 
-BRAND_FILES lists every committed file drawn here (assets/, the web app's
+BRAND_FILES lists every committed file drawn here (assets/brand/, the web app's
 icons, the README banners), and RASTER_FILES the PNG renders of some of
 them; `python -m groundcast.icon` rewrites both, and tests keep them the
 same. Icon files carry `digest()` in their names, and
@@ -326,17 +326,17 @@ def write_icons(folder: Path) -> dict[str, Path]:
 
 # Committed files drawn here, by path from the repository root.
 BRAND_FILES: dict[str, Callable[[], str]] = {
-    "assets/mark.svg": svg,
-    "assets/mark-small.svg": lambda: svg(small=True),
-    "assets/glyph-on-light.svg": lambda: glyph("light"),
-    "assets/glyph-on-dark.svg": lambda: glyph("dark"),
-    "assets/wordmark-on-light.svg": lambda: wordmark("light"),
-    "assets/wordmark-on-dark.svg": lambda: wordmark("dark"),
-    "assets/lockup-on-light.svg": lambda: lockup("light"),
-    "assets/lockup-on-dark.svg": lambda: lockup("dark"),
-    "assets/lockup-stacked-on-light.svg": lambda: lockup_stacked("light"),
-    "assets/lockup-stacked-on-dark.svg": lambda: lockup_stacked("dark"),
-    "assets/social-preview.svg": social_preview,
+    "assets/brand/mark.svg": svg,
+    "assets/brand/mark-small.svg": lambda: svg(small=True),
+    "assets/brand/glyph-on-light.svg": lambda: glyph("light"),
+    "assets/brand/glyph-on-dark.svg": lambda: glyph("dark"),
+    "assets/brand/wordmark-on-light.svg": lambda: wordmark("light"),
+    "assets/brand/wordmark-on-dark.svg": lambda: wordmark("dark"),
+    "assets/brand/lockup-on-light.svg": lambda: lockup("light"),
+    "assets/brand/lockup-on-dark.svg": lambda: lockup("dark"),
+    "assets/brand/lockup-stacked-on-light.svg": lambda: lockup_stacked("light"),
+    "assets/brand/lockup-stacked-on-dark.svg": lambda: lockup_stacked("dark"),
+    "assets/brand/social-preview.svg": social_preview,
     "src/groundcast/web/static/favicon.svg": lambda: svg(small=True),
     "src/groundcast/web/static/logo.svg": svg,
     "src/groundcast/web/static/wordmark.svg": lambda: wordmark("light"),
@@ -360,7 +360,7 @@ def write_brand_files(root: Path) -> list[Path]:
 # Committed PNG renders of files in BRAND_FILES, for places that take no SVG (GitHub's social preview).
 # Each records the SHA-256 of its source in a tEXt chunk, so a test spots a stale render without
 # rendering; writing them needs resvg-py (the dev extra), since the text outlines are paths.
-RASTER_FILES: dict[str, str] = {"assets/social-preview.png": "assets/social-preview.svg"}
+RASTER_FILES: dict[str, str] = {"assets/brand/social-preview.png": "assets/brand/social-preview.svg"}
 SOURCE_KEY = b"Source-SHA256"
 
 
