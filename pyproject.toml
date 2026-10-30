@@ -32,7 +32,8 @@ tts = [
 ]
 # Speech recognition for video and audio materials.
 asr = ["faster-whisper>=1.2"]
-dev = ["pytest>=8.0", "httpx>=0.27"]
+# resvg-py renders the committed PNG files in `python -m groundcast.icon`.
+dev = ["pytest>=8.0", "httpx>=0.27", "resvg-py>=0.5"]
 
 [project.scripts]
 groundcast = "groundcast.cli:main"

@@ -12,8 +12,9 @@ repository. The wordmark is the product name set in Fraunces, kept as
 outlines in groundcast.wordmark, so it looks the same on every machine.
 
 BRAND_FILES lists every committed file drawn here (assets/, the web app's
-icons, the README banners); `python -m groundcast.icon` rewrites them, and a
-test keeps them the same. Icon files carry `digest()` in their names, and
+icons, the README banners), and RASTER_FILES the PNG renders of some of
+them; `python -m groundcast.icon` rewrites both, and tests keep them the
+same. Icon files carry `digest()` in their names, and
 the page links the favicon with it, so a changed drawing is never shown from
 an old cached copy.
 """
@@ -356,7 +357,64 @@ def write_brand_files(root: Path) -> list[Path]:
     return written
 
 
+# Committed PNG renders of files in BRAND_FILES, for places that take no SVG (GitHub's social preview).
+# Each records the SHA-256 of its source in a tEXt chunk, so a test spots a stale render without
+# rendering; writing them needs resvg-py (the dev extra), since the text outlines are paths.
+RASTER_FILES: dict[str, str] = {"assets/social-preview.png": "assets/social-preview.svg"}
+SOURCE_KEY = b"Source-SHA256"
+
+
+def source_sha256(name: str) -> str:
+    """The SHA-256 of the drawing a raster file in RASTER_FILES is rendered from."""
+    return hashlib.sha256(BRAND_FILES[RASTER_FILES[name]]().encode("utf-8")).hexdigest()
+
+
+def png_text(data: bytes) -> dict[bytes, bytes]:
+    """The tEXt entries of a PNG, by keyword."""
+    out, pos = {}, 8
+    while pos + 8 <= len(data):
+        length, kind = struct.unpack(">I4s", data[pos : pos + 8])
+        if kind == b"tEXt":
+            keyword, _, value = data[pos + 8 : pos + 8 + length].partition(b"\x00")
+            out[keyword] = value
+        pos += 12 + length
+    return out
+
+
+def _with_text(data: bytes, keyword: bytes, value: bytes) -> bytes:
+    """data with a tEXt entry added after its IHDR chunk."""
+    body = keyword + b"\x00" + value
+    entry = struct.pack(">I", len(body)) + b"tEXt" + body + struct.pack(">I", zlib.crc32(b"tEXt" + body) & 0xFFFFFFFF)
+    end = 8 + 12 + struct.unpack(">I", data[8:12])[0]
+    return data[:end] + entry + data[end:]
+
+
+def write_raster_files(root: Path) -> tuple[list[Path], list[Path]]:
+    """Render the files in RASTER_FILES under root whose recorded source differs; return those written and
+    those left stale because resvg-py is not installed."""
+    written, stale = [], []
+    for name, source in RASTER_FILES.items():
+        path, sha = root / name, source_sha256(name)
+        if path.is_file() and png_text(path.read_bytes()).get(SOURCE_KEY) == sha.encode("ascii"):
+            continue
+        try:
+            import resvg_py
+        except ImportError:
+            stale.append(path)
+            continue
+        data = resvg_py.svg_to_bytes(svg_string=BRAND_FILES[source](), skip_system_fonts=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(_with_text(data, SOURCE_KEY, sha.encode("ascii")))
+        written.append(path)
+    return written, stale
+
+
 if __name__ == "__main__":
     # python -m groundcast.icon [repository root, default: the current directory]
-    for path in write_brand_files(Path(sys.argv[1]) if len(sys.argv) > 1 else Path.cwd()):
+    root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.cwd()
+    rendered, stale = write_raster_files(root)
+    for path in write_brand_files(root) + rendered:
         print(f"wrote {path}")
+    for path in stale:
+        print(f"not rendered, install resvg-py (the dev extra): {path}", file=sys.stderr)
+    sys.exit(1 if stale else 0)

@@ -73,9 +73,11 @@ which every statement is grounded in those materials.
   by `scripts/outline_wordmark.py`. The brand kit in `assets/` (see its
   README), `web/static/favicon.svg`, `logo.svg`, and `wordmark.svg`, and the
   README banners in `.github/assets/` are its output, listed in
-  `BRAND_FILES`, and the shortcut icons are rendered from it, so no binary
-  image is tracked. After changing the drawing, run `python -m
-  groundcast.icon` to rewrite those files (a test compares them). The page
+  `BRAND_FILES`, and the shortcut icons are rendered from it at install
+  time. The only tracked binary image is `assets/social-preview.png`
+  (listed in `RASTER_FILES`), rendered with resvg-py from its SVG and
+  carrying that SVG's SHA-256. After changing the drawing, run `python -m
+  groundcast.icon` to rewrite those files (tests compare them). The page
   links the favicon and logo with the drawing's digest, and on Windows the
   launcher sets the .ico on the app windows, since the browser would show
   its cached, stretched favicon there.

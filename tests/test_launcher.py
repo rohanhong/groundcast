@@ -99,6 +99,20 @@ def test_generated_images_match_the_drawing() -> None:
         assert path.is_file() and path.read_text(encoding="utf-8") == make(), f"run python -m groundcast.icon ({name})"
 
 
+def test_rendered_images_match_their_drawing() -> None:
+    import re
+    import struct
+
+    from groundcast.icon import BRAND_FILES, RASTER_FILES, SOURCE_KEY, png_text, source_sha256
+
+    root = Path(__file__).resolve().parent.parent
+    for name, source in RASTER_FILES.items():
+        data = (root / name).read_bytes()
+        assert png_text(data).get(SOURCE_KEY) == source_sha256(name).encode("ascii"), f"run python -m groundcast.icon ({name})"
+        width, height = re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', BRAND_FILES[source]()).groups()  # type: ignore[union-attr]
+        assert struct.unpack(">II", data[16:24]) == (round(float(width)), round(float(height)))
+
+
 def test_small_icons_use_the_simple_drawing() -> None:
     from groundcast.icon import LARGE, SMALL, SMALL_MAX, geometry, render
 

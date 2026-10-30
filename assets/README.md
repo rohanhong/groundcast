@@ -1,9 +1,13 @@
 # Groundcast brand assets
 
-Every SVG in this folder is drawn by `src/groundcast/icon.py`. Do not edit
+Every file in this folder is drawn by `src/groundcast/icon.py`. Do not edit
 them by hand: change the drawing there, then run `python -m groundcast.icon`
 from the repository root, which also rewrites the web app's icons and the
 README banners. A test fails when a committed file differs from the drawing.
+The one PNG, `social-preview.png`, is rendered from its SVG with resvg-py
+(in the `dev` extra); it records the SVG's SHA-256 in a `Source-SHA256`
+text chunk, which the test compares, and the command exits non-zero when it
+is stale and resvg-py is missing.
 
 ## The mark
 
@@ -36,6 +40,7 @@ favicon use it at 24 px and below, the large drawing above.
 | `lockup-on-light.svg`, `lockup-on-dark.svg` | Icon beside the name; the default signature. |
 | `lockup-stacked-on-light.svg`, `lockup-stacked-on-dark.svg` | Icon above the name, for square spaces. |
 | `social-preview.svg` | 1280 x 640 link preview card. |
+| `social-preview.png` | The same card as PNG, for GitHub's social preview. |
 
 Also drawn from the same source: `src/groundcast/web/static/favicon.svg`,
 `logo.svg`, and `wordmark.svg` (the sidebar paints it as a mask in the
@@ -43,9 +48,9 @@ theme's colour), `.github/assets/banner-light.svg` and `banner-dark.svg`
 (the README header), and the PNG, ICO, and ICNS shortcut icons, which
 `groundcast shortcut` renders into the data directory.
 
-GitHub accepts only PNG, JPG, or GIF as a social preview: export
-`social-preview.svg` to a 1280 x 640 PNG with any SVG tool and upload it in
-the repository's Settings, General, Social preview.
+GitHub accepts only PNG, JPG, or GIF as a social preview and does not read
+it from the repository: upload `social-preview.png` in the repository's
+Settings, General, Social preview, again whenever it changes.
 
 ## Colour
 
