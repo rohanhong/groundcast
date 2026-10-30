@@ -2,12 +2,14 @@
 
 ## Supported Versions
 
-groundcast has no releases yet. Fixes land on `main` only.
+Security fixes land on `main` and ship in the next patch release of the
+latest release line.
 
 | Version | Supported |
 |---|---|
+| `1.0.x` (latest release line) | Yes |
 | `main` (latest commit) | Yes |
-| Older commits | No |
+| Older versions | No |
 
 ## Reporting a Vulnerability
 
@@ -20,7 +22,7 @@ Report them privately through GitHub:
 
 Include what you can of:
 
-- the affected component and the commit you tested;
+- the affected component and the version or commit you tested;
 - steps to reproduce, and your OS and LLM backend;
 - the impact, and a suggested fix if you have one.
 
@@ -29,7 +31,7 @@ Include what you can of:
 - An acknowledgement within 7 days. This is a single-maintainer project, so
   responses are best effort.
 - Updates as the report is triaged and fixed, through the private advisory.
-- Coordinated disclosure: the advisory is published once a fix is on `main`,
+- Coordinated disclosure: the advisory is published once a fix is released,
   with credit to you unless you prefer otherwise.
 
 ## Scope
