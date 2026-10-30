@@ -91,14 +91,29 @@ def test_health_tells_groundcast_from_other_programs(settings: Settings) -> None
 
 
 def test_generated_images_match_the_drawing() -> None:
-    from groundcast.icon import banner, svg
+    from groundcast.icon import BRAND_FILES
 
     root = Path(__file__).resolve().parent.parent
-    assert (root / "src/groundcast/web/static/favicon.svg").read_text(encoding="utf-8") == svg()
-    tagline = "Study audio, grounded in your materials"
-    for name, ink, muted in (("light", "#1a1c1e", "#5f666c"), ("dark", "#e9ecee", "#a8b0b7")):
-        committed = (root / f".github/assets/banner-{name}.svg").read_text(encoding="utf-8")
-        assert committed == banner("Groundcast", tagline, ink, muted), f"regenerate banner-{name}.svg"
+    for name, make in BRAND_FILES.items():
+        path = root / name
+        assert path.is_file() and path.read_text(encoding="utf-8") == make(), f"run python -m groundcast.icon ({name})"
+
+
+def test_small_icons_use_the_simple_drawing() -> None:
+    from groundcast.icon import LARGE, SMALL, SMALL_MAX, geometry, render
+
+    assert geometry(SMALL_MAX) is SMALL and geometry(SMALL_MAX + 1) is LARGE
+    assert len(SMALL.rings) < len(LARGE.rings)
+    assert render(16).shape == (16, 16, 4) and render(16)[0, 0, 3] == 0  # the rounded corner is clear
+
+
+def test_sidebar_wordmark_keeps_the_outline_proportions() -> None:
+    import re
+
+    root = Path(__file__).resolve().parent.parent / "src/groundcast/web/static"
+    svg = (root / "wordmark.svg").read_text(encoding="utf-8")
+    width, height = re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg).groups()  # type: ignore[union-attr]
+    assert f"aspect-ratio: {width} / {height};" in (root / "style.css").read_text(encoding="utf-8")
 
 
 def test_icon_files_carry_the_drawing_digest(tmp_path: Path) -> None:

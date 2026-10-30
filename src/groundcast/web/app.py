@@ -689,11 +689,12 @@ def create_app(
     @app.get("/", include_in_schema=False)
     @app.get("/index.html", include_in_schema=False)
     def page() -> HTMLResponse:
-        # The favicon address carries the drawing's digest: browsers keep a favicon by its address, and an
+        # The icon addresses carry the drawing's digest: browsers keep a favicon by its address, and an
         # app window shows it as the window icon, so a changed icon would otherwise stay old there.
         html = static_dir.joinpath("index.html").read_text(encoding="utf-8")
-        return HTMLResponse(html.replace('"favicon.svg"', f'"favicon.svg?v={icon_digest()}"'),
-                            headers={"Cache-Control": "no-cache"})  # fmt: skip
+        for name in ("favicon.svg", "logo.svg"):
+            html = html.replace(f'"{name}"', f'"{name}?v={icon_digest()}"')
+        return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
     app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="ui")
     return app

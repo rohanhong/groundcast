@@ -67,13 +67,18 @@ which every statement is grounded in those materials.
   static UI), `evaluation/`, `install.py` and `install.toml` (`groundcast
   setup`), `doctor.py` (`groundcast doctor`), `launcher.py` (`groundcast
   launch`), `shortcuts.py` and `icon.py` (`groundcast shortcut`). `icon.py`
-  holds the one drawing of the icon (a G of sound waves whose crossbar is the
-  ground line): `web/static/favicon.svg` and the README banners in
-  `.github/assets/` are its output, and the shortcut icons are rendered from
-  it, so no binary image is tracked. After changing the drawing, regenerate
-  those files (a test compares them). The page links the favicon with the
-  drawing's digest, and on Windows the launcher sets the .ico on the app
-  windows, since the browser would show its cached, stretched favicon there.
+  holds the one drawing of the brand (a flat G of sound waves whose crossbar
+  is the ground line, with a simpler drawing at 24 px and below), and
+  `wordmark.py` the product name and tagline as Fraunces outlines, written
+  by `scripts/outline_wordmark.py`. The brand kit in `assets/` (see its
+  README), `web/static/favicon.svg`, `logo.svg`, and `wordmark.svg`, and the
+  README banners in `.github/assets/` are its output, listed in
+  `BRAND_FILES`, and the shortcut icons are rendered from it, so no binary
+  image is tracked. After changing the drawing, run `python -m
+  groundcast.icon` to rewrite those files (a test compares them). The page
+  links the favicon and logo with the drawing's digest, and on Windows the
+  launcher sets the .ico on the app windows, since the browser would show
+  its cached, stretched favicon there.
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
   the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are
   added to the Writer prompt for two-host sessions and recall prompts.

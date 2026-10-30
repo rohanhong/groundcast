@@ -1,14 +1,21 @@
-"""The Groundcast icon: one drawing, written out as SVG (web) and as PNG, ICO, and ICNS (shortcuts).
+"""The Groundcast brand: the mark, the wordmark, and their lockups, written out as SVG and as PNG, ICO, and ICNS.
 
-The mark is a G drawn as sound waves: two open rings spread from a glowing
-source at the centre, and the G's crossbar is a warm ground line the source
-stands on, as every sentence of a session stands on its sources. All shapes
-are defined once below, in a unit box (0 to 1, y down); `svg()` writes them
-as vector shapes and `render()` samples them several times per pixel, so
-the two outputs match without any binary image in the repository.
-web/static/favicon.svg is `svg()`'s output (a test keeps them the same).
-Icon files carry `digest()` in their names, and the page links the favicon
-with it, so a changed drawing is never shown from an old cached copy.
+The mark is a G drawn as sound waves: two open rings spread from a source at
+the centre, and the G's crossbar is an amber ground line the source stands
+on, as every sentence of a session stands on its sources. It is flat: cream
+rings and an amber bar on a teal rounded square. Icons of SMALL_MAX pixels
+and below drop the inner ring and grow the source, so the G stays legible at
+16 px. All shapes are defined once below, in a unit box (0 to 1, y down);
+`svg()` writes them as vector shapes and `render()` samples them several
+times per pixel, so the two outputs match without any binary image in the
+repository. The wordmark is the product name set in Fraunces, kept as
+outlines in groundcast.wordmark, so it looks the same on every machine.
+
+BRAND_FILES lists every committed file drawn here (assets/, the web app's
+icons, the README banners); `python -m groundcast.icon` rewrites them, and a
+test keeps them the same. Icon files carry `digest()` in their names, and
+the page links the favicon with it, so a changed drawing is never shown from
+an old cached copy.
 """
 
 from __future__ import annotations
@@ -16,27 +23,57 @@ from __future__ import annotations
 import hashlib
 import math
 import struct
+import sys
 import zlib
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
+from groundcast.wordmark import NAME, TAGLINE
+
 CORNER = 0.225  # corner radius of the rounded square
-BACKGROUND = ("#0a2226", "#145650")  # top, bottom
-HIGHLIGHT = ("#ffffff", 0.16, (0.28, 0.18), 0.7)  # soft light: colour, opacity, centre, radius
 CENTRE = (0.5, 0.5)
-GAP = 38.0  # degrees: the G's opening, from straight right towards the top
-RINGS = ((0.31, 0.09, 1.0), (0.19, 0.046, 0.55))  # radius, stroke width, opacity
-RING_COLOURS = ("#fff3dc", "#f4a640", 0.19, 0.81)  # top colour, bottom colour, from y, to y
-BAR = (0.31, 0.09)  # from the centre to this distance right, stroke width
-BAR_COLOURS = ("#f7b84e", "#ec8f2e")  # at the centre, at the end
-GLOW = ("#ffc46b", 0.7, 0.22)  # around the source: colour, opacity at the centre, radius
-SOURCE = ("#fff7e8", 0.066)  # colour, radius
+GAP = 40.0  # degrees: the G's opening, from straight right towards the top
+TILE = "#0e3b3a"
+CREAM = "#fff4e0"
+AMBER = "#f0a23b"
+
+
+@dataclass(frozen=True)
+class Geometry:
+    rings: tuple[tuple[float, float, float], ...]  # radius, stroke width, opacity; the outer ring first
+    bar: float  # stroke width of the crossbar, which runs from the centre to the outer ring
+    source: float  # radius of the source at the centre
+
+
+LARGE = Geometry(rings=((0.27, 0.11, 1.0), (0.14, 0.06, 0.55)), bar=0.11, source=0.07)
+SMALL = Geometry(rings=((0.27, 0.11, 1.0),), bar=0.11, source=0.095)
+SMALL_MAX = 24  # px: icons this size and below use SMALL
+
+
+@dataclass(frozen=True)
+class Ground:
+    mark: str  # rings and source
+    bar: str
+    text: str  # the wordmark
+    muted: str  # the tagline
+
+
+GROUNDS = {
+    "light": Ground(mark="#0e3b3a", bar="#d98a1e", text="#0e3b3a", muted="#5b6d6a"),
+    "dark": Ground(mark=CREAM, bar=AMBER, text=CREAM, muted="#a9b8b4"),
+}
 
 SAMPLES = 4  # per pixel side
 ICO_SIZES = (16, 20, 24, 32, 40, 48, 64, 128, 256)  # window icon sizes at 100 to 200 % scaling
 ICNS_TYPES = {128: b"ic07", 256: b"ic08", 512: b"ic09"}
 SVG_BOX = 100.0
+
+
+def geometry(size: int) -> Geometry:
+    return SMALL if size <= SMALL_MAX else LARGE
 
 
 def _rgb(hex_colour: str) -> np.ndarray:
@@ -53,46 +90,34 @@ def ring_ends(radius: float) -> tuple[tuple[float, float], tuple[float, float]]:
 # Raster
 
 
-def _mix(a: np.ndarray, b: np.ndarray, t: np.ndarray) -> np.ndarray:
-    t = np.clip(t, 0.0, 1.0)[..., None]
-    return a + (b - a) * t
-
-
 def _paint(rgb: np.ndarray, colour: np.ndarray, cover: np.ndarray) -> np.ndarray:
-    """Paint colour (one colour, or one per sample) with coverage 0 to 1 over an opaque picture."""
+    """Paint one colour with coverage 0 to 1 over an opaque picture."""
     c = cover[..., None]
     return rgb * (1 - c) + colour * c
 
 
 def render(size: int) -> np.ndarray:
-    """RGBA pixels, shape (size, size, 4), uint8."""
+    """RGBA pixels of the icon on its tile, shape (size, size, 4), uint8."""
+    g = geometry(size)
     n = size * SAMPLES
     coords = (np.arange(n, dtype=np.float32) + 0.5) / n
     x, y = np.meshgrid(coords, coords)
     cx, cy = CENTRE
 
-    rgb = _mix(_rgb(BACKGROUND[0]), _rgb(BACKGROUND[1]), y)
-    colour, opacity, (hx, hy), radius = HIGHLIGHT
-    rgb = _paint(rgb, _rgb(colour), opacity * np.clip(1 - np.hypot(x - hx, y - hy) / radius, 0, 1))
-    colour, opacity, radius = GLOW
-    rgb = _paint(rgb, _rgb(colour), opacity * np.clip(1 - np.hypot(x - cx, y - cy) / radius, 0, 1) ** 2)
-
-    top, bottom, y0, y1 = RING_COLOURS
-    ring_rgb = _mix(_rgb(top), _rgb(bottom), (y - y0) / (y1 - y0))
+    rgb = np.broadcast_to(_rgb(TILE), (n, n, 3)).copy()
     dx, dy = x - cx, y - cy
     angle = np.degrees(np.arctan2(dy, dx)) % 360.0  # 0 straight right, growing clockwise on screen
-    for radius, width, opacity in RINGS:
+    for radius, width, opacity in g.rings:
         (sx, sy), (ex, ey) = ring_ends(radius)
         to_ends = np.minimum(np.hypot(x - sx, y - sy), np.hypot(x - ex, y - ey))
         d = np.where(angle <= 360.0 - GAP, np.abs(np.hypot(dx, dy) - radius), to_ends)
-        rgb = _paint(rgb, ring_rgb, opacity * (d <= width / 2))
+        rgb = _paint(rgb, _rgb(CREAM), opacity * (d <= width / 2))
 
-    length, width = BAR
+    length = g.rings[0][0]
     t = np.clip((x - cx) / length, 0.0, 1.0)
-    bar = np.hypot(x - (cx + t * length), y - cy) <= width / 2
-    rgb = _paint(rgb, _mix(_rgb(BAR_COLOURS[0]), _rgb(BAR_COLOURS[1]), t), bar.astype(np.float32))
-    colour, radius = SOURCE
-    rgb = _paint(rgb, _rgb(colour), (np.hypot(x - cx, y - cy) <= radius).astype(np.float32))
+    bar = np.hypot(x - (cx + t * length), y - cy) <= g.bar / 2
+    rgb = _paint(rgb, _rgb(AMBER), bar.astype(np.float32))
+    rgb = _paint(rgb, _rgb(CREAM), (np.hypot(dx, dy) <= g.source).astype(np.float32))
 
     # The rounded square cuts it out.
     qx = np.maximum(np.abs(x - 0.5) - (0.5 - CORNER), 0.0)
@@ -109,56 +134,124 @@ def render(size: int) -> np.ndarray:
 # Vector
 
 
+def _f(value: float) -> str:
+    return f"{value:.2f}".rstrip("0").rstrip(".")
+
+
 def _n(value: float) -> str:
-    return f"{value * SVG_BOX:.2f}".rstrip("0").rstrip(".")
+    return _f(value * SVG_BOX)
 
 
-def svg(prefix: str = "gc") -> str:
-    """The icon as an SVG document; prefix keeps its IDs unique when several copies share a page."""
-    box = _n(1)
+def _glyph(g: Geometry, mark: str, bar: str) -> str:
+    """The mark's shapes, without the tile, in a box of SVG_BOX units."""
     cx, cy = CENTRE
-    hi_colour, hi_opacity, (hx, hy), hi_radius = HIGHLIGHT
-    glow_colour, glow_opacity, glow_radius = GLOW
-    top, bottom, y0, y1 = RING_COLOURS
-    length, bar_width = BAR
-    source_colour, source_radius = SOURCE
-    rings = ""
-    for radius, width, opacity in RINGS:
+    out = []
+    for radius, width, opacity in g.rings:
         (sx, sy), (ex, ey) = ring_ends(radius)
-        rings += (f'<path d="M{_n(sx)} {_n(sy)}A{_n(radius)} {_n(radius)} 0 1 0 {_n(ex)} {_n(ey)}" '
-                  f'stroke-width="{_n(width)}" stroke-opacity="{opacity:g}"/>')  # fmt: skip
-    return "".join([
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {box} {box}" role="img" aria-label="Groundcast">',
-        "<defs>",
-        f'<clipPath id="{prefix}-shape"><rect width="{box}" height="{box}" rx="{_n(CORNER)}"/></clipPath>',
-        f'<linearGradient id="{prefix}-bg" x1="0" y1="0" x2="0" y2="{box}" gradientUnits="userSpaceOnUse">'
-        f'<stop offset="0" stop-color="{BACKGROUND[0]}"/><stop offset="1" stop-color="{BACKGROUND[1]}"/>'
-        "</linearGradient>",
-        f'<radialGradient id="{prefix}-hi" cx="{_n(hx)}" cy="{_n(hy)}" r="{_n(hi_radius)}" '
-        f'gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="{hi_colour}" stop-opacity="{hi_opacity:g}"/>'
-        f'<stop offset="1" stop-color="{hi_colour}" stop-opacity="0"/></radialGradient>',
-        f'<radialGradient id="{prefix}-glow" cx="{_n(cx)}" cy="{_n(cy)}" r="{_n(glow_radius)}" '
-        f'gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="{glow_colour}" '
-        f'stop-opacity="{glow_opacity:g}"/><stop offset=".5" stop-color="{glow_colour}" '
-        f'stop-opacity="{glow_opacity / 4:g}"/><stop offset="1" stop-color="{glow_colour}" stop-opacity="0"/>'
-        "</radialGradient>",
-        f'<linearGradient id="{prefix}-ring" x1="0" y1="{_n(y0)}" x2="0" y2="{_n(y1)}" '
-        f'gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="{top}"/>'
-        f'<stop offset="1" stop-color="{bottom}"/></linearGradient>',
-        f'<linearGradient id="{prefix}-bar" x1="{_n(cx)}" y1="0" x2="{_n(cx + length)}" y2="0" '
-        f'gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="{BAR_COLOURS[0]}"/>'
-        f'<stop offset="1" stop-color="{BAR_COLOURS[1]}"/></linearGradient>',
-        "</defs>",
-        f'<g clip-path="url(#{prefix}-shape)">',
-        f'<rect width="{box}" height="{box}" fill="url(#{prefix}-bg)"/>',
-        f'<rect width="{box}" height="{box}" fill="url(#{prefix}-hi)"/>',
-        f'<circle cx="{_n(cx)}" cy="{_n(cy)}" r="{_n(glow_radius)}" fill="url(#{prefix}-glow)"/>',
-        f'<g fill="none" stroke="url(#{prefix}-ring)" stroke-linecap="round">{rings}</g>',
-        f'<path d="M{_n(cx)} {_n(cy)}H{_n(cx + length)}" stroke="url(#{prefix}-bar)" '
-        f'stroke-width="{_n(bar_width)}" stroke-linecap="round"/>',
-        f'<circle cx="{_n(cx)}" cy="{_n(cy)}" r="{_n(source_radius)}" fill="{source_colour}"/>',
-        "</g></svg>\n",
+        alpha = "" if opacity == 1 else f' stroke-opacity="{opacity:g}"'
+        out.append(f'<path d="M{_n(sx)} {_n(sy)}A{_n(radius)} {_n(radius)} 0 1 0 {_n(ex)} {_n(ey)}" fill="none" '
+                   f'stroke="{mark}" stroke-width="{_n(width)}" stroke-linecap="round"{alpha}/>')  # fmt: skip
+    out.append(f'<path d="M{_n(cx)} {_n(cy)}H{_n(cx + g.rings[0][0])}" stroke="{bar}" stroke-width="{_n(g.bar)}" '
+               'stroke-linecap="round"/>')  # fmt: skip
+    out.append(f'<circle cx="{_n(cx)}" cy="{_n(cy)}" r="{_n(g.source)}" fill="{mark}"/>')
+    return "".join(out)
+
+
+def _tile(g: Geometry) -> str:
+    box = _n(1)
+    return f'<rect width="{box}" height="{box}" rx="{_n(CORNER)}" fill="{TILE}"/>' + _glyph(g, CREAM, AMBER)
+
+
+def _place(content: str, x: float, y: float, side: float) -> str:
+    """Content drawn in the SVG_BOX box, moved to (x, y) and scaled to side units."""
+    return f'<g transform="translate({_f(x)} {_f(y)}) scale({side / SVG_BOX:.6g})">{content}</g>'
+
+
+def _text(outline: dict, x: float, baseline: float, cap: float, colour: str) -> str:
+    """An outline from groundcast.wordmark with its ink starting at x, scaled so a capital is cap tall."""
+    s = cap / outline["cap"]
+    return (f'<path transform="translate({_f(x - outline["box"][0] * s)} {_f(baseline)}) scale({s:.6g})" '
+            f'fill="{colour}" d="{outline["path"]}"/>')  # fmt: skip
+
+
+def _extent(outline: dict, cap: float) -> tuple[float, float, float]:
+    """Ink width, height above the baseline, and depth below it, for a capital cap tall."""
+    s = cap / outline["cap"]
+    x0, y0, x1, y1 = outline["box"]
+    return (x1 - x0) * s, -y0 * s, max(y1, 0) * s
+
+
+def _document(width: float, height: float, body: str, sized: bool = True) -> str:
+    size = f' width="{_f(width)}" height="{_f(height)}"' if sized else ""
+    return (f'<svg xmlns="http://www.w3.org/2000/svg"{size} viewBox="0 0 {_f(width)} {_f(height)}" role="img" '
+            f'aria-label="Groundcast"><title>Groundcast</title>{body}</svg>\n')  # fmt: skip
+
+
+def svg(small: bool = False) -> str:
+    """The icon on its tile as an SVG document; small is the version for 24 px and below."""
+    return _document(SVG_BOX, SVG_BOX, _tile(SMALL if small else LARGE), sized=False)
+
+
+def glyph(ground: str) -> str:
+    """The mark without its tile, in the colours for a light or dark ground."""
+    c = GROUNDS[ground]
+    inset = CENTRE[0] - LARGE.rings[0][0] - LARGE.rings[0][1] / 2 - 0.025
+    side = (1 - 2 * inset) * SVG_BOX
+    body = f'<g transform="translate({_n(-inset)} {_n(-inset)})">{_glyph(LARGE, c.mark, c.bar)}</g>'
+    return _document(side, side, body)
+
+
+def wordmark(ground: str, cap: float = 100.0) -> str:
+    """The product name alone."""
+    width, above, below = _extent(NAME, cap)
+    return _document(width, above + below, _text(NAME, 0, above, cap, GROUNDS[ground].text))
+
+
+def lockup(ground: str) -> str:
+    """The icon beside the name, whose capitals are half the icon's height and centred on it."""
+    side, cap = 100.0, 50.0
+    x = side * 1.3
+    width, _, _ = _extent(NAME, cap)
+    body = _place(_tile(LARGE), 0, 0, side) + _text(NAME, x, (side + cap) / 2, cap, GROUNDS[ground].text)
+    return _document(x + width, side, body)
+
+
+def lockup_stacked(ground: str) -> str:
+    """The icon centred above the name."""
+    side, cap = 100.0, 30.0
+    width, above, below = _extent(NAME, cap)
+    total = max(side, width)
+    baseline = side * 1.22 + above
+    body = _place(_tile(LARGE), (total - side) / 2, 0, side) + _text(
+        NAME, (total - width) / 2, baseline, cap, GROUNDS[ground].text)
+    return _document(total, baseline + below, body)
+
+
+def banner(ground: str) -> str:
+    """The README banner: the icon beside the name and the tagline."""
+    c = GROUNDS[ground]
+    side, margin, x = 108.0, 6.0, 138.0
+    name_cap, tagline_cap = 40.0, 13.0
+    width = max(_extent(NAME, name_cap)[0], _extent(TAGLINE, tagline_cap)[0])
+    body = (_place(_tile(LARGE), margin, margin, side) + _text(NAME, x, 62, name_cap, c.text)
+            + _text(TAGLINE, x + 1, 96, tagline_cap, c.muted))  # fmt: skip
+    return _document(x + width + margin, side + 2 * margin, body)
+
+
+def social_preview() -> str:
+    """A 1280 x 640 card for link previews: the mark, then the name standing on the crossbar's ground line."""
+    c = GROUNDS["dark"]
+    width, height, side = 1280.0, 640.0, 360.0
+    cy = height / 2
+    left = 520.0
+    body = "".join([
+        f'<rect width="{_f(width)}" height="{_f(height)}" fill="{TILE}"/>',
+        _place(_glyph(LARGE, c.mark, c.bar), 330 - side / 2, cy - side / 2, side),
+        f'<path d="M{_f(left - 20)} {_f(cy)}H{_f(width)}" stroke="{c.bar}" stroke-width="4" stroke-opacity=".85"/>',
+        _text(NAME, left, cy - 26, 80, c.text),
+        _text(TAGLINE, left + 2, cy + 48, 22, c.muted),
     ])  # fmt: skip
+    return _document(width, height, body)
 
 
 # Files
@@ -196,7 +289,7 @@ def icns(types: dict[int, bytes] = ICNS_TYPES) -> bytes:
 
 def digest() -> str:
     """A short digest of the drawing, which changes whenever the icon does."""
-    return hashlib.sha256(svg().encode("utf-8")).hexdigest()[:8]
+    return hashlib.sha256((svg() + svg(small=True)).encode("utf-8")).hexdigest()[:8]
 
 
 ICON_MAKERS = {"png": lambda: png(256), "ico": ico, "icns": icns}
@@ -230,20 +323,40 @@ def write_icons(folder: Path) -> dict[str, Path]:
     return out
 
 
-def banner(name: str, tagline: str, ink: str, muted: str, prefix: str = "gb") -> str:
-    """A README banner: the icon beside the name and a tagline (fonts are the viewer's serif and sans)."""
-    icon = svg(prefix).replace(' role="img" aria-label="Groundcast"', "").replace(
-        "<svg ", '<svg x="6" y="6" width="108" height="108" ', 1)
-    return "".join([
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="560" height="120" viewBox="0 0 560 120" role="img" '
-        f'aria-label="{name}">',
-        f"<title>{name}</title>",
-        icon.rstrip("\n"),
-        f'<text x="138" y="68" fill="{ink}" font-size="56" font-weight="600" letter-spacing="-1" '
-        'font-family="Iowan Old Style, Palatino Linotype, Palatino, Book Antiqua, Georgia, serif">'
-        f"{name}</text>",
-        f'<text x="141" y="100" fill="{muted}" font-size="18" '
-        'font-family="Segoe UI, -apple-system, Helvetica Neue, Arial, sans-serif">'
-        f"{tagline}</text>",
-        "</svg>\n",
-    ])  # fmt: skip
+# Committed files drawn here, by path from the repository root.
+BRAND_FILES: dict[str, Callable[[], str]] = {
+    "assets/mark.svg": svg,
+    "assets/mark-small.svg": lambda: svg(small=True),
+    "assets/glyph-on-light.svg": lambda: glyph("light"),
+    "assets/glyph-on-dark.svg": lambda: glyph("dark"),
+    "assets/wordmark-on-light.svg": lambda: wordmark("light"),
+    "assets/wordmark-on-dark.svg": lambda: wordmark("dark"),
+    "assets/lockup-on-light.svg": lambda: lockup("light"),
+    "assets/lockup-on-dark.svg": lambda: lockup("dark"),
+    "assets/lockup-stacked-on-light.svg": lambda: lockup_stacked("light"),
+    "assets/lockup-stacked-on-dark.svg": lambda: lockup_stacked("dark"),
+    "assets/social-preview.svg": social_preview,
+    "src/groundcast/web/static/favicon.svg": lambda: svg(small=True),
+    "src/groundcast/web/static/logo.svg": svg,
+    "src/groundcast/web/static/wordmark.svg": lambda: wordmark("light"),
+    ".github/assets/banner-light.svg": lambda: banner("light"),
+    ".github/assets/banner-dark.svg": lambda: banner("dark"),
+}
+
+
+def write_brand_files(root: Path) -> list[Path]:
+    """Rewrite the files in BRAND_FILES under root that differ from the drawing; return those written."""
+    written = []
+    for name, make in BRAND_FILES.items():
+        path, text = root / name, make()
+        if not path.is_file() or path.read_text(encoding="utf-8") != text:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8", newline="\n")
+            written.append(path)
+    return written
+
+
+if __name__ == "__main__":
+    # python -m groundcast.icon [repository root, default: the current directory]
+    for path in write_brand_files(Path(sys.argv[1]) if len(sys.argv) > 1 else Path.cwd()):
+        print(f"wrote {path}")
