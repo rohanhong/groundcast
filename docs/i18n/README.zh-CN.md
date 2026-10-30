@@ -32,6 +32,16 @@ Groundcast 是一个个人使用的本地 Web 应用，把你手头已有的学�
 > [!NOTE]
 > 可以添加 PDF（带文字层或扫描件）、PowerPoint、Word、Markdown 或纯文本文件，按网址添加网页，也可以添加笔记照片、视频和音频；识别出的语音和扫描文字经你核对后才会使用。用自己的话描述想要的会话，再确认它提出的简报，就能得到经过核对、带章节标记的 MP3（单人旁白或双主持人），以及一份文稿，其中的链接会在对应的页码、幻灯片或时间点打开每个来源。会话完成后，打字提问的回答和选择题测验都来自你的资料。会话结尾还可以加入回忆提问，每题后留出停顿。资料中的概念汇总到一张概念表里，附带你在每个概念上的测验结果，可以重命名与合并。偏好设置决定默认的声音、语速和简报，档案的每次改动都有记录，并可导出。开始会话时，排序的建议会说明为何适合你；Groundcast 从你过去的会话和反馈中推断出的内容都会展示给你，从不悄悄使用。
 
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../../assets/demo/olm-session-dark.gif">
+  <source media="(prefers-color-scheme: light)" srcset="../../assets/demo/olm-session-light.gif">
+  <img alt="Groundcast 演示：抓取维基百科上的洞螈条目，描述会话，然后对照文稿收听并打开某个句子的来源" src="../../assets/demo/olm-session-light.gif" width="860">
+</picture>
+</p>
+
+<p align="center"><sub>从网页到经过核对的双主持人会话：抓取网页、填写简报、生成（约四分钟，此处剪去）、收听，并打开某个句子的来源。演示资料为维基百科贡献者撰写的 <a href="https://en.wikipedia.org/wiki/Olm">"Olm"</a> 条目，采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> 许可；这些录屏展示了该文本，以相同许可共享。</sub></p>
+
 ## ✨ 亮点
 
 - 🔎 **以资料为依据**：脚本中的每条陈述都标注其所依据的资料片段，并由独立的 Verifier 核对；不来自你资料的内容会明确标出。

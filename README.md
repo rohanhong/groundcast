@@ -50,6 +50,16 @@ result as an MP3 you can play in any phone player.
 > you; what Groundcast infers from your past sessions and your feedback is
 > shown to you and never used silently.
 
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/demo/olm-session-dark.gif">
+  <source media="(prefers-color-scheme: light)" srcset="assets/demo/olm-session-light.gif">
+  <img alt="Groundcast demo: fetch a Wikipedia article on the olm, describe a session, then listen with the transcript and open a sentence's source" src="assets/demo/olm-session-light.gif" width="860">
+</picture>
+</p>
+
+<p align="center"><sub>From a web page to a checked two-host session: fetch, brief, generate (about four minutes, cut here), listen, and open a sentence's source. The material is <a href="https://en.wikipedia.org/wiki/Olm">"Olm"</a> by Wikipedia contributors, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; these recordings show that text and are shared under the same license.</sub></p>
+
 ## ✨ Highlights
 
 - 🔎 **Grounded by design**: every claim in a script cites the source chunks

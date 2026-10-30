@@ -70,14 +70,16 @@ which every statement is grounded in those materials.
   holds the one drawing of the brand (a flat G of sound waves whose crossbar
   is the ground line, with a simpler drawing at 24 px and below), and
   `wordmark.py` the product name and tagline as Fraunces outlines, written
-  by `scripts/outline_wordmark.py`. The brand kit in `assets/` (see its
+  by `scripts/outline_wordmark.py`. The brand kit in `assets/brand/` (see its
   README), `web/static/favicon.svg`, `logo.svg`, and `wordmark.svg`, and the
   README banners in `.github/assets/` are its output, listed in
   `BRAND_FILES`, and the shortcut icons are rendered from it at install
-  time. The only tracked binary image is `assets/social-preview.png`
+  time. The tracked binary images are `assets/brand/social-preview.png`
   (listed in `RASTER_FILES`), rendered with resvg-py from its SVG and
-  carrying that SVG's SHA-256. After changing the drawing, run `python -m
-  groundcast.icon` to rewrite those files (tests compare them). The page
+  carrying that SVG's SHA-256, and the README demo recordings in
+  `assets/demo/` (see its README), which no code draws. After changing
+  the drawing, run `python -m groundcast.icon` to rewrite those files
+  (tests compare them). The page
   links the favicon and logo with the drawing's digest, and on Windows the
   launcher sets the .ico on the app windows, since the browser would show
   its cached, stretched favicon there.
