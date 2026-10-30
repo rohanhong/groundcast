@@ -34,6 +34,20 @@ same licence, unlike the rest of the repository.
 ### Re-recording
 
 The interface changes over time, and these recordings do not. Replace both
-when the screens they show change visibly; use material that is openly
-licensed or self-written (see AGENTS.md), and update this file and the
-caption in `README.md` and its translations.
+when the screens they show change visibly: from the repository root, with
+`pip install playwright pillow` and Google Chrome,
+
+```
+python scripts/record_demo.py run assets/demo/olm-session.toml --scheme light
+python scripts/record_demo.py run assets/demo/olm-session.toml --scheme dark
+```
+
+Each run starts its own service on a free port with an empty data
+directory, calls the configured LLM backend for one session, and writes the
+GIF named in `olm-session.toml`, which also holds the material, the brief,
+the card text, and the timing. Pass `--font` with the Fraunces variable
+font for the card, and `--frames DIR` to keep the frames, so that
+`record_demo.py gif` can compose the GIF again (for example at another
+speed) without a new session. Use material that is openly licensed or
+self-written (see AGENTS.md), and update this file and the caption in
+`README.md` and its translations.

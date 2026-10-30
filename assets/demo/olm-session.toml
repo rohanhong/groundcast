@@ -1,0 +1,31 @@
+# The README demo recordings, read by scripts/record_demo.py.
+# Labels are the interface's own wording, which the script clicks.
+
+[material]
+url = "https://en.wikipedia.org/wiki/Olm"
+
+[brief]
+focus = "How the olm survives in its caves: finding food in total darkness, its slow metabolism, and its long life"
+minutes = 4
+listen = "Commute"
+format = "Two hosts"
+level = "Introductory"
+
+[recording]
+width = 1280
+height = 760
+speed = 1.3          # playback speed against real time
+fps = 15
+colors = 128         # one palette for the whole GIF
+max_gap_s = 2.5      # longer idle gaps between frames are cut to this
+last_hold_s = 0.5    # how long the last frame of each part stays
+card_s = 2.4         # how long the card between the two parts stays
+session_timeout_min = 20
+
+[card]
+title = "About {minutes} minutes later"   # {minutes}: the real wait, rounded
+line = "Written, checked against the article sentence by sentence, and voiced"
+
+[output]   # file names, next to this file
+light = "olm-session-light.gif"
+dark = "olm-session-dark.gif"

@@ -77,12 +77,13 @@ which every statement is grounded in those materials.
   time. The tracked binary images are `assets/brand/social-preview.png`
   (listed in `RASTER_FILES`), rendered with resvg-py from its SVG and
   carrying that SVG's SHA-256, and the README demo recordings in
-  `assets/demo/` (see its README), which no code draws. After changing
-  the drawing, run `python -m groundcast.icon` to rewrite those files
-  (tests compare them). The page
-  links the favicon and logo with the drawing's digest, and on Windows the
-  launcher sets the .ico on the app windows, since the browser would show
-  its cached, stretched favicon there.
+  `assets/demo/` (see its README), which `scripts/record_demo.py`
+  records from the live app as `olm-session.toml` there describes, with
+  a real LLM run. After changing the drawing, run `python -m
+  groundcast.icon` to rewrite the drawn files (tests compare them). The
+  page links the favicon and logo with the drawing's digest, and on
+  Windows the launcher sets the .ico on the app windows, since the browser
+  would show its cached, stretched favicon there.
 - Prompts live in `src/groundcast/prompts/*.md`; `rubric.md` is shared by
   the Writer, reviser, and Editor prompts; `dialogue.md` and `recall.md` are
   added to the Writer prompt for two-host sessions and recall prompts.
