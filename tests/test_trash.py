@@ -50,11 +50,13 @@ def _session(store: Store, material_id: str, status: SessionStatus = SessionStat
 
 
 def _quiz(store: Store, session_id: str, quiz_id: str = "q1") -> Quiz:
-    quiz = Quiz(id=quiz_id, questions=[QuizQuestion(id=f"{quiz_id}-1", question="Why?", options=["a", "b"], correct=0,
-                                                    explanation="", topic="Tides")])  # fmt: skip
     data = load_quizzes(store, session_id)
+    # A second after the last quiz: two calls can share a clock tick, and a restore sorts by time.
+    at = max((q.created_at for q in data.quizzes), default=utc_now()) + timedelta(seconds=1)
+    quiz = Quiz(id=quiz_id, questions=[QuizQuestion(id=f"{quiz_id}-1", question="Why?", options=["a", "b"], correct=0,
+                                                    explanation="", topic="Tides")], created_at=at)  # fmt: skip
     data.quizzes.append(quiz)
-    data.attempts.append(QuizAttempt(id=f"{quiz_id}-a", quiz_id=quiz_id, answers=[0], score=1))
+    data.attempts.append(QuizAttempt(id=f"{quiz_id}-a", quiz_id=quiz_id, answers=[0], score=1, created_at=at))
     save_quizzes(store, session_id, data)
     return quiz
 
